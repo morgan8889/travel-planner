@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { Session } from '@supabase/supabase-js';
 import App from "./App";
 import { supabase } from './lib/supabase';
 
@@ -18,19 +19,31 @@ describe("App", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(supabase.auth.onAuthStateChange).mockReturnValue({
-      data: { subscription: { unsubscribe: vi.fn() } }
-    } as any);
+      data: {
+        subscription: {
+          id: 'mock-subscription-id',
+          unsubscribe: vi.fn(),
+          callback: vi.fn()
+        }
+      }
+    } as ReturnType<typeof supabase.auth.onAuthStateChange>);
   });
 
   it("renders loading state initially", () => {
-    vi.mocked(supabase.auth.getSession).mockResolvedValue({ data: { session: null } } as any);
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: { session: null },
+      error: null
+    });
 
     render(<App />);
     expect(screen.getByText("Loading...")).toBeInTheDocument();
   });
 
   it("renders auth form when no session", async () => {
-    vi.mocked(supabase.auth.getSession).mockResolvedValue({ data: { session: null } } as any);
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: { session: null },
+      error: null
+    });
 
     render(<App />);
 
@@ -42,10 +55,25 @@ describe("App", () => {
 
   it("renders main content when authenticated", async () => {
     const mockSession = {
-      user: { email: "test@example.com" },
+      user: {
+        id: 'test-id',
+        email: "test@example.com",
+        app_metadata: {},
+        user_metadata: {},
+        aud: 'authenticated',
+        created_at: new Date().toISOString()
+      },
       access_token: "mock-token",
-    };
-    vi.mocked(supabase.auth.getSession).mockResolvedValue({ data: { session: mockSession } } as any);
+      token_type: 'bearer',
+      expires_in: 3600,
+      expires_at: Date.now() + 3600000,
+      refresh_token: 'mock-refresh-token'
+    } as Session;
+
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: { session: mockSession },
+      error: null
+    });
 
     render(<App />);
 
