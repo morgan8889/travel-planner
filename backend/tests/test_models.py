@@ -1,5 +1,6 @@
-from travel_planner.models import Base, UserProfile, Trip, TripMember
+from travel_planner.models import Base, UserProfile, Trip, TripMember, AnnualPlan, CalendarBlock
 from travel_planner.models.trip import TripType, TripStatus, MemberRole
+from travel_planner.models.calendar import BlockType
 
 
 def test_user_and_trip_models_importable():
@@ -31,3 +32,19 @@ def test_trip_status_enum():
 def test_member_role_enum():
     assert MemberRole.owner == "owner"
     assert MemberRole.member == "member"
+
+
+def test_calendar_models_importable():
+    models = [AnnualPlan, CalendarBlock]
+    assert len(models) == 2
+
+
+def test_calendar_tables_exist():
+    table_names = Base.metadata.tables.keys()
+    assert "annual_plans" in table_names
+    assert "calendar_blocks" in table_names
+
+
+def test_block_type_enum():
+    assert BlockType.pto == "pto"
+    assert BlockType.holiday == "holiday"
