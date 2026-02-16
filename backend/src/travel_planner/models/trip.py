@@ -9,13 +9,13 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from travel_planner.models.user import Base
 
 
-class TripType(str, enum.Enum):
+class TripType(enum.StrEnum):
     vacation = "vacation"
     remote_week = "remote_week"
     sabbatical = "sabbatical"
 
 
-class TripStatus(str, enum.Enum):
+class TripStatus(enum.StrEnum):
     dreaming = "dreaming"
     planning = "planning"
     booked = "booked"
@@ -23,7 +23,7 @@ class TripStatus(str, enum.Enum):
     completed = "completed"
 
 
-class MemberRole(str, enum.Enum):
+class MemberRole(enum.StrEnum):
     owner = "owner"
     member = "member"
 

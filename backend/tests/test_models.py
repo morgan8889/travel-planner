@@ -1,13 +1,27 @@
 from travel_planner.models import (
-    Base, UserProfile, Trip, TripMember, AnnualPlan, CalendarBlock,
-    ItineraryDay, Activity,
-    Checklist, ChecklistItem, ChecklistItemUser,
-    ChatThread, ChatMessage,
-    GmailConnection, ImportRecord,
+    Activity,
+    AnnualPlan,
+    Base,
+    CalendarBlock,
+    ChatMessage,
+    ChatThread,
+    Checklist,
+    ChecklistItem,
+    ChecklistItemUser,
+    GmailConnection,
+    ImportRecord,
+    ItineraryDay,
+    Trip,
+    TripMember,
+    UserProfile,
 )
-from travel_planner.models.trip import TripType, TripStatus, MemberRole
 from travel_planner.models.calendar import BlockType
-from travel_planner.models.itinerary import ActivityCategory, ActivitySource, ImportStatus
+from travel_planner.models.itinerary import (
+    ActivityCategory,
+    ActivitySource,
+    ImportStatus,
+)
+from travel_planner.models.trip import MemberRole, TripStatus, TripType
 
 
 def test_user_and_trip_models_importable():

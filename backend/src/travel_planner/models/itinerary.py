@@ -1,6 +1,6 @@
+import datetime as dt
 import enum
 import uuid
-from datetime import date, datetime, time
 
 from sqlalchemy import (
     Date,
@@ -19,19 +19,19 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from travel_planner.models.user import Base
 
 
-class ActivityCategory(str, enum.Enum):
+class ActivityCategory(enum.StrEnum):
     transport = "transport"
     food = "food"
     activity = "activity"
     lodging = "lodging"
 
 
-class ActivitySource(str, enum.Enum):
+class ActivitySource(enum.StrEnum):
     manual = "manual"
     gmail_import = "gmail_import"
 
 
-class ImportStatus(str, enum.Enum):
+class ImportStatus(enum.StrEnum):
     pending_review = "pending_review"
     confirmed = "confirmed"
     rejected = "rejected"
@@ -46,7 +46,7 @@ class ItineraryDay(Base):
     trip_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("trips.id")
     )
-    date: Mapped[date] = mapped_column(Date)
+    date: Mapped[dt.date] = mapped_column(Date)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     activities: Mapped[list["Activity"]] = relationship(
@@ -65,8 +65,8 @@ class Activity(Base):
     )
     title: Mapped[str] = mapped_column(String(255))
     category: Mapped[ActivityCategory] = mapped_column(Enum(ActivityCategory))
-    start_time: Mapped[time | None] = mapped_column(Time, nullable=True)
-    end_time: Mapped[time | None] = mapped_column(Time, nullable=True)
+    start_time: Mapped[dt.time | None] = mapped_column(Time, nullable=True)
+    end_time: Mapped[dt.time | None] = mapped_column(Time, nullable=True)
     location: Mapped[str | None] = mapped_column(String(500), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     confirmation_number: Mapped[str | None] = mapped_column(
@@ -80,7 +80,7 @@ class Activity(Base):
     import_status: Mapped[ImportStatus | None] = mapped_column(
         Enum(ImportStatus), nullable=True
     )
-    created_at: Mapped[datetime] = mapped_column(
+    created_at: Mapped[dt.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
 

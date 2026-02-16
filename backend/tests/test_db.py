@@ -1,4 +1,4 @@
-from travel_planner.db import get_db, engine, async_session
+from travel_planner.db import async_session, engine, get_db
 
 
 def test_engine_exists():
