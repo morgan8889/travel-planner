@@ -1,6 +1,10 @@
-from travel_planner.models import Base, UserProfile, Trip, TripMember, AnnualPlan, CalendarBlock
+from travel_planner.models import (
+    Base, UserProfile, Trip, TripMember, AnnualPlan, CalendarBlock,
+    ItineraryDay, Activity,
+)
 from travel_planner.models.trip import TripType, TripStatus, MemberRole
 from travel_planner.models.calendar import BlockType
+from travel_planner.models.itinerary import ActivityCategory, ActivitySource, ImportStatus
 
 
 def test_user_and_trip_models_importable():
@@ -48,3 +52,32 @@ def test_calendar_tables_exist():
 def test_block_type_enum():
     assert BlockType.pto == "pto"
     assert BlockType.holiday == "holiday"
+
+
+def test_itinerary_models_importable():
+    models = [ItineraryDay, Activity]
+    assert len(models) == 2
+
+
+def test_itinerary_tables_exist():
+    table_names = Base.metadata.tables.keys()
+    assert "itinerary_days" in table_names
+    assert "activities" in table_names
+
+
+def test_activity_category_enum():
+    assert ActivityCategory.transport == "transport"
+    assert ActivityCategory.food == "food"
+    assert ActivityCategory.activity == "activity"
+    assert ActivityCategory.lodging == "lodging"
+
+
+def test_activity_source_enum():
+    assert ActivitySource.manual == "manual"
+    assert ActivitySource.gmail_import == "gmail_import"
+
+
+def test_import_status_enum():
+    assert ImportStatus.pending_review == "pending_review"
+    assert ImportStatus.confirmed == "confirmed"
+    assert ImportStatus.rejected == "rejected"
