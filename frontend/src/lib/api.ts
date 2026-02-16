@@ -14,15 +14,33 @@ api.interceptors.request.use(async (config) => {
   return config
 })
 
-// Response interceptor: handle 401
+// Response interceptor: refresh token and retry once on 401
+let refreshPromise: Promise<string | null> | null = null
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (error.response?.status === 401) {
-      const { error: refreshError } = await supabase.auth.refreshSession()
-      if (refreshError) {
-        await supabase.auth.signOut()
+    const originalRequest = error.config
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true
+
+      if (!refreshPromise) {
+        refreshPromise = supabase.auth.refreshSession()
+          .then(({ data, error: refreshError }) => {
+            if (refreshError || !data.session) {
+              supabase.auth.signOut()
+              return null
+            }
+            return data.session.access_token
+          })
+          .finally(() => { refreshPromise = null })
       }
+
+      const newToken = await refreshPromise
+      if (!newToken) return Promise.reject(error)
+
+      originalRequest.headers.Authorization = `Bearer ${newToken}`
+      return api(originalRequest)
     }
     return Promise.reject(error)
   }

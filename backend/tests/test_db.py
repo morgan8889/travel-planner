@@ -11,4 +11,5 @@ def test_async_session_factory_exists():
 
 def test_get_db_is_async_generator():
     import inspect
+
     assert inspect.isasyncgenfunction(get_db)

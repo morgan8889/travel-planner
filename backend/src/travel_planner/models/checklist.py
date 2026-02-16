@@ -40,9 +40,7 @@ class ChecklistItem(Base):
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
 
     checklist: Mapped["Checklist"] = relationship(back_populates="items")
-    user_checks: Mapped[list["ChecklistItemUser"]] = relationship(
-        back_populates="item"
-    )
+    user_checks: Mapped[list["ChecklistItemUser"]] = relationship(back_populates="item")
 
 
 class ChecklistItemUser(Base):

@@ -69,9 +69,7 @@ class Activity(Base):
     end_time: Mapped[dt.time | None] = mapped_column(Time, nullable=True)
     location: Mapped[str | None] = mapped_column(String(500), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    confirmation_number: Mapped[str | None] = mapped_column(
-        String(100), nullable=True
-    )
+    confirmation_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
     source: Mapped[ActivitySource] = mapped_column(
         Enum(ActivitySource), default=ActivitySource.manual

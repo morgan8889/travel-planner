@@ -12,7 +12,7 @@ from travel_planner.config import settings
 
 http_bearer = HTTPBearer()
 
-# Singleton JWKS client for RS256 verification with automatic caching
+# Singleton JWKS client for asymmetric verification with automatic caching
 # Cache TTL: 1 hour (balances security and performance)
 jwks_client = PyJWKClient(
     uri=f"{settings.supabase_url}/auth/v1/.well-known/jwks.json",
@@ -38,16 +38,16 @@ async def get_current_user(
         # Get signing key from JWKS (auto-fetches and caches)
         signing_key = jwks_client.get_signing_key_from_jwt(token)
 
-        # Decode with RS256 (asymmetric verification)
+        # Decode with asymmetric verification (RS256 or ES256)
         payload = jwt.decode(
             token,
-            signing_key.key,  # PyJWK.key property contains public key
-            algorithms=["RS256"],  # Changed from HS256
+            signing_key.key,
+            algorithms=["RS256", "ES256"],
             audience="authenticated",
-            issuer=f"{settings.supabase_url}/auth/v1",  # Verify token source
+            issuer=f"{settings.supabase_url}/auth/v1",
         )
         user_id = UUID(payload["sub"])
-        email = payload["email"]
+        email = payload.get("email", "")
         return AuthUser(id=user_id, email=email)
     except (jwt.InvalidTokenError, KeyError, ValueError) as e:
         raise HTTPException(status_code=401, detail="Invalid or expired token") from e

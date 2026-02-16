@@ -15,6 +15,19 @@ vi.mock('./lib/supabase', () => ({
   },
 }))
 
+vi.mock('./lib/api', () => ({
+  api: {
+    get: vi.fn().mockResolvedValue({ data: [] }),
+    post: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
+    interceptors: {
+      request: { use: vi.fn() },
+      response: { use: vi.fn() },
+    },
+  },
+}))
+
 describe("App", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -53,7 +66,7 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: /send magic link/i })).toBeInTheDocument();
   });
 
-  it("renders main content when authenticated", async () => {
+  it("renders main layout when authenticated", async () => {
     const mockSession = {
       user: {
         id: 'test-id',
@@ -77,10 +90,9 @@ describe("App", () => {
 
     render(<App />);
 
-    // Wait for loading to complete
+    // Wait for loading to complete - the router renders the header with "Travel Planner"
     await screen.findByText("Travel Planner");
     expect(screen.getByText("test@example.com")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /sign out/i })).toBeInTheDocument();
-    expect(screen.getByText("Welcome to Travel Planner")).toBeInTheDocument();
   });
 });
