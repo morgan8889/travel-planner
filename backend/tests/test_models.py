@@ -1,4 +1,10 @@
-from travel_planner.models import Base, UserProfile, Trip, TripMember, AnnualPlan, CalendarBlock, ItineraryDay, Activity
+from travel_planner.models import (
+    Base, UserProfile, Trip, TripMember, AnnualPlan, CalendarBlock,
+    ItineraryDay, Activity,
+    Checklist, ChecklistItem, ChecklistItemUser,
+    ChatThread, ChatMessage,
+    GmailConnection, ImportRecord,
+)
 from travel_planner.models.trip import TripType, TripStatus, MemberRole
 from travel_planner.models.calendar import BlockType
 from travel_planner.models.itinerary import ActivityCategory, ActivitySource, ImportStatus
@@ -78,3 +84,23 @@ def test_import_status_enum():
     assert ImportStatus.pending_review == "pending_review"
     assert ImportStatus.confirmed == "confirmed"
     assert ImportStatus.rejected == "rejected"
+
+
+def test_remaining_models_importable():
+    models = [
+        Checklist, ChecklistItem, ChecklistItemUser,
+        ChatThread, ChatMessage,
+        GmailConnection, ImportRecord,
+    ]
+    assert len(models) == 7
+
+
+def test_all_14_tables_exist():
+    table_names = set(Base.metadata.tables.keys())
+    expected = {
+        "user_profiles", "trips", "trip_members", "annual_plans",
+        "calendar_blocks", "itinerary_days", "activities", "checklists",
+        "checklist_items", "checklist_item_users", "chat_threads",
+        "chat_messages", "gmail_connections", "import_records",
+    }
+    assert expected == table_names
