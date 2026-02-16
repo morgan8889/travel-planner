@@ -1,23 +1,31 @@
 import os
 
-# CRITICAL: Set test JWT secret BEFORE any other imports
+# CRITICAL: Set test environment variables BEFORE any other imports
 # This must be done before importing anything from travel_planner
-os.environ["SUPABASE_JWT_SECRET"] = "test-secret-key-minimum-32-characters-long"
+os.environ["SUPABASE_URL"] = "http://test.supabase.co"
 
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock, patch
 
 import jwt
 import pytest
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import rsa
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from travel_planner.db import get_db
 from travel_planner.main import app
 
+# Generate RSA key pair for RS256 test tokens
+_test_private_key = rsa.generate_private_key(
+    public_exponent=65537, key_size=2048, backend=default_backend()
+)
+_test_public_key = _test_private_key.public_key()
+
 
 def create_test_token(user_id: str, email: str, expired: bool = False) -> str:
-    """Create a test JWT token."""
+    """Create a test JWT token using RS256 (matching production)."""
     exp = datetime.now(UTC) + (
         timedelta(hours=-1) if expired else timedelta(hours=1)
     )
@@ -25,9 +33,25 @@ def create_test_token(user_id: str, email: str, expired: bool = False) -> str:
         "sub": user_id,
         "email": email,
         "aud": "authenticated",
+        "iss": f"{os.environ['SUPABASE_URL']}/auth/v1",
         "exp": exp,
     }
-    return jwt.encode(payload, os.environ["SUPABASE_JWT_SECRET"], algorithm="HS256")
+    return jwt.encode(payload, _test_private_key, algorithm="RS256")
+
+
+@pytest.fixture(autouse=True)
+def mock_jwks_client():
+    """Mock the PyJWKClient to avoid network calls in tests.
+
+    This fixture automatically patches the JWKS client for all tests,
+    returning our test RSA public key for RS256 token verification.
+    """
+    with patch("travel_planner.auth.jwks_client") as mock_client:
+        # Create a mock signing key that returns our test public key
+        mock_signing_key = Mock()
+        mock_signing_key.key = _test_public_key
+        mock_client.get_signing_key_from_jwt.return_value = mock_signing_key
+        yield mock_client
 
 
 @pytest.fixture
