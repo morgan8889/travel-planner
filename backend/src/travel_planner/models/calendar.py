@@ -9,7 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from travel_planner.models.user import Base
 
 
-class BlockType(str, enum.Enum):
+class BlockType(enum.StrEnum):
     pto = "pto"
     holiday = "holiday"
 
