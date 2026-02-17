@@ -5,7 +5,6 @@ from uuid import UUID
 import pytest
 from fastapi.testclient import TestClient
 
-from travel_planner.models.itinerary import Activity, ActivityCategory, ItineraryDay
 from tests.conftest import (
     OTHER_USER_EMAIL,
     OTHER_USER_ID,
@@ -15,6 +14,7 @@ from tests.conftest import (
     make_trip,
     make_user,
 )
+from travel_planner.models.itinerary import Activity, ActivityCategory, ItineraryDay
 
 # Local aliases matching the previous private naming convention
 _make_user = make_user
@@ -36,7 +36,11 @@ def other_user_headers() -> dict[str, str]:
 
 
 def test_list_itinerary_days_empty(
-    client: TestClient, auth_headers: dict, trip_id: str, override_get_db, mock_db_session
+    client: TestClient,
+    auth_headers: dict,
+    trip_id: str,
+    override_get_db,
+    mock_db_session,
 ):
     """List itinerary days for trip with no days returns empty list"""
     # Setup: Trip exists and user is a member
@@ -54,16 +58,17 @@ def test_list_itinerary_days_empty(
 
     mock_db_session.execute = AsyncMock(side_effect=[result_mock1, result_mock2])
 
-    response = client.get(
-        f"/itinerary/trips/{trip_id}/days",
-        headers=auth_headers
-    )
+    response = client.get(f"/itinerary/trips/{trip_id}/days", headers=auth_headers)
     assert response.status_code == 200
     assert response.json() == []
 
 
 def test_list_itinerary_days_with_data(
-    client: TestClient, auth_headers: dict, trip_id: str, override_get_db, mock_db_session
+    client: TestClient,
+    auth_headers: dict,
+    trip_id: str,
+    override_get_db,
+    mock_db_session,
 ):
     """List itinerary days with activity counts in date order"""
     # Setup: Trip exists and user is a member
@@ -95,17 +100,18 @@ def test_list_itinerary_days_with_data(
     # day2 should come first (earlier date), day1 second
     # day2 has 0 activities, day1 has 3 activities
     result_mock2 = MagicMock()
-    result_mock2.__iter__ = MagicMock(return_value=iter([
-        (day2, 0),  # Earlier date, no activities
-        (day1, 3),  # Later date, 3 activities
-    ]))
+    result_mock2.__iter__ = MagicMock(
+        return_value=iter(
+            [
+                (day2, 0),  # Earlier date, no activities
+                (day1, 3),  # Later date, 3 activities
+            ]
+        )
+    )
 
     mock_db_session.execute = AsyncMock(side_effect=[result_mock1, result_mock2])
 
-    response = client.get(
-        f"/itinerary/trips/{trip_id}/days",
-        headers=auth_headers
-    )
+    response = client.get(f"/itinerary/trips/{trip_id}/days", headers=auth_headers)
 
     assert response.status_code == 200
     data = response.json()
@@ -124,7 +130,11 @@ def test_list_itinerary_days_with_data(
 
 
 def test_list_itinerary_days_not_member(
-    client: TestClient, other_user_headers: dict, trip_id: str, override_get_db, mock_db_session
+    client: TestClient,
+    other_user_headers: dict,
+    trip_id: str,
+    override_get_db,
+    mock_db_session,
 ):
     """Non-member cannot list itinerary days"""
     # Setup: verify_trip_member query returns None (user not a member)
@@ -133,14 +143,17 @@ def test_list_itinerary_days_not_member(
     mock_db_session.execute = AsyncMock(return_value=result_mock)
 
     response = client.get(
-        f"/itinerary/trips/{trip_id}/days",
-        headers=other_user_headers
+        f"/itinerary/trips/{trip_id}/days", headers=other_user_headers
     )
     assert response.status_code == 403
 
 
 def test_create_itinerary_day(
-    client: TestClient, auth_headers: dict, trip_id: str, override_get_db, mock_db_session
+    client: TestClient,
+    auth_headers: dict,
+    trip_id: str,
+    override_get_db,
+    mock_db_session,
 ):
     """Create itinerary day for trip"""
     # Setup: Trip exists and user is a member
@@ -166,10 +179,7 @@ def test_create_itinerary_day(
     response = client.post(
         f"/itinerary/trips/{trip_id}/days",
         headers=auth_headers,
-        json={
-            "date": "2026-07-15",
-            "notes": "Arrival day"
-        }
+        json={"date": "2026-07-15", "notes": "Arrival day"},
     )
     assert response.status_code == 201
     data = response.json()
@@ -179,7 +189,11 @@ def test_create_itinerary_day(
 
 
 def test_create_activity(
-    client: TestClient, auth_headers: dict, itinerary_day_id: str, override_get_db, mock_db_session
+    client: TestClient,
+    auth_headers: dict,
+    itinerary_day_id: str,
+    override_get_db,
+    mock_db_session,
 ):
     """Create activity for itinerary day"""
     # Setup: Day exists and user has access
@@ -203,7 +217,9 @@ def test_create_activity(
     result_mock3 = MagicMock()
     result_mock3.scalar.return_value = 2  # Max sort_order is 2
 
-    mock_db_session.execute = AsyncMock(side_effect=[result_mock1, result_mock2, result_mock3])
+    mock_db_session.execute = AsyncMock(
+        side_effect=[result_mock1, result_mock2, result_mock3]
+    )
     mock_db_session.add = MagicMock()
     mock_db_session.commit = AsyncMock()
 
@@ -223,8 +239,8 @@ def test_create_activity(
             "end_time": "18:45",
             "location": "CDG Airport",
             "notes": "Terminal 2E",
-            "confirmation_number": "ABC123"
-        }
+            "confirmation_number": "ABC123",
+        },
     )
     assert response.status_code == 201
     data = response.json()
@@ -239,7 +255,11 @@ def test_create_activity(
 
 
 def test_list_activities(
-    client: TestClient, auth_headers: dict, itinerary_day_id: str, override_get_db, mock_db_session
+    client: TestClient,
+    auth_headers: dict,
+    itinerary_day_id: str,
+    override_get_db,
+    mock_db_session,
 ):
     """List activities for itinerary day ordered by sort_order"""
     # Setup: Day exists and user has access
@@ -288,11 +308,12 @@ def test_list_activities(
     result_mock3 = MagicMock()
     result_mock3.scalars.return_value.all.return_value = [activity1, activity2]
 
-    mock_db_session.execute = AsyncMock(side_effect=[result_mock1, result_mock2, result_mock3])
+    mock_db_session.execute = AsyncMock(
+        side_effect=[result_mock1, result_mock2, result_mock3]
+    )
 
     response = client.get(
-        f"/itinerary/days/{itinerary_day_id}/activities",
-        headers=auth_headers
+        f"/itinerary/days/{itinerary_day_id}/activities", headers=auth_headers
     )
     assert response.status_code == 200
     data = response.json()
@@ -305,7 +326,11 @@ def test_list_activities(
 
 
 def test_update_activity(
-    client: TestClient, auth_headers: dict, activity_id: str, override_get_db, mock_db_session
+    client: TestClient,
+    auth_headers: dict,
+    activity_id: str,
+    override_get_db,
+    mock_db_session,
 ):
     """Update activity with partial data"""
     # Setup: Activity exists and user has access
@@ -341,7 +366,9 @@ def test_update_activity(
     result_mock3 = MagicMock()
     result_mock3.scalar_one_or_none.return_value = trip
 
-    mock_db_session.execute = AsyncMock(side_effect=[result_mock1, result_mock2, result_mock3])
+    mock_db_session.execute = AsyncMock(
+        side_effect=[result_mock1, result_mock2, result_mock3]
+    )
     mock_db_session.commit = AsyncMock()
 
     # Mock refresh to update the activity object
@@ -354,10 +381,7 @@ def test_update_activity(
     response = client.patch(
         f"/itinerary/activities/{activity_id}",
         headers=auth_headers,
-        json={
-            "title": "Updated Title",
-            "notes": "New notes"
-        }
+        json={"title": "Updated Title", "notes": "New notes"},
     )
     assert response.status_code == 200
     data = response.json()
@@ -366,7 +390,11 @@ def test_update_activity(
 
 
 def test_delete_activity(
-    client: TestClient, auth_headers: dict, activity_id: str, override_get_db, mock_db_session
+    client: TestClient,
+    auth_headers: dict,
+    activity_id: str,
+    override_get_db,
+    mock_db_session,
 ):
     """Delete activity"""
     # Setup: Activity exists and user has access
@@ -394,12 +422,13 @@ def test_delete_activity(
     result_mock3 = MagicMock()
     result_mock3.scalar_one_or_none.return_value = trip
 
-    mock_db_session.execute = AsyncMock(side_effect=[result_mock1, result_mock2, result_mock3])
+    mock_db_session.execute = AsyncMock(
+        side_effect=[result_mock1, result_mock2, result_mock3]
+    )
     mock_db_session.delete = AsyncMock()
     mock_db_session.commit = AsyncMock()
 
     response = client.delete(
-        f"/itinerary/activities/{activity_id}",
-        headers=auth_headers
+        f"/itinerary/activities/{activity_id}", headers=auth_headers
     )
     assert response.status_code == 204

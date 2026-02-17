@@ -26,9 +26,7 @@ async def verify_day_access(
 ) -> ItineraryDay:
     """Verify user has access to itinerary day via trip membership"""
     # Get the day
-    result = await db.execute(
-        select(ItineraryDay).where(ItineraryDay.id == day_id)
-    )
+    result = await db.execute(select(ItineraryDay).where(ItineraryDay.id == day_id))
     day = result.scalar_one_or_none()
     if not day:
         raise HTTPException(status_code=404, detail="Itinerary day not found")
@@ -41,17 +39,14 @@ async def verify_day_access(
 @router.get("/trips/{trip_id}/days", response_model=list[ItineraryDayResponse])
 async def list_itinerary_days(
     trip_id: UUID,
+    user_id: CurrentUserId,
     db: AsyncSession = Depends(get_db),
-    user_id: CurrentUserId = None,
 ):
     """List all itinerary days for a trip"""
     await verify_trip_member(trip_id, db, user_id)
 
     result = await db.execute(
-        select(
-            ItineraryDay,
-            func.count(Activity.id).label("activity_count")
-        )
+        select(ItineraryDay, func.count(Activity.id).label("activity_count"))
         .outerjoin(Activity)
         .where(ItineraryDay.trip_id == trip_id)
         .group_by(ItineraryDay.id)
@@ -66,54 +61,49 @@ async def list_itinerary_days(
                 trip_id=day.trip_id,
                 date=day.date,
                 notes=day.notes,
-                activity_count=activity_count or 0
+                activity_count=activity_count or 0,
             )
         )
     return days
 
 
-@router.post("/trips/{trip_id}/days", response_model=ItineraryDayResponse, status_code=201)
+@router.post(
+    "/trips/{trip_id}/days", response_model=ItineraryDayResponse, status_code=201
+)
 async def create_itinerary_day(
     trip_id: UUID,
     day_data: ItineraryDayCreate,
+    user_id: CurrentUserId,
     db: AsyncSession = Depends(get_db),
-    user_id: CurrentUserId = None,
 ):
     """Create a new itinerary day"""
     await verify_trip_member(trip_id, db, user_id)
 
-    day = ItineraryDay(
-        trip_id=trip_id,
-        date=day_data.date,
-        notes=day_data.notes
-    )
+    day = ItineraryDay(trip_id=trip_id, date=day_data.date, notes=day_data.notes)
     db.add(day)
     await db.commit()
     await db.refresh(day)
 
     return ItineraryDayResponse(
-        id=day.id,
-        trip_id=day.trip_id,
-        date=day.date,
-        notes=day.notes,
-        activity_count=0
+        id=day.id, trip_id=day.trip_id, date=day.date, notes=day.notes, activity_count=0
     )
 
 
-@router.post("/days/{day_id}/activities", response_model=ActivityResponse, status_code=201)
+@router.post(
+    "/days/{day_id}/activities", response_model=ActivityResponse, status_code=201
+)
 async def create_activity(
     day_id: UUID,
     activity_data: ActivityCreate,
+    user_id: CurrentUserId,
     db: AsyncSession = Depends(get_db),
-    user_id: CurrentUserId = None,
 ):
     """Create a new activity for an itinerary day"""
     await verify_day_access(day_id, db, user_id)
 
     # Get max sort_order for this day
     result = await db.execute(
-        select(func.max(Activity.sort_order))
-        .where(Activity.itinerary_day_id == day_id)
+        select(func.max(Activity.sort_order)).where(Activity.itinerary_day_id == day_id)
     )
     max_sort_order = result.scalar()
     next_sort_order = (max_sort_order + 1) if max_sort_order is not None else 0
@@ -139,8 +129,8 @@ async def create_activity(
 @router.get("/days/{day_id}/activities", response_model=list[ActivityResponse])
 async def list_activities(
     day_id: UUID,
+    user_id: CurrentUserId,
     db: AsyncSession = Depends(get_db),
-    user_id: CurrentUserId = None,
 ):
     """List all activities for an itinerary day"""
     await verify_day_access(day_id, db, user_id)
@@ -159,14 +149,12 @@ async def list_activities(
 async def update_activity(
     activity_id: UUID,
     activity_data: ActivityUpdate,
+    user_id: CurrentUserId,
     db: AsyncSession = Depends(get_db),
-    user_id: CurrentUserId = None,
 ):
     """Update an activity"""
     # Get the activity
-    result = await db.execute(
-        select(Activity).where(Activity.id == activity_id)
-    )
+    result = await db.execute(select(Activity).where(Activity.id == activity_id))
     activity = result.scalar_one_or_none()
     if not activity:
         raise HTTPException(status_code=404, detail="Activity not found")
@@ -188,14 +176,12 @@ async def update_activity(
 @router.delete("/activities/{activity_id}", status_code=204)
 async def delete_activity(
     activity_id: UUID,
+    user_id: CurrentUserId,
     db: AsyncSession = Depends(get_db),
-    user_id: CurrentUserId = None,
 ):
     """Delete an activity"""
     # Get the activity
-    result = await db.execute(
-        select(Activity).where(Activity.id == activity_id)
-    )
+    result = await db.execute(select(Activity).where(Activity.id == activity_id))
     activity = result.scalar_one_or_none()
     if not activity:
         raise HTTPException(status_code=404, detail="Activity not found")
