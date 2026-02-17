@@ -58,7 +58,9 @@ class Trip(Base):
         DateTime(timezone=True), server_default=func.now()
     )
 
-    members: Mapped[list["TripMember"]] = relationship(back_populates="trip")
+    members: Mapped[list["TripMember"]] = relationship(
+        back_populates="trip", cascade="all, delete-orphan", passive_deletes=True
+    )
     children: Mapped[list["Trip"]] = relationship(back_populates="parent")
     parent: Mapped["Trip | None"] = relationship(
         back_populates="children", remote_side=[id]
