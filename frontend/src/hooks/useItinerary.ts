@@ -60,7 +60,7 @@ export function useCreateActivity(dayId: string, tripId: string) {
 export function useUpdateActivity(tripId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async ({ activityId, dayId, data }: { activityId: string; dayId: string; data: UpdateActivity }) => {
+    mutationFn: async ({ activityId, data }: { activityId: string; dayId: string; data: UpdateActivity }) => {
       const { data: activity } = await itineraryApi.updateActivity(activityId, data)
       return activity
     },
@@ -74,7 +74,7 @@ export function useUpdateActivity(tripId: string) {
 export function useDeleteActivity(tripId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async ({ activityId, dayId }: { activityId: string; dayId: string }) => {
+    mutationFn: async ({ activityId }: { activityId: string; dayId: string }) => {
       await itineraryApi.deleteActivity(activityId)
     },
     onSuccess: (_data, { dayId }) => {
