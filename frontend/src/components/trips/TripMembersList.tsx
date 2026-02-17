@@ -1,5 +1,5 @@
 import type { TripMember } from '../../lib/types'
-import { XMarkIcon } from '@heroicons/react/24/outline'
+import { X } from 'lucide-react'
 
 interface TripMembersListProps {
   members: TripMember[]
@@ -35,7 +35,7 @@ export function TripMembersList({
   onUpdateRole,
 }: TripMembersListProps) {
   return (
-    <ul className="divide-y divide-gray-100">
+    <ul className="divide-y divide-stone-100">
       {members.map((member, index) => (
         <li key={member.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
           <div
@@ -47,10 +47,10 @@ export function TripMembersList({
           </div>
 
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-gray-900 truncate">
+            <p className="text-sm font-medium text-stone-900 truncate">
               {member.display_name || member.email.split('@')[0]}
             </p>
-            <p className="text-xs text-gray-500 truncate">{member.email}</p>
+            <p className="text-xs text-stone-500 truncate">{member.email}</p>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
@@ -69,8 +69,8 @@ export function TripMembersList({
                 disabled={!isOwner}
                 className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                   isOwner
-                    ? 'bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-700 hover:ring-1 hover:ring-blue-200 cursor-pointer transition-all duration-200'
-                    : 'bg-gray-100 text-gray-600'
+                    ? 'bg-stone-100 text-stone-600 hover:bg-blue-50 hover:text-blue-700 hover:ring-1 hover:ring-blue-200 cursor-pointer transition-all duration-200'
+                    : 'bg-stone-100 text-stone-600'
                 }`}
               >
                 Member
@@ -81,10 +81,10 @@ export function TripMembersList({
               <button
                 type="button"
                 onClick={() => onRemove(member.id)}
-                className="p-1 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+                className="p-1 text-stone-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
                 aria-label={`Remove ${member.display_name || member.email}`}
               >
-                <XMarkIcon className="w-4 h-4" />
+                <X className="w-4 h-4" />
               </button>
             )}
           </div>

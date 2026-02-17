@@ -1,5 +1,5 @@
 import { Link, useNavigate } from '@tanstack/react-router'
-import { ChevronRightIcon } from '@heroicons/react/24/outline'
+import { ChevronRight } from 'lucide-react'
 import { useCreateTrip } from '../hooks/useTrips'
 import { TripForm } from '../components/trips/TripForm'
 import type { TripCreate, TripUpdate } from '../lib/types'
@@ -24,19 +24,19 @@ export function NewTripPage() {
     <div>
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm mb-6">
-        <Link to="/trips" className="text-gray-500 hover:text-blue-600 transition-colors">
+        <Link to="/trips" className="text-stone-500 hover:text-blue-600 transition-colors">
           My Trips
         </Link>
-        <ChevronRightIcon className="w-4 h-4 text-gray-400" />
-        <span className="text-gray-900 font-medium">New Trip</span>
+        <ChevronRight className="w-4 h-4 text-stone-400" />
+        <span className="text-stone-900 font-medium">New Trip</span>
       </nav>
 
       {/* Form Card */}
       <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sm:p-8">
+        <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-6 sm:p-8">
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Plan a New Trip</h1>
-            <p className="mt-1 text-sm text-gray-500">
+            <h1 className="text-2xl font-bold text-stone-900">Plan a New Trip</h1>
+            <p className="mt-1 text-sm text-stone-500">
               Fill in the details below to start planning your next adventure.
             </p>
           </div>

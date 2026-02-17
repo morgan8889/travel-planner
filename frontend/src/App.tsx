@@ -20,10 +20,10 @@ const queryClient = new QueryClient({
 
 function LoadingSpinner() {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center">
       <div className="text-center">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-2 border-gray-200 border-t-blue-600" />
-        <p className="mt-4 text-gray-600">Loading...</p>
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-2 border-stone-200 border-t-blue-600" />
+        <p className="mt-4 text-stone-600">Loading...</p>
       </div>
     </div>
   )
