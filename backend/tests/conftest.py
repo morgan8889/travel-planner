@@ -97,7 +97,7 @@ def activity_id() -> str:
 @pytest.fixture
 def checklist_id() -> str:
     """Return checklist ID as string."""
-    return "555e4567-e89b-12d3-a456-426614174004"
+    return "777e4567-e89b-12d3-a456-426614174006"
 
 
 @pytest.fixture

@@ -1,7 +1,7 @@
 from datetime import date, time
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from travel_planner.models.itinerary import ActivityCategory
 
@@ -22,7 +22,7 @@ class ItineraryDayResponse(BaseModel):
 
 
 class ActivityCreate(BaseModel):
-    title: str
+    title: str = Field(..., min_length=1, max_length=255)
     category: ActivityCategory
     start_time: time | None = None
     end_time: time | None = None
@@ -30,9 +30,16 @@ class ActivityCreate(BaseModel):
     notes: str | None = None
     confirmation_number: str | None = None
 
+    @model_validator(mode="after")
+    def end_time_after_start_time(self) -> "ActivityCreate":
+        if self.start_time is not None and self.end_time is not None:
+            if self.end_time <= self.start_time:
+                raise ValueError("end_time must be after start_time")
+        return self
+
 
 class ActivityUpdate(BaseModel):
-    title: str | None = None
+    title: str | None = Field(default=None, min_length=1, max_length=255)
     category: ActivityCategory | None = None
     start_time: time | None = None
     end_time: time | None = None
@@ -40,6 +47,13 @@ class ActivityUpdate(BaseModel):
     notes: str | None = None
     confirmation_number: str | None = None
     sort_order: int | None = None
+
+    @model_validator(mode="after")
+    def end_time_after_start_time(self) -> "ActivityUpdate":
+        if self.start_time is not None and self.end_time is not None:
+            if self.end_time <= self.start_time:
+                raise ValueError("end_time must be after start_time")
+        return self
 
 
 class ActivityResponse(BaseModel):
