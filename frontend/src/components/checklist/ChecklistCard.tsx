@@ -40,7 +40,11 @@ export function ChecklistCard({ checklist, tripId }: ChecklistCardProps) {
   }
 
   const handleToggle = async (itemId: string) => {
-    await toggleMutation.mutateAsync(itemId)
+    try {
+      await toggleMutation.mutateAsync(itemId)
+    } catch (error) {
+      // Error is captured by mutation state and displayed
+    }
   }
 
   const completedCount = checklist.items.filter((item) => item.checked).length
@@ -107,7 +111,7 @@ export function ChecklistCard({ checklist, tripId }: ChecklistCardProps) {
       <div className="space-y-2">
         {checklist.items.length === 0 ? (
           <p className="text-sm text-gray-500 text-center py-4">
-            No items yet. Click + to add one.
+            No items yet. Click 'Add item' button to get started.
           </p>
         ) : (
           checklist.items.map((item) => (
