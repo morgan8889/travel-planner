@@ -1,4 +1,5 @@
 import type { TripMember } from '../../lib/types'
+import { XMarkIcon } from '@heroicons/react/24/outline'
 
 interface TripMembersListProps {
   members: TripMember[]
@@ -68,7 +69,7 @@ export function TripMembersList({
                 disabled={!isOwner}
                 className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                   isOwner
-                    ? 'bg-gray-100 text-gray-600 hover:bg-blue-100 hover:text-blue-700 cursor-pointer transition-colors'
+                    ? 'bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-700 hover:ring-1 hover:ring-blue-200 cursor-pointer transition-all duration-200'
                     : 'bg-gray-100 text-gray-600'
                 }`}
               >
@@ -83,9 +84,7 @@ export function TripMembersList({
                 className="p-1 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
                 aria-label={`Remove ${member.display_name || member.email}`}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <XMarkIcon className="w-4 h-4" />
               </button>
             )}
           </div>

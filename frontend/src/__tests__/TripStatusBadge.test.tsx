@@ -5,11 +5,11 @@ import type { TripStatus } from '../lib/types'
 
 describe('TripStatusBadge', () => {
   const statuses: { value: TripStatus; label: string; colorClass: string }[] = [
-    { value: 'dreaming', label: 'Dreaming', colorClass: 'bg-purple-100' },
-    { value: 'planning', label: 'Planning', colorClass: 'bg-amber-100' },
-    { value: 'booked', label: 'Booked', colorClass: 'bg-blue-100' },
-    { value: 'active', label: 'Active', colorClass: 'bg-green-100' },
-    { value: 'completed', label: 'Completed', colorClass: 'bg-gray-100' },
+    { value: 'dreaming', label: 'Dreaming', colorClass: 'bg-purple-50' },
+    { value: 'planning', label: 'Planning', colorClass: 'bg-amber-50' },
+    { value: 'booked', label: 'Booked', colorClass: 'bg-blue-50' },
+    { value: 'active', label: 'Active', colorClass: 'bg-green-50' },
+    { value: 'completed', label: 'Completed', colorClass: 'bg-gray-50' },
   ]
 
   statuses.forEach(({ value, label, colorClass }) => {
