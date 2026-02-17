@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { ExclamationTriangleIcon, ArrowLeftIcon, ChevronRightIcon, PencilSquareIcon, CalendarIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { ExclamationTriangleIcon, ArrowLeftIcon, ChevronRightIcon, PencilSquareIcon, CalendarIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline'
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { useTrip, useUpdateTrip, useDeleteTrip } from '../hooks/useTrips'
 import { useAddMember, useRemoveMember, useUpdateMemberRole } from '../hooks/useMembers'
+import { useItineraryDays, useCreateDay } from '../hooks/useItinerary'
+import { useChecklists } from '../hooks/useChecklists'
 import { useAuth } from '../contexts/AuthContext'
 import { TripStatusBadge } from '../components/trips/TripStatusBadge'
 import { TripTypeBadge } from '../components/trips/TripTypeBadge'
@@ -13,6 +15,9 @@ import { AddMemberModal } from '../components/trips/AddMemberModal'
 import { TripCard } from '../components/trips/TripCard'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
+import { ItineraryDayCard } from '../components/itinerary/ItineraryDayCard'
+import { ChecklistCard } from '../components/checklist/ChecklistCard'
+import { AddChecklistModal } from '../components/checklist/AddChecklistModal'
 import type { TripCreate, TripStatus, TripUpdate } from '../lib/types'
 
 function formatDateRange(startDate: string, endDate: string): string {
@@ -82,10 +87,17 @@ export function TripDetailPage() {
   const removeMember = useRemoveMember(tripId)
   const updateMemberRole = useUpdateMemberRole(tripId)
 
+  // Itinerary and Checklist hooks
+  const { data: itineraryDays, isLoading: daysLoading, isError: daysError, error: daysErrorMsg } = useItineraryDays(tripId)
+  const { data: checklists, isLoading: checklistsLoading, isError: checklistsError, error: checklistsErrorMsg } = useChecklists(tripId)
+  const createDay = useCreateDay(tripId)
+
   const [isEditing, setIsEditing] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showAddMember, setShowAddMember] = useState(false)
   const [addMemberError, setAddMemberError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'overview' | 'itinerary' | 'checklists'>('overview')
+  const [showAddChecklistModal, setShowAddChecklistModal] = useState(false)
 
   const isOwner = trip?.members.some(
     (m) => m.user_id === user?.id && m.role === 'owner'
@@ -128,6 +140,17 @@ export function TripDetailPage() {
 
   function handleUpdateRole(memberId: string, role: 'owner' | 'member') {
     updateMemberRole.mutate({ memberId, role })
+  }
+
+  async function handleAddDay() {
+    const dateStr = window.prompt('Enter date (YYYY-MM-DD):')
+    if (!dateStr) return
+
+    try {
+      await createDay.mutateAsync({ date: dateStr })
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to create day')
+    }
   }
 
   // Loading state
@@ -193,6 +216,44 @@ export function TripDetailPage() {
         <span className="text-gray-900 font-medium truncate">{trip.destination}</span>
       </nav>
 
+      {/* Tab Navigation */}
+      <div className="mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex gap-6">
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'overview'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Overview
+            </button>
+            <button
+              onClick={() => setActiveTab('itinerary')}
+              className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'itinerary'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Itinerary {itineraryDays && itineraryDays.length > 0 && `(${itineraryDays.length} days)`}
+            </button>
+            <button
+              onClick={() => setActiveTab('checklists')}
+              className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'checklists'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Checklists {checklists && checklists.length > 0 && `(${checklists.length})`}
+            </button>
+          </nav>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
@@ -215,7 +276,7 @@ export function TripDetailPage() {
                 submitLabel="Save Changes"
               />
             </div>
-          ) : (
+          ) : activeTab === 'overview' ? (
             <>
               {/* Trip Header */}
               <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-gray-200 p-6">
@@ -316,7 +377,102 @@ export function TripDetailPage() {
                 </div>
               )}
             </>
-          )}
+          ) : activeTab === 'itinerary' ? (
+            <>
+              {/* Itinerary Tab */}
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Itinerary
+                  {itineraryDays && itineraryDays.length > 0 && (
+                    <span className="ml-2 text-lg text-gray-500 font-normal">
+                      {itineraryDays.length} {itineraryDays.length === 1 ? 'day' : 'days'}
+                    </span>
+                  )}
+                </h2>
+                <button
+                  onClick={handleAddDay}
+                  disabled={createDay.isPending}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  <PlusIcon className="w-4 h-4" />
+                  Add Day
+                </button>
+              </div>
+
+              {daysLoading ? (
+                <div className="flex items-center justify-center py-16">
+                  <LoadingSpinner />
+                </div>
+              ) : daysError ? (
+                <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-gray-200 p-6">
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-600">
+                      {daysErrorMsg instanceof Error ? daysErrorMsg.message : 'Failed to load itinerary'}
+                    </p>
+                  </div>
+                </div>
+              ) : itineraryDays && itineraryDays.length > 0 ? (
+                <div className="space-y-4">
+                  {itineraryDays.map((day) => (
+                    <ItineraryDayCard key={day.id} day={day} tripId={tripId} />
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-gray-200 p-12 text-center">
+                  <p className="text-gray-600 mb-4">
+                    No itinerary days yet. Click "Add Day" to start planning your trip.
+                  </p>
+                </div>
+              )}
+            </>
+          ) : activeTab === 'checklists' ? (
+            <>
+              {/* Checklists Tab */}
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Checklists
+                  {checklists && checklists.length > 0 && (
+                    <span className="ml-2 text-lg text-gray-500 font-normal">
+                      {checklists.length}
+                    </span>
+                  )}
+                </h2>
+                <button
+                  onClick={() => setShowAddChecklistModal(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <PlusIcon className="w-4 h-4" />
+                  New Checklist
+                </button>
+              </div>
+
+              {checklistsLoading ? (
+                <div className="flex items-center justify-center py-16">
+                  <LoadingSpinner />
+                </div>
+              ) : checklistsError ? (
+                <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-gray-200 p-6">
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-600">
+                      {checklistsErrorMsg instanceof Error ? checklistsErrorMsg.message : 'Failed to load checklists'}
+                    </p>
+                  </div>
+                </div>
+              ) : checklists && checklists.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {checklists.map((checklist) => (
+                    <ChecklistCard key={checklist.id} checklist={checklist} tripId={tripId} />
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-gray-200 p-12 text-center">
+                  <p className="text-gray-600 mb-4">
+                    No checklists yet. Click "New Checklist" to create one.
+                  </p>
+                </div>
+              )}
+            </>
+          ) : null}
         </div>
 
         {/* Sidebar */}
@@ -378,6 +534,12 @@ export function TripDetailPage() {
         onAdd={handleAddMember}
         isLoading={addMember.isPending}
         error={addMemberError}
+      />
+
+      <AddChecklistModal
+        isOpen={showAddChecklistModal}
+        onClose={() => setShowAddChecklistModal(false)}
+        tripId={tripId}
       />
     </div>
   )
