@@ -11,7 +11,7 @@ interface ItineraryDayCardProps {
 }
 
 export function ItineraryDayCard({ day, tripId }: ItineraryDayCardProps) {
-  const { data: activities, isLoading } = useActivities(day.id)
+  const { data: activities, isLoading, isError, error } = useActivities(day.id)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
 
   const formattedDate = new Date(day.date).toLocaleDateString('en-US', {
@@ -41,6 +41,12 @@ export function ItineraryDayCard({ day, tripId }: ItineraryDayCardProps) {
 
       {isLoading ? (
         <div className="text-sm text-gray-500 text-center py-8">Loading activities...</div>
+      ) : isError ? (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-sm text-red-600">
+            {error instanceof Error ? error.message : 'Failed to load activities'}
+          </p>
+        </div>
       ) : activities && activities.length > 0 ? (
         <div className="space-y-2">
           {activities.map((activity) => (
