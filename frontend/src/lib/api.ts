@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { supabase } from './supabase'
-import type { ItineraryDay, Activity, CreateItineraryDay, CreateActivity, UpdateActivity, Checklist, ChecklistItem, CreateChecklist, CreateChecklistItem } from './types'
+import type { ItineraryDay, Activity, CreateItineraryDay, CreateActivity, UpdateActivity, Checklist, ChecklistItem, CreateChecklist, CreateChecklistItem, CalendarYearResponse, AnnualPlan, CalendarBlock, CreateAnnualPlan, CreateCalendarBlock, UpdateCalendarBlock } from './types'
 
 export const api = axios.create({
   baseURL: '/api', // Vite proxy strips this, hits localhost:8000
@@ -79,4 +79,21 @@ export const checklistApi = {
 
   toggleItem: (itemId: string) =>
     api.post<ChecklistItem>(`/checklist/items/${itemId}/toggle`, {}),
+}
+
+export const calendarApi = {
+  getYear: (year: number) =>
+    api.get<CalendarYearResponse>(`/calendar/plans/${year}`),
+
+  createPlan: (data: CreateAnnualPlan) =>
+    api.post<AnnualPlan>('/calendar/plans', data),
+
+  createBlock: (data: CreateCalendarBlock) =>
+    api.post<CalendarBlock>('/calendar/blocks', data),
+
+  updateBlock: (blockId: string, data: UpdateCalendarBlock) =>
+    api.patch<CalendarBlock>(`/calendar/blocks/${blockId}`, data),
+
+  deleteBlock: (blockId: string) =>
+    api.delete(`/calendar/blocks/${blockId}`),
 }
