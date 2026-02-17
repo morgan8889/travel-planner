@@ -92,3 +92,15 @@ def itinerary_day_id() -> str:
 def activity_id() -> str:
     """Return activity ID as string."""
     return "999e4567-e89b-12d3-a456-426614174008"
+
+
+@pytest.fixture
+def checklist_id() -> str:
+    """Return checklist ID as string."""
+    return "555e4567-e89b-12d3-a456-426614174004"
+
+
+@pytest.fixture
+def item_id() -> str:
+    """Return checklist item ID as string."""
+    return "666e4567-e89b-12d3-a456-426614174005"
