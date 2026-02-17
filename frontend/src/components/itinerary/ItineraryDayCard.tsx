@@ -14,7 +14,7 @@ export function ItineraryDayCard({ day, tripId }: ItineraryDayCardProps) {
   const { data: activities, isLoading, isError, error } = useActivities(day.id)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
 
-  const formattedDate = new Date(day.date).toLocaleDateString('en-US', {
+  const formattedDate = new Date(day.date + 'T00:00:00').toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',

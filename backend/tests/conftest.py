@@ -12,6 +12,7 @@ import jwt
 import pytest
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
+from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from travel_planner.db import get_db
@@ -68,6 +69,12 @@ def auth_headers() -> dict[str, str]:
     test_email = "test@example.com"
     token = create_test_token(test_user_id, test_email)
     return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+def client() -> TestClient:
+    """Create a test client for the FastAPI app."""
+    return TestClient(app)
 
 
 @pytest.fixture

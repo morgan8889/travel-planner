@@ -5,7 +5,6 @@ from uuid import UUID
 import pytest
 from fastapi.testclient import TestClient
 
-from travel_planner.main import app
 from travel_planner.models.itinerary import Activity, ActivityCategory, ItineraryDay
 from travel_planner.models.trip import MemberRole, Trip, TripMember
 from travel_planner.models.user import UserProfile
@@ -16,11 +15,6 @@ OTHER_USER_ID = UUID("223e4567-e89b-12d3-a456-426614174001")
 OTHER_USER_EMAIL = "other@example.com"
 TRIP_ID = UUID("333e4567-e89b-12d3-a456-426614174002")
 MEMBER_ID = UUID("443e4567-e89b-12d3-a456-426614174003")
-
-
-@pytest.fixture
-def client():
-    return TestClient(app)
 
 
 @pytest.fixture

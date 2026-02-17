@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -58,3 +58,7 @@ class ChecklistItemUser(Base):
     checked: Mapped[bool] = mapped_column(Boolean, default=False)
 
     item: Mapped["ChecklistItem"] = relationship(back_populates="user_checks")
+
+    __table_args__ = (
+        UniqueConstraint("item_id", "user_id", name="uq_checklist_item_user"),
+    )

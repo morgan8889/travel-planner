@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from travel_planner.auth import AuthUser, get_current_user
+from travel_planner.auth import CurrentUserId
 from travel_planner.db import get_db
 from travel_planner.deps import verify_trip_member
 from travel_planner.models.itinerary import Activity, ItineraryDay
@@ -22,7 +22,7 @@ router = APIRouter(prefix="/itinerary", tags=["itinerary"])
 async def verify_day_access(
     day_id: UUID,
     db: AsyncSession,
-    current_user: AuthUser
+    user_id: UUID,
 ) -> ItineraryDay:
     """Verify user has access to itinerary day via trip membership"""
     # Get the day
@@ -34,7 +34,7 @@ async def verify_day_access(
         raise HTTPException(status_code=404, detail="Itinerary day not found")
 
     # Verify user is a member of the trip
-    await verify_trip_member(day.trip_id, db, current_user)
+    await verify_trip_member(day.trip_id, db, user_id)
     return day
 
 
@@ -42,10 +42,10 @@ async def verify_day_access(
 async def list_itinerary_days(
     trip_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: AuthUser = Depends(get_current_user),
+    user_id: CurrentUserId = None,
 ):
     """List all itinerary days for a trip"""
-    await verify_trip_member(trip_id, db, current_user)
+    await verify_trip_member(trip_id, db, user_id)
 
     result = await db.execute(
         select(
@@ -77,10 +77,10 @@ async def create_itinerary_day(
     trip_id: UUID,
     day_data: ItineraryDayCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: AuthUser = Depends(get_current_user),
+    user_id: CurrentUserId = None,
 ):
     """Create a new itinerary day"""
-    await verify_trip_member(trip_id, db, current_user)
+    await verify_trip_member(trip_id, db, user_id)
 
     day = ItineraryDay(
         trip_id=trip_id,
@@ -105,10 +105,10 @@ async def create_activity(
     day_id: UUID,
     activity_data: ActivityCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: AuthUser = Depends(get_current_user),
+    user_id: CurrentUserId = None,
 ):
     """Create a new activity for an itinerary day"""
-    await verify_day_access(day_id, db, current_user)
+    await verify_day_access(day_id, db, user_id)
 
     # Get max sort_order for this day
     result = await db.execute(
@@ -116,7 +116,7 @@ async def create_activity(
         .where(Activity.itinerary_day_id == day_id)
     )
     max_sort_order = result.scalar()
-    next_sort_order = (max_sort_order or -1) + 1
+    next_sort_order = (max_sort_order + 1) if max_sort_order is not None else 0
 
     activity = Activity(
         itinerary_day_id=day_id,
@@ -140,10 +140,10 @@ async def create_activity(
 async def list_activities(
     day_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: AuthUser = Depends(get_current_user),
+    user_id: CurrentUserId = None,
 ):
     """List all activities for an itinerary day"""
-    await verify_day_access(day_id, db, current_user)
+    await verify_day_access(day_id, db, user_id)
 
     result = await db.execute(
         select(Activity)
@@ -160,7 +160,7 @@ async def update_activity(
     activity_id: UUID,
     activity_data: ActivityUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: AuthUser = Depends(get_current_user),
+    user_id: CurrentUserId = None,
 ):
     """Update an activity"""
     # Get the activity
@@ -172,7 +172,7 @@ async def update_activity(
         raise HTTPException(status_code=404, detail="Activity not found")
 
     # Verify user has access to the day
-    await verify_day_access(activity.itinerary_day_id, db, current_user)
+    await verify_day_access(activity.itinerary_day_id, db, user_id)
 
     # Update only provided fields
     update_data = activity_data.model_dump(exclude_unset=True)
@@ -189,7 +189,7 @@ async def update_activity(
 async def delete_activity(
     activity_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: AuthUser = Depends(get_current_user),
+    user_id: CurrentUserId = None,
 ):
     """Delete an activity"""
     # Get the activity
@@ -201,7 +201,7 @@ async def delete_activity(
         raise HTTPException(status_code=404, detail="Activity not found")
 
     # Verify user has access to the day
-    await verify_day_access(activity.itinerary_day_id, db, current_user)
+    await verify_day_access(activity.itinerary_day_id, db, user_id)
 
     await db.delete(activity)
     await db.commit()

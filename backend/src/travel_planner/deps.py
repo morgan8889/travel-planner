@@ -4,14 +4,13 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from travel_planner.auth import AuthUser
 from travel_planner.models.trip import Trip, TripMember
 
 
 async def verify_trip_member(
     trip_id: UUID,
     db: AsyncSession,
-    current_user: AuthUser,
+    user_id: UUID,
 ) -> Trip:
     """Verify the current user is a member of the trip and return the trip.
 
@@ -21,7 +20,7 @@ async def verify_trip_member(
         select(Trip)
         .join(TripMember)
         .where(Trip.id == trip_id)
-        .where(TripMember.user_id == current_user.id)
+        .where(TripMember.user_id == user_id)
     )
     trip = result.scalar_one_or_none()
     if not trip:

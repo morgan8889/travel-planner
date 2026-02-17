@@ -69,6 +69,7 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column("checked", sa.Boolean, nullable=False, server_default="false"),
+        sa.UniqueConstraint("item_id", "user_id", name="uq_checklist_item_user"),
     )
 
 

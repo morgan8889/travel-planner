@@ -5,7 +5,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from travel_planner.auth import AuthUser, get_current_user
+from travel_planner.auth import CurrentUserId
 from travel_planner.db import get_db
 from travel_planner.deps import verify_trip_member
 from travel_planner.models.checklist import Checklist, ChecklistItem, ChecklistItemUser
@@ -24,10 +24,10 @@ async def create_checklist(
     trip_id: UUID,
     checklist_data: ChecklistCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: AuthUser = Depends(get_current_user),
+    user_id: CurrentUserId = None,
 ):
     """Create a new checklist for a trip"""
-    await verify_trip_member(trip_id, db, current_user)
+    await verify_trip_member(trip_id, db, user_id)
 
     checklist = Checklist(
         trip_id=trip_id,
@@ -49,10 +49,10 @@ async def create_checklist(
 async def list_checklists(
     trip_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: AuthUser = Depends(get_current_user),
+    user_id: CurrentUserId = None,
 ):
     """List all checklists for a trip with items and user check status"""
-    await verify_trip_member(trip_id, db, current_user)
+    await verify_trip_member(trip_id, db, user_id)
 
     # Fetch checklists with items and user checks eagerly loaded
     result = await db.execute(
@@ -71,7 +71,7 @@ async def list_checklists(
         for item in checklist.items:
             # Find user's check status
             user_check = next(
-                (uc for uc in item.user_checks if uc.user_id == current_user.id),
+                (uc for uc in item.user_checks if uc.user_id == user_id),
                 None
             )
             checked = user_check.checked if user_check else False
@@ -103,7 +103,7 @@ async def add_checklist_item(
     checklist_id: UUID,
     item_data: ChecklistItemCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: AuthUser = Depends(get_current_user),
+    user_id: CurrentUserId = None,
 ):
     """Add an item to a checklist with auto-incremented sort_order"""
     # Get the checklist
@@ -115,7 +115,7 @@ async def add_checklist_item(
         raise HTTPException(status_code=404, detail="Checklist not found")
 
     # Verify user is a member of the trip
-    await verify_trip_member(checklist.trip_id, db, current_user)
+    await verify_trip_member(checklist.trip_id, db, user_id)
 
     # Get max sort_order for this checklist
     result = await db.execute(
@@ -123,7 +123,7 @@ async def add_checklist_item(
         .where(ChecklistItem.checklist_id == checklist_id)
     )
     max_sort_order = result.scalar()
-    next_sort_order = (max_sort_order or -1) + 1
+    next_sort_order = (max_sort_order + 1) if max_sort_order is not None else 0
 
     item = ChecklistItem(
         checklist_id=checklist_id,
@@ -147,7 +147,7 @@ async def add_checklist_item(
 async def toggle_item_check(
     item_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: AuthUser = Depends(get_current_user),
+    user_id: CurrentUserId = None,
 ):
     """Toggle the checked status of an item for the current user"""
     # Get the item with its checklist
@@ -161,13 +161,13 @@ async def toggle_item_check(
         raise HTTPException(status_code=404, detail="Checklist item not found")
 
     # Verify user is a member of the trip
-    await verify_trip_member(item.checklist.trip_id, db, current_user)
+    await verify_trip_member(item.checklist.trip_id, db, user_id)
 
     # Get or create ChecklistItemUser record
     result = await db.execute(
         select(ChecklistItemUser)
         .where(ChecklistItemUser.item_id == item_id)
-        .where(ChecklistItemUser.user_id == current_user.id)
+        .where(ChecklistItemUser.user_id == user_id)
     )
     user_check = result.scalar_one_or_none()
 
@@ -178,7 +178,7 @@ async def toggle_item_check(
         # Create new record (checked=True)
         user_check = ChecklistItemUser(
             item_id=item_id,
-            user_id=current_user.id,
+            user_id=user_id,
             checked=True
         )
         db.add(user_check)

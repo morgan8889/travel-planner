@@ -4,7 +4,6 @@ from uuid import UUID
 import pytest
 from fastapi.testclient import TestClient
 
-from travel_planner.main import app
 from travel_planner.models.checklist import Checklist, ChecklistItem, ChecklistItemUser
 from travel_planner.models.trip import MemberRole, Trip, TripMember
 from travel_planner.models.user import UserProfile
@@ -18,26 +17,9 @@ MEMBER_ID = UUID("443e4567-e89b-12d3-a456-426614174003")
 
 
 @pytest.fixture
-def client():
-    return TestClient(app)
-
-
-@pytest.fixture
 def trip_id() -> str:
     """Return trip ID as string."""
     return str(TRIP_ID)
-
-
-@pytest.fixture
-def checklist_id() -> str:
-    """Return checklist ID as string."""
-    return "555e4567-e89b-12d3-a456-426614174004"
-
-
-@pytest.fixture
-def item_id() -> str:
-    """Return checklist item ID as string."""
-    return "666e4567-e89b-12d3-a456-426614174005"
 
 
 @pytest.fixture

@@ -389,8 +389,13 @@ export function TripDetailPage() {
               </div>
 
               {daysLoading ? (
-                <div className="flex items-center justify-center py-16">
-                  <LoadingSpinner />
+                <div className="animate-pulse space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                      <div className="h-5 bg-stone-200 rounded w-1/3 mb-3" />
+                      <div className="h-4 bg-stone-200 rounded w-2/3" />
+                    </div>
+                  ))}
                 </div>
               ) : daysError ? (
                 <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-gray-200 p-6">
@@ -436,8 +441,16 @@ export function TripDetailPage() {
               </div>
 
               {checklistsLoading ? (
-                <div className="flex items-center justify-center py-16">
-                  <LoadingSpinner />
+                <div className="animate-pulse grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="bg-white rounded-xl border border-gray-200 p-4">
+                      <div className="h-5 bg-stone-200 rounded w-1/2 mb-4" />
+                      <div className="space-y-2">
+                        <div className="h-4 bg-stone-200 rounded w-full" />
+                        <div className="h-4 bg-stone-200 rounded w-3/4" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : checklistsError ? (
                 <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-gray-200 p-6">
