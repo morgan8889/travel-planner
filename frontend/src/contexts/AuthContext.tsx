@@ -18,13 +18,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-    }).catch((err) => {
-      console.error('Failed to get session:', err)
-    }).finally(() => {
-      setIsLoading(false)
-    })
+    let cancelled = false
+
+    async function initAuth() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          setSession(session)
+          return
+        }
+        if (import.meta.env.DEV && import.meta.env.VITE_AUTO_LOGIN === 'true') {
+          const { data, error } = await supabase.auth.signInAnonymously()
+          if (error) {
+            console.warn('Auto-login failed:', error.message)
+          } else if (data.session) {
+            setSession(data.session)
+          }
+          return
+        }
+      } catch (err) {
+        console.error('Failed to initialize auth:', err)
+      } finally {
+        if (!cancelled) setIsLoading(false)
+      }
+    }
+
+    initAuth()
 
     const {
       data: { subscription },
@@ -32,7 +51,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session)
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      cancelled = true
+      subscription.unsubscribe()
+    }
   }, [])
 
   const signInWithMagicLink = async (email: string) => {
