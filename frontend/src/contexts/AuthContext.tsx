@@ -27,10 +27,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSession(session)
           return
         }
-        if (import.meta.env.VITE_AUTO_LOGIN === 'true') {
-          const { error } = await supabase.auth.signInAnonymously()
+        if (import.meta.env.DEV && import.meta.env.VITE_AUTO_LOGIN === 'true') {
+          const { data, error } = await supabase.auth.signInAnonymously()
           if (error) {
             console.warn('Auto-login failed:', error.message)
+          } else if (data.session) {
+            setSession(data.session)
           }
           return
         }
