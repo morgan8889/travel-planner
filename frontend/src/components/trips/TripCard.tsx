@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { CalendarIcon } from '@heroicons/react/24/outline'
+import { Calendar } from 'lucide-react'
 import type { TripSummary } from '../../lib/types'
 import { TripStatusBadge } from './TripStatusBadge'
 import { TripTypeBadge } from './TripTypeBadge'
@@ -57,16 +57,16 @@ export function TripCard({ trip }: TripCardProps) {
       params={{ tripId: trip.id }}
       className="block group"
     >
-      <div className="bg-white rounded-xl border border-gray-200 p-5 transition-all duration-300 hover:shadow-lg hover:shadow-blue-100/40 hover:-translate-y-0.5 hover:border-blue-200">
+      <div className="bg-white rounded-2xl border border-stone-200 p-5 transition-all duration-300 hover:shadow-lg hover:shadow-blue-100/30 hover:-translate-y-0.5 hover:border-blue-200 animate-card-enter">
         <div className="flex items-start justify-between mb-3">
-          <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-700 transition-colors duration-300 truncate mr-2">
+          <h3 className="text-lg font-semibold text-stone-900 group-hover:text-blue-700 transition-colors duration-300 truncate mr-2">
             {trip.destination}
           </h3>
           <TripTypeBadge type={trip.type} />
         </div>
 
-        <div className="flex items-center gap-1.5 text-sm text-gray-500 mb-4">
-          <CalendarIcon className="w-4 h-4 shrink-0" />
+        <div className="flex items-center gap-1.5 text-sm text-stone-500 mb-4">
+          <Calendar className="w-4 h-4 shrink-0" />
           <span data-testid="trip-dates">{dateRange}</span>
         </div>
 
@@ -85,8 +85,8 @@ export function TripCard({ trip }: TripCardProps) {
               </div>
             ))}
             {memberCount > 3 && (
-              <div className="w-7 h-7 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center">
-                <span className="text-[10px] font-medium text-gray-600">
+              <div className="w-7 h-7 rounded-full bg-stone-200 border-2 border-white flex items-center justify-center">
+                <span className="text-[10px] font-medium text-stone-600">
                   +{memberCount - 3}
                 </span>
               </div>
