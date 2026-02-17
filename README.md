@@ -21,8 +21,8 @@ travel-planner/
 - **Migrations**: Alembic
 
 ### Frontend
-- **Framework**: React 18 with TypeScript
-- **Build Tool**: Vite
+- **Framework**: React 19 with TypeScript
+- **Build Tool**: Vite 7
 - **Routing**: TanStack Router
 - **State**: TanStack Query
 - **Styling**: Tailwind CSS
@@ -68,10 +68,8 @@ travel-planner/
 3. **Start the backend**
    ```bash
    cd backend
-   python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   pip install -e .
-   uvicorn travel_planner.main:app --reload
+   uv sync && uv sync --dev
+   uv run uvicorn travel_planner.main:app --port 8000
    ```
 
 4. **Start the frontend**
@@ -111,8 +109,7 @@ See [MANUAL_TESTING.md](./MANUAL_TESTING.md) for detailed setup instructions.
 Backend:
 ```bash
 cd backend
-source .venv/bin/activate
-pytest
+uv run pytest
 ```
 
 Frontend:
@@ -168,28 +165,54 @@ The backend automatically generates interactive API documentation:
 - **Swagger UI**: http://localhost:8000/docs
 - **ReDoc**: http://localhost:8000/redoc
 
-## Project Features
+## Project Roadmap
 
-### Phase 1: Foundation
-- ✅ Project structure setup
-- ✅ Basic authentication endpoints
-- ✅ Database models and migrations
+### Phase 1: Project Scaffolding & Database
+- ✅ FastAPI backend with SQLAlchemy + asyncpg
+- ✅ React + Vite + TanStack Router/Query frontend
+- ✅ Database models (14 tables) and Alembic migrations
+- ✅ Tailwind CSS styling
 
-### Phase 2: Auth & User Profiles (Current)
-- ✅ RS256 JWT authentication
-- ✅ User profile management
+### Phase 2: Auth & User Profiles
+- ✅ RS256 JWT authentication via Supabase JWKS
+- ✅ User profile management (create/update)
 - ✅ Protected API endpoints
-- ✅ Automated tests for auth flow
+- ✅ Magic link + anonymous sign-in frontend flow
 
-### Phase 3: Trip Planning (Upcoming)
-- 🔄 Trip CRUD operations
-- 🔄 Destination management
-- 🔄 Activity planning
+### Phase 3: Trip CRUD (In Progress)
+- ✅ Trip CRUD API endpoints
+- ✅ Trip member management (invite, remove, roles)
+- ✅ Trip list page with status filter pills
+- ✅ Trip detail page with edit, status transitions, members sidebar
+- ✅ New trip creation page
+- 🔄 Trip dashboard tabs (Itinerary | Checklists | Chat | Imports)
 
-### Phase 4: AI Integration (Upcoming)
-- 🔄 AI-powered trip recommendations
-- 🔄 Itinerary generation
-- 🔄 Smart suggestions
+### Phase 4: Annual Calendar
+- 🔲 Annual plan & calendar block API
+- 🔲 12-month year grid calendar view
+- 🔲 PTO/holiday block management
+- 🔲 Drag-to-create trips from calendar
+- 🔲 Public holiday auto-detection
+
+### Phase 5: Itinerary Builder
+- 🔲 Itinerary day + activity CRUD API
+- 🔲 Day-by-day timeline with drag-and-drop reorder
+
+### Phase 6: Checklists
+- 🔲 Checklist CRUD with per-user check state
+- 🔲 Checklist templates (packing, documents, pre-departure)
+
+### Phase 7: AI Features
+- 🔲 AI itinerary generation + chat assistant + checklist generation
+
+### Phase 8: Gmail Import
+- 🔲 Gmail OAuth + AI-powered booking parsing + import review UI
+
+### Phase 9: Frontend AI Polish
+- 🔲 AI generate buttons in itinerary and checklist views
+
+### Phase 10: Integration & Deployment
+- 🔲 End-to-end integration tests + Docker + deployment config
 
 ## Contributing
 
