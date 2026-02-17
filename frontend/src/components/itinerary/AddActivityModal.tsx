@@ -42,19 +42,24 @@ export function AddActivityModal({ isOpen, onClose, dayId, tripId }: AddActivity
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    await createActivity.mutateAsync({
-      title: formData.title,
-      category: formData.category,
-      start_time: formData.start_time || null,
-      end_time: formData.end_time || null,
-      location: formData.location || null,
-      notes: formData.notes || null,
-      confirmation_number: formData.confirmation_number || null,
-    })
+    try {
+      await createActivity.mutateAsync({
+        title: formData.title,
+        category: formData.category,
+        start_time: formData.start_time || null,
+        end_time: formData.end_time || null,
+        location: formData.location || null,
+        notes: formData.notes || null,
+        confirmation_number: formData.confirmation_number || null,
+      })
 
-    // Reset form and close
-    resetForm()
-    onClose()
+      // Reset form and close only on success
+      resetForm()
+      onClose()
+    } catch (error) {
+      // Error is automatically captured by mutation state and displayed
+      // Keep modal open to show error message
+    }
   }
 
   return (
