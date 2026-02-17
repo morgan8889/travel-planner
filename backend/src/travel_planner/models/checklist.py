@@ -15,7 +15,7 @@ class Checklist(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     trip_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("trips.id")
+        UUID(as_uuid=True), ForeignKey("trips.id", ondelete="CASCADE")
     )
     title: Mapped[str] = mapped_column(String(255))
     created_at: Mapped[datetime] = mapped_column(
@@ -34,7 +34,7 @@ class ChecklistItem(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     checklist_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("checklists.id")
+        UUID(as_uuid=True), ForeignKey("checklists.id", ondelete="CASCADE")
     )
     text: Mapped[str] = mapped_column(Text)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
@@ -50,10 +50,10 @@ class ChecklistItemUser(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     item_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("checklist_items.id")
+        UUID(as_uuid=True), ForeignKey("checklist_items.id", ondelete="CASCADE")
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("user_profiles.id")
+        UUID(as_uuid=True), ForeignKey("user_profiles.id", ondelete="CASCADE")
     )
     checked: Mapped[bool] = mapped_column(Boolean, default=False)
 

@@ -1,14 +1,14 @@
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ChecklistCreate(BaseModel):
-    title: str
+    title: str = Field(..., min_length=1, max_length=255)
 
 
 class ChecklistItemCreate(BaseModel):
-    text: str
+    text: str = Field(..., min_length=1, max_length=2000)
 
 
 class ChecklistItemResponse(BaseModel):
