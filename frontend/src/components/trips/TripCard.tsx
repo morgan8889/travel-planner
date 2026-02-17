@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { CalendarIcon } from '@heroicons/react/24/outline'
 import type { TripSummary } from '../../lib/types'
 import { TripStatusBadge } from './TripStatusBadge'
 import { TripTypeBadge } from './TripTypeBadge'
@@ -56,18 +57,16 @@ export function TripCard({ trip }: TripCardProps) {
       params={{ tripId: trip.id }}
       className="block group"
     >
-      <div className="bg-white rounded-xl border border-gray-200 p-5 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 hover:border-gray-300">
+      <div className="bg-white rounded-xl border border-gray-200 p-5 transition-all duration-300 hover:shadow-lg hover:shadow-blue-100/40 hover:-translate-y-0.5 hover:border-blue-200">
         <div className="flex items-start justify-between mb-3">
-          <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors truncate mr-2">
+          <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-700 transition-colors duration-300 truncate mr-2">
             {trip.destination}
           </h3>
           <TripTypeBadge type={trip.type} />
         </div>
 
         <div className="flex items-center gap-1.5 text-sm text-gray-500 mb-4">
-          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
+          <CalendarIcon className="w-4 h-4 shrink-0" />
           <span data-testid="trip-dates">{dateRange}</span>
         </div>
 

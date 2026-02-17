@@ -1,4 +1,5 @@
 import { Link, useNavigate } from '@tanstack/react-router'
+import { ChevronRightIcon } from '@heroicons/react/24/outline'
 import { useCreateTrip } from '../hooks/useTrips'
 import { TripForm } from '../components/trips/TripForm'
 import type { TripCreate, TripUpdate } from '../lib/types'
@@ -26,9 +27,7 @@ export function NewTripPage() {
         <Link to="/trips" className="text-gray-500 hover:text-blue-600 transition-colors">
           My Trips
         </Link>
-        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
+        <ChevronRightIcon className="w-4 h-4 text-gray-400" />
         <span className="text-gray-900 font-medium">New Trip</span>
       </nav>
 

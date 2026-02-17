@@ -8,17 +8,17 @@ const typeConfig: Record<TripType, { label: string; icon: string; classes: strin
   vacation: {
     label: 'Vacation',
     icon: '☀️',
-    classes: 'bg-orange-50 text-orange-700',
+    classes: 'bg-orange-50 text-orange-700 ring-1 ring-orange-200',
   },
   remote_week: {
     label: 'Remote Week',
     icon: '💻',
-    classes: 'bg-cyan-50 text-cyan-700',
+    classes: 'bg-cyan-50 text-cyan-700 ring-1 ring-cyan-200',
   },
   sabbatical: {
     label: 'Sabbatical',
     icon: '🧭',
-    classes: 'bg-indigo-50 text-indigo-700',
+    classes: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200',
   },
 }
 

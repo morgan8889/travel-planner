@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { CheckCircleIcon } from '@heroicons/react/20/solid'
 import type { TripCreate, TripStatus, TripType, TripUpdate } from '../../lib/types'
 import { useTrips } from '../../hooks/useTrips'
 import { LoadingSpinner } from '../ui/LoadingSpinner'
@@ -110,8 +111,8 @@ export function TripForm({
               onClick={() => setType(option.value)}
               className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 ${
                 type === option.value
-                  ? 'border-blue-500 bg-blue-50 shadow-md'
-                  : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                  ? 'border-blue-500 bg-blue-50 shadow-md ring-1 ring-blue-500/20'
+                  : 'border-gray-200 bg-white hover:border-blue-200 hover:bg-blue-50/30'
               }`}
             >
               <span className="text-3xl">{option.icon}</span>
@@ -123,9 +124,7 @@ export function TripForm({
               </span>
               {type === option.value && (
                 <div className="absolute top-2 right-2">
-                  <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
+                  <CheckCircleIcon className="w-5 h-5 text-blue-500" />
                 </div>
               )}
             </button>
@@ -274,7 +273,7 @@ export function TripForm({
         <button
           type="submit"
           disabled={isLoading}
-          className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg hover:from-blue-700 hover:to-blue-800 active:scale-[0.98] transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50"
         >
           {isLoading && <LoadingSpinner size="sm" />}
           {submitLabel}

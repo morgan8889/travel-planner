@@ -1,4 +1,5 @@
 import type { TripStatus } from '../../lib/types'
+import { ArrowRightIcon } from '@heroicons/react/24/outline'
 import { LoadingSpinner } from '../ui/LoadingSpinner'
 
 interface StatusTransitionButtonProps {
@@ -43,12 +44,10 @@ export function StatusTransitionButton({
     <button
       onClick={() => onTransition(config.nextStatus)}
       disabled={isLoading}
-      className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 ${config.classes}`}
+      className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 ${config.classes}`}
     >
       {isLoading && <LoadingSpinner size="sm" />}
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-      </svg>
+      <ArrowRightIcon className="w-4 h-4" />
       {config.label}
     </button>
   )

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ExclamationTriangleIcon, ArrowLeftIcon, ChevronRightIcon, PencilSquareIcon, CalendarIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { useTrip, useUpdateTrip, useDeleteTrip } from '../hooks/useTrips'
 import { useAddMember, useRemoveMember, useUpdateMemberRole } from '../hooks/useMembers'
@@ -138,10 +139,8 @@ export function TripDetailPage() {
   if (error) {
     return (
       <div className="text-center py-16">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-50 mb-4">
-          <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-          </svg>
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-red-50 to-red-100/80 ring-1 ring-red-200/50 mb-4">
+          <ExclamationTriangleIcon className="w-8 h-8 text-red-500" />
         </div>
         <h2 className="text-xl font-semibold text-gray-900 mb-2">Unable to load trip</h2>
         <p className="text-gray-600 mb-4">Something went wrong. The trip may not exist or you may not have access.</p>
@@ -167,7 +166,7 @@ export function TripDetailPage() {
   if (!trip) {
     return (
       <div className="text-center py-16">
-        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-100 mb-6">
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-gray-50 to-gray-100/80 ring-1 ring-gray-200/50 mb-6">
           <span className="text-4xl">🔍</span>
         </div>
         <h2 className="text-xl font-semibold text-gray-900 mb-2">Trip not found</h2>
@@ -176,9 +175,7 @@ export function TripDetailPage() {
           to="/trips"
           className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
+          <ArrowLeftIcon className="w-4 h-4" />
           Back to My Trips
         </Link>
       </div>
@@ -192,9 +189,7 @@ export function TripDetailPage() {
         <Link to="/trips" className="text-gray-500 hover:text-blue-600 transition-colors">
           My Trips
         </Link>
-        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
+        <ChevronRightIcon className="w-4 h-4 text-gray-400" />
         <span className="text-gray-900 font-medium truncate">{trip.destination}</span>
       </nav>
 
@@ -202,7 +197,7 @@ export function TripDetailPage() {
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {isEditing ? (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Edit Trip</h2>
               <TripForm
                 defaultValues={{
@@ -223,7 +218,7 @@ export function TripDetailPage() {
           ) : (
             <>
               {/* Trip Header */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-gray-200 p-6">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                   <h1 className="text-3xl font-bold text-gray-900">
                     {trip.destination}
@@ -232,9 +227,7 @@ export function TripDetailPage() {
                     onClick={() => setIsEditing(true)}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors shrink-0"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
+                    <PencilSquareIcon className="w-4 h-4" />
                     Edit
                   </button>
                 </div>
@@ -247,9 +240,7 @@ export function TripDetailPage() {
 
                 {/* Dates */}
                 <div className="flex items-center gap-3 text-gray-600 mb-4">
-                  <svg className="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
+                  <CalendarIcon className="w-5 h-5 text-gray-400 shrink-0" />
                   <span>{formatDateRange(trip.start_date, trip.end_date)}</span>
                   <span className="text-sm text-gray-400">
                     ({getCountdownText(trip.start_date)})
@@ -258,7 +249,7 @@ export function TripDetailPage() {
 
                 {/* Notes */}
                 {trip.notes && (
-                  <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="mt-4 p-4 bg-gray-50/80 border border-gray-100 rounded-lg">
                     <h3 className="text-sm font-medium text-gray-700 mb-1">Notes</h3>
                     <p className="text-sm text-gray-600 whitespace-pre-wrap">{trip.notes}</p>
                   </div>
@@ -276,7 +267,7 @@ export function TripDetailPage() {
 
               {/* Sub-trips for sabbaticals */}
               {trip.type === 'sabbatical' && (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-gray-200 p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-semibold text-gray-900">
                       Sub-trips
@@ -319,9 +310,7 @@ export function TripDetailPage() {
                     onClick={() => setShowDeleteConfirm(true)}
                     className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
+                    <TrashIcon className="w-4 h-4" />
                     Delete Trip
                   </button>
                 </div>
@@ -332,7 +321,7 @@ export function TripDetailPage() {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">
                 Members

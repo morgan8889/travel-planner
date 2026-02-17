@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { EnvelopeIcon } from '@heroicons/react/24/outline'
 import { useAuth } from '../contexts/AuthContext'
 
 type Status = 'idle' | 'submitting' | 'sent' | 'error'
@@ -35,19 +36,7 @@ export function AuthForm() {
         <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
           <div className="text-center">
             <div className="mb-4">
-              <svg
-                className="mx-auto h-12 w-12 text-green-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                />
-              </svg>
+              <EnvelopeIcon className="mx-auto h-12 w-12 text-green-500" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
               Check your email
@@ -107,7 +96,7 @@ export function AuthForm() {
           <button
             type="submit"
             disabled={status === 'submitting'}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium"
+            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2.5 px-4 rounded-lg hover:from-blue-700 hover:to-blue-800 active:scale-[0.99] disabled:bg-gray-400 disabled:cursor-not-allowed font-medium transition-all duration-200"
           >
             {status === 'submitting' ? 'Sending...' : 'Send Magic Link'}
           </button>
