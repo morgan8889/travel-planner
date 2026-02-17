@@ -22,6 +22,7 @@ class AnnualPlanResponse(BaseModel):
 
 
 class CalendarBlockCreate(BaseModel):
+    annual_plan_id: uuid.UUID
     type: BlockType
     start_date: date
     end_date: date

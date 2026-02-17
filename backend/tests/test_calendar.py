@@ -45,12 +45,14 @@ def test_annual_plan_create_no_notes():
 
 def test_calendar_block_create_valid():
     block = CalendarBlockCreate(
+        annual_plan_id=PLAN_ID,
         type="pto",
         start_date=date(2026, 7, 1),
         end_date=date(2026, 7, 5),
         destination="Beach",
         notes="Summer break",
     )
+    assert block.annual_plan_id == PLAN_ID
     assert block.type == "pto"
     assert block.start_date == date(2026, 7, 1)
     assert block.end_date == date(2026, 7, 5)
@@ -59,6 +61,7 @@ def test_calendar_block_create_valid():
 def test_calendar_block_create_end_before_start():
     with pytest.raises(ValidationError, match="end_date must be on or after start_date"):
         CalendarBlockCreate(
+            annual_plan_id=PLAN_ID,
             type="pto",
             start_date=date(2026, 7, 5),
             end_date=date(2026, 7, 1),
@@ -205,3 +208,172 @@ def test_get_annual_plan_year_no_plan(
     assert data["blocks"] == []
     assert len(data["trips"]) == 1
     assert data["trips"][0]["destination"] == "Tokyo"
+
+
+def test_create_calendar_block(
+    client, auth_headers, override_get_db, mock_db_session
+):
+    """Create a calendar block on an existing plan owned by the user."""
+    from datetime import datetime, UTC
+
+    plan = MagicMock(spec=AnnualPlan)
+    plan.id = PLAN_ID
+    plan.user_id = TEST_USER_ID
+    plan.year = 2026
+    plan.notes = None
+    plan.created_at = datetime(2026, 1, 1, tzinfo=UTC)
+
+    result_mock1 = MagicMock()
+    result_mock1.scalar_one_or_none.return_value = plan
+
+    mock_db_session.execute = AsyncMock(return_value=result_mock1)
+    mock_db_session.add = MagicMock()
+    mock_db_session.commit = AsyncMock()
+
+    async def mock_refresh(obj):
+        obj.id = BLOCK_ID
+        obj.annual_plan_id = PLAN_ID
+        obj.type = "pto"
+        obj.start_date = date(2026, 7, 1)
+        obj.end_date = date(2026, 7, 5)
+        obj.destination = None
+        obj.notes = "Summer PTO"
+
+    mock_db_session.refresh = AsyncMock(side_effect=mock_refresh)
+
+    response = client.post(
+        "/calendar/blocks",
+        headers=auth_headers,
+        json={
+            "annual_plan_id": str(PLAN_ID),
+            "type": "pto",
+            "start_date": "2026-07-01",
+            "end_date": "2026-07-05",
+            "notes": "Summer PTO",
+        },
+    )
+    assert response.status_code == 201
+    data = response.json()
+    assert data["annual_plan_id"] == str(PLAN_ID)
+    assert data["type"] == "pto"
+    assert data["notes"] == "Summer PTO"
+
+
+def test_create_calendar_block_not_owner(
+    client, auth_headers, override_get_db, mock_db_session
+):
+    """Cannot create a block on a plan owned by another user."""
+    from datetime import datetime, UTC
+
+    plan = MagicMock(spec=AnnualPlan)
+    plan.id = PLAN_ID
+    plan.user_id = OTHER_USER_ID
+    plan.year = 2026
+    plan.notes = None
+    plan.created_at = datetime(2026, 1, 1, tzinfo=UTC)
+
+    result_mock1 = MagicMock()
+    result_mock1.scalar_one_or_none.return_value = plan
+
+    mock_db_session.execute = AsyncMock(return_value=result_mock1)
+
+    response = client.post(
+        "/calendar/blocks",
+        headers=auth_headers,
+        json={
+            "annual_plan_id": str(PLAN_ID),
+            "type": "holiday",
+            "start_date": "2026-12-25",
+            "end_date": "2026-12-25",
+        },
+    )
+    assert response.status_code == 403
+
+
+def test_update_calendar_block(
+    client, auth_headers, override_get_db, mock_db_session
+):
+    """Update notes on an existing block owned by the user."""
+    from datetime import datetime, UTC
+
+    block = MagicMock(spec=CalendarBlock)
+    block.id = BLOCK_ID
+    block.annual_plan_id = PLAN_ID
+    block.type = "pto"
+    block.start_date = date(2026, 7, 1)
+    block.end_date = date(2026, 7, 5)
+    block.destination = None
+    block.notes = "Original notes"
+
+    plan = MagicMock(spec=AnnualPlan)
+    plan.id = PLAN_ID
+    plan.user_id = TEST_USER_ID
+    plan.year = 2026
+    plan.notes = None
+    plan.created_at = datetime(2026, 1, 1, tzinfo=UTC)
+
+    result_mock1 = MagicMock()
+    result_mock1.scalar_one_or_none.return_value = block
+
+    result_mock2 = MagicMock()
+    result_mock2.scalar_one_or_none.return_value = plan
+
+    mock_db_session.execute = AsyncMock(
+        side_effect=[result_mock1, result_mock2]
+    )
+    mock_db_session.commit = AsyncMock()
+
+    async def mock_refresh(obj):
+        obj.notes = "Updated notes"
+
+    mock_db_session.refresh = AsyncMock(side_effect=mock_refresh)
+
+    response = client.patch(
+        f"/calendar/blocks/{BLOCK_ID}",
+        headers=auth_headers,
+        json={"notes": "Updated notes"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["notes"] == "Updated notes"
+
+
+def test_delete_calendar_block(
+    client, auth_headers, override_get_db, mock_db_session
+):
+    """Delete a block owned by the user returns 204."""
+    from datetime import datetime, UTC
+
+    block = MagicMock(spec=CalendarBlock)
+    block.id = BLOCK_ID
+    block.annual_plan_id = PLAN_ID
+    block.type = "pto"
+    block.start_date = date(2026, 7, 1)
+    block.end_date = date(2026, 7, 5)
+    block.destination = None
+    block.notes = None
+
+    plan = MagicMock(spec=AnnualPlan)
+    plan.id = PLAN_ID
+    plan.user_id = TEST_USER_ID
+    plan.year = 2026
+    plan.notes = None
+    plan.created_at = datetime(2026, 1, 1, tzinfo=UTC)
+
+    result_mock1 = MagicMock()
+    result_mock1.scalar_one_or_none.return_value = block
+
+    result_mock2 = MagicMock()
+    result_mock2.scalar_one_or_none.return_value = plan
+
+    mock_db_session.execute = AsyncMock(
+        side_effect=[result_mock1, result_mock2]
+    )
+    mock_db_session.delete = AsyncMock()
+    mock_db_session.commit = AsyncMock()
+
+    response = client.delete(
+        f"/calendar/blocks/{BLOCK_ID}",
+        headers=auth_headers,
+    )
+    assert response.status_code == 204
