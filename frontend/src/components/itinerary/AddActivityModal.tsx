@@ -56,7 +56,7 @@ export function AddActivityModal({ isOpen, onClose, dayId, tripId }: AddActivity
       // Reset form and close only on success
       resetForm()
       onClose()
-    } catch (error) {
+    } catch {
       // Error is automatically captured by mutation state and displayed
       // Keep modal open to show error message
     }
