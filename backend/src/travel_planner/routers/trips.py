@@ -5,7 +5,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from travel_planner.auth import CurrentUserId
+from sqlalchemy.dialects.postgresql import insert
+
+from travel_planner.auth import CurrentUser, CurrentUserId
 from travel_planner.db import get_db
 from travel_planner.models.trip import MemberRole, Trip, TripMember, TripStatus
 from travel_planner.models.user import UserProfile
@@ -97,10 +99,19 @@ def _build_trip_response(trip: Trip) -> TripResponse:
 @router.post("", status_code=201, response_model=TripResponse)
 async def create_trip(
     trip_data: TripCreate,
-    user_id: CurrentUserId,
+    user: CurrentUser,
     db: AsyncSession = Depends(get_db),
 ) -> TripResponse:
     """Create a new trip. The caller becomes the owner."""
+    # Ensure user profile exists (FK target for trip_members)
+    upsert_stmt = insert(UserProfile).values(
+        id=user.id,
+        email=user.email,
+        display_name=user.email.split("@")[0] if user.email else "Anonymous",
+    )
+    upsert_stmt = upsert_stmt.on_conflict_do_nothing(index_elements=["id"])
+    await db.execute(upsert_stmt)
+
     trip = Trip(
         type=trip_data.type,
         destination=trip_data.destination,
@@ -115,7 +126,7 @@ async def create_trip(
 
     member = TripMember(
         trip_id=trip.id,
-        user_id=user_id,
+        user_id=user.id,
         role=MemberRole.owner,
     )
     db.add(member)

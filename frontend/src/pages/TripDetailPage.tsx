@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ExclamationTriangleIcon, ArrowLeftIcon, ChevronRightIcon, PencilSquareIcon, CalendarIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline'
+import { TriangleAlert, ArrowLeft, ChevronRight, SquarePen, Calendar, Trash2, MapPinOff, Plus } from 'lucide-react'
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { useTrip, useUpdateTrip, useDeleteTrip } from '../hooks/useTrips'
 import { useAddMember, useRemoveMember, useUpdateMemberRole } from '../hooks/useMembers'
@@ -54,21 +54,21 @@ function getCountdownText(startDate: string): string {
 function DetailSkeleton() {
   return (
     <div className="animate-pulse">
-      <div className="h-4 bg-gray-200 rounded w-24 mb-6" />
+      <div className="h-4 bg-stone-200 rounded w-24 mb-6" />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
-          <div className="h-10 bg-gray-200 rounded-lg w-3/4" />
+          <div className="h-10 bg-stone-200 rounded-lg w-3/4" />
           <div className="flex gap-2">
-            <div className="h-6 bg-gray-200 rounded-full w-20" />
-            <div className="h-6 bg-gray-200 rounded-full w-24" />
+            <div className="h-6 bg-stone-200 rounded-full w-20" />
+            <div className="h-6 bg-stone-200 rounded-full w-24" />
           </div>
-          <div className="h-5 bg-gray-200 rounded w-1/2" />
-          <div className="h-20 bg-gray-200 rounded-lg" />
+          <div className="h-5 bg-stone-200 rounded w-1/2" />
+          <div className="h-20 bg-stone-200 rounded-lg" />
         </div>
         <div className="space-y-4">
-          <div className="h-6 bg-gray-200 rounded w-24" />
-          <div className="h-12 bg-gray-200 rounded-lg" />
-          <div className="h-12 bg-gray-200 rounded-lg" />
+          <div className="h-6 bg-stone-200 rounded w-24" />
+          <div className="h-12 bg-stone-200 rounded-lg" />
+          <div className="h-12 bg-stone-200 rounded-lg" />
         </div>
       </div>
     </div>
@@ -163,14 +163,14 @@ export function TripDetailPage() {
     return (
       <div className="text-center py-16">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-red-50 to-red-100/80 ring-1 ring-red-200/50 mb-4">
-          <ExclamationTriangleIcon className="w-8 h-8 text-red-500" />
+          <TriangleAlert className="w-8 h-8 text-red-500" />
         </div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Unable to load trip</h2>
-        <p className="text-gray-600 mb-4">Something went wrong. The trip may not exist or you may not have access.</p>
+        <h2 className="text-xl font-semibold text-stone-900 mb-2">Unable to load trip</h2>
+        <p className="text-stone-600 mb-4">Something went wrong. The trip may not exist or you may not have access.</p>
         <div className="flex items-center justify-center gap-3">
           <Link
             to="/trips"
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-stone-700 bg-white border border-stone-300 rounded-lg hover:bg-stone-50 transition-colors"
           >
             Back to Trips
           </Link>
@@ -189,16 +189,16 @@ export function TripDetailPage() {
   if (!trip) {
     return (
       <div className="text-center py-16">
-        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-gray-50 to-gray-100/80 ring-1 ring-gray-200/50 mb-6">
-          <span className="text-4xl">🔍</span>
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-stone-50 to-stone-100/80 ring-1 ring-stone-200/50 mb-6">
+          <MapPinOff className="w-10 h-10 text-stone-400" />
         </div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Trip not found</h2>
-        <p className="text-gray-600 mb-6">This trip does not exist or has been deleted.</p>
+        <h2 className="text-xl font-semibold text-stone-900 mb-2">Trip not found</h2>
+        <p className="text-stone-600 mb-6">This trip does not exist or has been deleted.</p>
         <Link
           to="/trips"
           className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
         >
-          <ArrowLeftIcon className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4" />
           Back to My Trips
         </Link>
       </div>
@@ -209,11 +209,11 @@ export function TripDetailPage() {
     <div>
       {/* Breadcrumb / Back */}
       <nav className="flex items-center gap-2 text-sm mb-6">
-        <Link to="/trips" className="text-gray-500 hover:text-blue-600 transition-colors">
+        <Link to="/trips" className="text-stone-500 hover:text-blue-600 transition-colors">
           My Trips
         </Link>
-        <ChevronRightIcon className="w-4 h-4 text-gray-400" />
-        <span className="text-gray-900 font-medium truncate">{trip.destination}</span>
+        <ChevronRight className="w-4 h-4 text-stone-400" />
+        <span className="text-stone-900 font-medium truncate">{trip.destination}</span>
       </nav>
 
       {/* Tab Navigation */}
@@ -258,8 +258,8 @@ export function TripDetailPage() {
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {isEditing ? (
-            <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Edit Trip</h2>
+            <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-stone-200 p-6">
+              <h2 className="text-lg font-semibold text-stone-900 mb-4">Edit Trip</h2>
               <TripForm
                 defaultValues={{
                   type: trip.type,
@@ -279,16 +279,16 @@ export function TripDetailPage() {
           ) : activeTab === 'overview' ? (
             <>
               {/* Trip Header */}
-              <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-gray-200 p-6">
+              <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-stone-200 p-6">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
-                  <h1 className="text-3xl font-bold text-gray-900">
+                  <h1 className="text-3xl font-bold text-stone-900">
                     {trip.destination}
                   </h1>
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors shrink-0"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-stone-600 bg-white border border-stone-300 rounded-lg hover:bg-stone-50 hover:text-stone-900 transition-colors shrink-0"
                   >
-                    <PencilSquareIcon className="w-4 h-4" />
+                    <SquarePen className="w-4 h-4" />
                     Edit
                   </button>
                 </div>
@@ -300,24 +300,24 @@ export function TripDetailPage() {
                 </div>
 
                 {/* Dates */}
-                <div className="flex items-center gap-3 text-gray-600 mb-4">
-                  <CalendarIcon className="w-5 h-5 text-gray-400 shrink-0" />
+                <div className="flex items-center gap-3 text-stone-600 mb-4">
+                  <Calendar className="w-5 h-5 text-stone-400 shrink-0" />
                   <span>{formatDateRange(trip.start_date, trip.end_date)}</span>
-                  <span className="text-sm text-gray-400">
+                  <span className="text-sm text-stone-400">
                     ({getCountdownText(trip.start_date)})
                   </span>
                 </div>
 
                 {/* Notes */}
                 {trip.notes && (
-                  <div className="mt-4 p-4 bg-gray-50/80 border border-gray-100 rounded-lg">
-                    <h3 className="text-sm font-medium text-gray-700 mb-1">Notes</h3>
-                    <p className="text-sm text-gray-600 whitespace-pre-wrap">{trip.notes}</p>
+                  <div className="mt-4 p-4 bg-stone-50/80 border border-stone-100 rounded-lg">
+                    <h3 className="text-sm font-medium text-stone-700 mb-1">Notes</h3>
+                    <p className="text-sm text-stone-600 whitespace-pre-wrap">{trip.notes}</p>
                   </div>
                 )}
 
                 {/* Status Transition */}
-                <div className="mt-5 pt-5 border-t border-gray-100">
+                <div className="mt-5 pt-5 border-t border-stone-100">
                   <StatusTransitionButton
                     currentStatus={trip.status}
                     onTransition={handleStatusTransition}
@@ -328,12 +328,12 @@ export function TripDetailPage() {
 
               {/* Sub-trips for sabbaticals */}
               {trip.type === 'sabbatical' && (
-                <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-gray-200 p-6">
+                <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-stone-200 p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold text-gray-900">
+                    <h2 className="text-lg font-semibold text-stone-900">
                       Sub-trips
                       {trip.children.length > 0 && (
-                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-stone-100 text-stone-600">
                           {trip.children.length}
                         </span>
                       )}
@@ -347,7 +347,7 @@ export function TripDetailPage() {
                   </div>
 
                   {trip.children.length === 0 ? (
-                    <p className="text-sm text-gray-500 py-4 text-center">
+                    <p className="text-sm text-stone-500 py-4 text-center">
                       No sub-trips yet. Add vacations or remote weeks within this sabbatical.
                     </p>
                   ) : (
@@ -364,14 +364,14 @@ export function TripDetailPage() {
               {isOwner && (
                 <div className="bg-white rounded-xl shadow-sm border border-red-200 p-6">
                   <h2 className="text-lg font-semibold text-red-600 mb-2">Danger Zone</h2>
-                  <p className="text-sm text-gray-600 mb-4">
+                  <p className="text-sm text-stone-600 mb-4">
                     Once you delete a trip, there is no going back. Please be certain.
                   </p>
                   <button
                     onClick={() => setShowDeleteConfirm(true)}
                     className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
                   >
-                    <TrashIcon className="w-4 h-4" />
+                    <Trash2 className="w-4 h-4" />
                     Delete Trip
                   </button>
                 </div>
@@ -394,7 +394,7 @@ export function TripDetailPage() {
                   disabled={createDay.isPending}
                   className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
                 >
-                  <PlusIcon className="w-4 h-4" />
+                  <Plus className="w-4 h-4" />
                   Add Day
                 </button>
               </div>
@@ -441,7 +441,7 @@ export function TripDetailPage() {
                   onClick={() => setShowAddChecklistModal(true)}
                   className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  <PlusIcon className="w-4 h-4" />
+                  <Plus className="w-4 h-4" />
                   New Checklist
                 </button>
               </div>
@@ -477,11 +477,11 @@ export function TripDetailPage() {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-gray-200 p-6">
+          <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-stone-200 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 className="text-lg font-semibold text-stone-900">
                 Members
-                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-stone-100 text-stone-600">
                   {trip.members.length}
                 </span>
               </h2>

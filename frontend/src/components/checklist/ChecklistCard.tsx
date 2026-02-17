@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PlusIcon } from '@heroicons/react/24/outline'
+import { Plus } from 'lucide-react'
 import type { Checklist } from '../../lib/types'
 import { useAddChecklistItem, useToggleChecklistItem } from '../../hooks/useChecklists'
 
@@ -64,7 +64,7 @@ export function ChecklistCard({ checklist, tripId }: ChecklistCardProps) {
           className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
           aria-label="Add item"
         >
-          <PlusIcon className="w-5 h-5" />
+          <Plus className="w-5 h-5" />
         </button>
       </div>
 

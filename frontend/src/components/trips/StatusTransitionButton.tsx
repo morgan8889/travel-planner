@@ -1,5 +1,5 @@
 import type { TripStatus } from '../../lib/types'
-import { ArrowRightIcon } from '@heroicons/react/24/outline'
+import { ArrowRight } from 'lucide-react'
 import { LoadingSpinner } from '../ui/LoadingSpinner'
 
 interface StatusTransitionButtonProps {
@@ -27,7 +27,7 @@ const transitionConfig: Record<string, { label: string; nextStatus: TripStatus; 
   active: {
     label: 'Complete Trip',
     nextStatus: 'completed',
-    classes: 'bg-gray-500 hover:bg-gray-600 text-white',
+    classes: 'bg-stone-500 hover:bg-stone-600 text-white',
   },
   completed: null,
 }
@@ -47,7 +47,7 @@ export function StatusTransitionButton({
       className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 ${config.classes}`}
     >
       {isLoading && <LoadingSpinner size="sm" />}
-      <ArrowRightIcon className="w-4 h-4" />
+      <ArrowRight className="w-4 h-4" />
       {config.label}
     </button>
   )

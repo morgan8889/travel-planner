@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PlusIcon } from '@heroicons/react/24/outline'
+import { Plus } from 'lucide-react'
 import type { ItineraryDay } from '../../lib/types'
 import { useActivities } from '../../hooks/useItinerary'
 import { ActivityItem } from './ActivityItem'
@@ -34,7 +34,7 @@ export function ItineraryDayCard({ day, tripId }: ItineraryDayCardProps) {
           onClick={() => setIsAddModalOpen(true)}
           className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
         >
-          <PlusIcon className="w-4 h-4" />
+          <Plus className="w-4 h-4" />
           Add Activity
         </button>
       </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { TrashIcon } from '@heroicons/react/24/outline'
+import { Trash2 } from 'lucide-react'
 import type { Activity, ActivityCategory } from '../../lib/types'
 import { useDeleteActivity } from '../../hooks/useItinerary'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
@@ -49,7 +49,7 @@ export function ActivityItem({ activity, tripId }: ActivityItemProps) {
               className="flex-shrink-0 p-1 text-gray-400 hover:text-red-600 rounded transition-colors disabled:opacity-50"
               aria-label="Delete activity"
             >
-              <TrashIcon className="w-4 h-4" />
+              <Trash2 className="w-4 h-4" />
             </button>
           </div>
           {timeRange && (
