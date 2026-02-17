@@ -96,3 +96,26 @@ export interface UpdateActivity {
   confirmation_number?: string | null
   sort_order?: number
 }
+
+export interface ChecklistItem {
+  id: string
+  checklist_id: string
+  text: string
+  sort_order: number
+  checked: boolean
+}
+
+export interface Checklist {
+  id: string
+  trip_id: string
+  title: string
+  items: ChecklistItem[]
+}
+
+export interface CreateChecklist {
+  title: string
+}
+
+export interface CreateChecklistItem {
+  text: string
+}

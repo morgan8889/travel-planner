@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { supabase } from './supabase'
-import type { ItineraryDay, Activity, CreateItineraryDay, CreateActivity, UpdateActivity } from './types'
+import type { ItineraryDay, Activity, CreateItineraryDay, CreateActivity, UpdateActivity, Checklist, ChecklistItem, CreateChecklist, CreateChecklistItem } from './types'
 
 export const api = axios.create({
   baseURL: '/api', // Vite proxy strips this, hits localhost:8000
@@ -65,4 +65,18 @@ export const itineraryApi = {
 
   deleteActivity: (activityId: string) =>
     api.delete(`/itinerary/activities/${activityId}`),
+}
+
+export const checklistApi = {
+  list: (tripId: string) =>
+    api.get<Checklist[]>(`/checklist/trips/${tripId}/checklists`),
+
+  create: (tripId: string, data: CreateChecklist) =>
+    api.post<Checklist>(`/checklist/trips/${tripId}/checklists`, data),
+
+  addItem: (checklistId: string, data: CreateChecklistItem) =>
+    api.post<ChecklistItem>(`/checklist/checklists/${checklistId}/items`, data),
+
+  toggleItem: (itemId: string) =>
+    api.post<ChecklistItem>(`/checklist/items/${itemId}/toggle`, {}),
 }
