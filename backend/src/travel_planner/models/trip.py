@@ -2,11 +2,20 @@ import enum
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, Enum, ForeignKey, String, Text, func
+from sqlalchemy import (
+    Date,
+    DateTime,
+    Enum,
+    ForeignKey,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from travel_planner.models.user import Base
+from travel_planner.models.user import Base, UserProfile
 
 
 class TripType(enum.StrEnum):
@@ -43,7 +52,7 @@ class Trip(Base):
     )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     parent_trip_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("trips.id"), nullable=True
+        UUID(as_uuid=True), ForeignKey("trips.id", ondelete="SET NULL"), nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
@@ -58,16 +67,18 @@ class Trip(Base):
 
 class TripMember(Base):
     __tablename__ = "trip_members"
+    __table_args__ = (UniqueConstraint("trip_id", "user_id", name="uq_trip_member"),)
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     trip_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("trips.id")
+        UUID(as_uuid=True), ForeignKey("trips.id", ondelete="CASCADE")
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("user_profiles.id")
+        UUID(as_uuid=True), ForeignKey("user_profiles.id", ondelete="CASCADE")
     )
     role: Mapped[MemberRole] = mapped_column(Enum(MemberRole))
 
     trip: Mapped["Trip"] = relationship(back_populates="members")
+    user: Mapped["UserProfile"] = relationship()

@@ -26,9 +26,7 @@ _test_public_key = _test_private_key.public_key()
 
 def create_test_token(user_id: str, email: str, expired: bool = False) -> str:
     """Create a test JWT token using RS256 (matching production)."""
-    exp = datetime.now(UTC) + (
-        timedelta(hours=-1) if expired else timedelta(hours=1)
-    )
+    exp = datetime.now(UTC) + (timedelta(hours=-1) if expired else timedelta(hours=1))
     payload = {
         "sub": user_id,
         "email": email,

@@ -18,18 +18,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
+    }).catch((err) => {
+      console.error('Failed to get session:', err)
+    }).finally(() => {
       setIsLoading(false)
     })
 
-    // Subscribe to auth state changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
-      setIsLoading(false)
     })
 
     return () => subscription.unsubscribe()

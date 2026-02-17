@@ -102,9 +102,13 @@ def test_import_status_enum():
 
 def test_remaining_models_importable():
     models = [
-        Checklist, ChecklistItem, ChecklistItemUser,
-        ChatThread, ChatMessage,
-        GmailConnection, ImportRecord,
+        Checklist,
+        ChecklistItem,
+        ChecklistItemUser,
+        ChatThread,
+        ChatMessage,
+        GmailConnection,
+        ImportRecord,
     ]
     assert len(models) == 7
 
@@ -112,9 +116,19 @@ def test_remaining_models_importable():
 def test_all_14_tables_exist():
     table_names = set(Base.metadata.tables.keys())
     expected = {
-        "user_profiles", "trips", "trip_members", "annual_plans",
-        "calendar_blocks", "itinerary_days", "activities", "checklists",
-        "checklist_items", "checklist_item_users", "chat_threads",
-        "chat_messages", "gmail_connections", "import_records",
+        "user_profiles",
+        "trips",
+        "trip_members",
+        "annual_plans",
+        "calendar_blocks",
+        "itinerary_days",
+        "activities",
+        "checklists",
+        "checklist_items",
+        "checklist_item_users",
+        "chat_threads",
+        "chat_messages",
+        "gmail_connections",
+        "import_records",
     }
     assert expected == table_names
