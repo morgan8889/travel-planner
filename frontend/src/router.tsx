@@ -3,6 +3,7 @@ import { RootLayout } from './components/layout/RootLayout'
 import { TripsPage } from './pages/TripsPage'
 import { NewTripPage } from './pages/NewTripPage'
 import { TripDetailPage } from './pages/TripDetailPage'
+import { CalendarPage } from './pages/CalendarPage'
 
 const rootRoute = createRootRoute({
   component: RootLayout,
@@ -12,7 +13,7 @@ const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
   beforeLoad: () => {
-    throw redirect({ to: '/trips' })
+    throw redirect({ to: '/calendar' })
   },
 })
 
@@ -34,7 +35,13 @@ export const tripDetailRoute = createRoute({
   component: TripDetailPage,
 })
 
-const routeTree = rootRoute.addChildren([indexRoute, tripsRoute, newTripRoute, tripDetailRoute])
+const calendarRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/calendar',
+  component: CalendarPage,
+})
+
+const routeTree = rootRoute.addChildren([indexRoute, tripsRoute, newTripRoute, tripDetailRoute, calendarRoute])
 
 export const router = createRouter({ routeTree })
 
