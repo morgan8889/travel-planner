@@ -80,3 +80,15 @@ def override_get_db(mock_db_session: AsyncSession):
     app.dependency_overrides[get_db] = _get_test_db
     yield
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def itinerary_day_id() -> str:
+    """Return itinerary day ID as string."""
+    return "555e4567-e89b-12d3-a456-426614174004"
+
+
+@pytest.fixture
+def activity_id() -> str:
+    """Return activity ID as string."""
+    return "999e4567-e89b-12d3-a456-426614174008"
