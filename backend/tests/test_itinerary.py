@@ -181,3 +181,42 @@ def test_list_itinerary_days_not_member(
         headers=other_user_headers
     )
     assert response.status_code == 403
+
+
+def test_create_itinerary_day(
+    client: TestClient, auth_headers: dict, trip_id: str, override_get_db, mock_db_session
+):
+    """Create itinerary day for trip"""
+    # Setup: Trip exists and user is a member
+    owner_user = _make_user()
+    owner_member = _make_member(user=owner_user)
+    trip = _make_trip(members=[owner_member])
+
+    # First call: verify_trip_member query
+    result_mock1 = MagicMock()
+    result_mock1.scalar_one_or_none.return_value = trip
+
+    mock_db_session.execute = AsyncMock(return_value=result_mock1)
+    mock_db_session.add = MagicMock()
+    mock_db_session.commit = AsyncMock()
+
+    # Mock refresh to set the ID on the day object (ItineraryDay instance)
+    async def mock_refresh(obj):
+        # Set the ID on the actual ItineraryDay object
+        obj.id = UUID("777e4567-e89b-12d3-a456-426614174006")
+
+    mock_db_session.refresh = AsyncMock(side_effect=mock_refresh)
+
+    response = client.post(
+        f"/itinerary/trips/{trip_id}/days",
+        headers=auth_headers,
+        json={
+            "date": "2026-07-15",
+            "notes": "Arrival day"
+        }
+    )
+    assert response.status_code == 201
+    data = response.json()
+    assert data["date"] == "2026-07-15"
+    assert data["notes"] == "Arrival day"
+    assert data["activity_count"] == 0

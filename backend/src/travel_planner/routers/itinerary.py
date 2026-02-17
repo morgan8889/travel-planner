@@ -9,7 +9,7 @@ from travel_planner.db import get_db
 from travel_planner.models.itinerary import Activity, ItineraryDay
 from travel_planner.models.trip import Trip, TripMember
 from travel_planner.models.user import UserProfile
-from travel_planner.schemas.itinerary import ItineraryDayResponse
+from travel_planner.schemas.itinerary import ItineraryDayCreate, ItineraryDayResponse
 
 router = APIRouter(prefix="/itinerary", tags=["itinerary"])
 
@@ -64,3 +64,31 @@ async def list_itinerary_days(
             )
         )
     return days
+
+
+@router.post("/trips/{trip_id}/days", response_model=ItineraryDayResponse, status_code=201)
+async def create_itinerary_day(
+    trip_id: UUID,
+    day_data: ItineraryDayCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: UserProfile = Depends(get_current_user),
+):
+    """Create a new itinerary day"""
+    await verify_trip_member(trip_id, db, current_user)
+
+    day = ItineraryDay(
+        trip_id=trip_id,
+        date=day_data.date,
+        notes=day_data.notes
+    )
+    db.add(day)
+    await db.commit()
+    await db.refresh(day)
+
+    return ItineraryDayResponse(
+        id=day.id,
+        trip_id=day.trip_id,
+        date=day.date,
+        notes=day.notes,
+        activity_count=0
+    )

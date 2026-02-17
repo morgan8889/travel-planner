@@ -4,6 +4,11 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 
 
+class ItineraryDayCreate(BaseModel):
+    date: date
+    notes: str | None = None
+
+
 class ItineraryDayResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
