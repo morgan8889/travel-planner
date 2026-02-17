@@ -47,7 +47,7 @@ class TripMemberResponse(BaseModel):
     user_id: uuid.UUID
     role: MemberRole
     display_name: str
-    email: str
+    email: str | None
     model_config = {"from_attributes": True}
 
 

@@ -11,7 +11,7 @@ class ProfileCreate(BaseModel):
 
 class ProfileResponse(BaseModel):
     id: uuid.UUID
-    email: str
+    email: str | None
     display_name: str
     preferences: dict
     created_at: datetime

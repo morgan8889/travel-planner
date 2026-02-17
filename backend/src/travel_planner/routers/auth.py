@@ -19,7 +19,7 @@ async def create_or_update_profile(
 ) -> ProfileResponse:
     stmt = insert(UserProfile).values(
         id=user.id,
-        email=user.email,
+        email=user.email or None,
         display_name=profile_data.display_name,
         preferences=profile_data.preferences,
     )

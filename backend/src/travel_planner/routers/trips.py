@@ -106,7 +106,7 @@ async def create_trip(
     # Ensure user profile exists (FK target for trip_members)
     upsert_stmt = insert(UserProfile).values(
         id=user.id,
-        email=user.email,
+        email=user.email or None,
         display_name=user.email.split("@")[0] if user.email else "Anonymous",
     )
     upsert_stmt = upsert_stmt.on_conflict_do_nothing(index_elements=["id"])
