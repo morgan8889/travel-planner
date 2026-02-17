@@ -7,8 +7,8 @@ from sqlalchemy.orm import selectinload
 
 from travel_planner.auth import AuthUser, get_current_user
 from travel_planner.db import get_db
+from travel_planner.deps import verify_trip_member
 from travel_planner.models.checklist import Checklist, ChecklistItem, ChecklistItemUser
-from travel_planner.models.trip import Trip, TripMember
 from travel_planner.schemas.checklist import (
     ChecklistCreate,
     ChecklistItemCreate,
@@ -17,24 +17,6 @@ from travel_planner.schemas.checklist import (
 )
 
 router = APIRouter(prefix="/checklist", tags=["checklist"])
-
-
-async def verify_trip_member(
-    trip_id: UUID,
-    db: AsyncSession,
-    current_user: AuthUser
-) -> Trip:
-    """Verify user is member of trip, return trip"""
-    result = await db.execute(
-        select(Trip)
-        .join(TripMember)
-        .where(Trip.id == trip_id)
-        .where(TripMember.user_id == current_user.id)
-    )
-    trip = result.scalar_one_or_none()
-    if not trip:
-        raise HTTPException(status_code=403, detail="Not a member of this trip")
-    return trip
 
 
 @router.post("/trips/{trip_id}/checklists", response_model=ChecklistResponse, status_code=201)

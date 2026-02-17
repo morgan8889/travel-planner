@@ -3,7 +3,7 @@ import { TriangleAlert, ArrowLeft, ChevronRight, SquarePen, Calendar, Trash2, Ma
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { useTrip, useUpdateTrip, useDeleteTrip } from '../hooks/useTrips'
 import { useAddMember, useRemoveMember, useUpdateMemberRole } from '../hooks/useMembers'
-import { useItineraryDays, useCreateDay } from '../hooks/useItinerary'
+import { useItineraryDays } from '../hooks/useItinerary'
 import { useChecklists } from '../hooks/useChecklists'
 import { useAuth } from '../contexts/AuthContext'
 import { TripStatusBadge } from '../components/trips/TripStatusBadge'
@@ -16,6 +16,7 @@ import { TripCard } from '../components/trips/TripCard'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { ItineraryDayCard } from '../components/itinerary/ItineraryDayCard'
+import { AddDayModal } from '../components/itinerary/AddDayModal'
 import { ChecklistCard } from '../components/checklist/ChecklistCard'
 import { AddChecklistModal } from '../components/checklist/AddChecklistModal'
 import type { TripCreate, TripStatus, TripUpdate } from '../lib/types'
@@ -90,7 +91,6 @@ export function TripDetailPage() {
   // Itinerary and Checklist hooks
   const { data: itineraryDays, isLoading: daysLoading, isError: daysError, error: daysErrorMsg } = useItineraryDays(tripId)
   const { data: checklists, isLoading: checklistsLoading, isError: checklistsError, error: checklistsErrorMsg } = useChecklists(tripId)
-  const createDay = useCreateDay(tripId)
 
   const [isEditing, setIsEditing] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -98,6 +98,7 @@ export function TripDetailPage() {
   const [addMemberError, setAddMemberError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'itinerary' | 'checklists'>('overview')
   const [showAddChecklistModal, setShowAddChecklistModal] = useState(false)
+  const [showAddDayModal, setShowAddDayModal] = useState(false)
 
   const isOwner = trip?.members.some(
     (m) => m.user_id === user?.id && m.role === 'owner'
@@ -140,17 +141,6 @@ export function TripDetailPage() {
 
   function handleUpdateRole(memberId: string, role: 'owner' | 'member') {
     updateMemberRole.mutate({ memberId, role })
-  }
-
-  async function handleAddDay() {
-    const dateStr = window.prompt('Enter date (YYYY-MM-DD):')
-    if (!dateStr) return
-
-    try {
-      await createDay.mutateAsync({ date: dateStr })
-    } catch (error) {
-      alert(error instanceof Error ? error.message : 'Failed to create day')
-    }
   }
 
   // Loading state
@@ -390,9 +380,8 @@ export function TripDetailPage() {
                   )}
                 </h2>
                 <button
-                  onClick={handleAddDay}
-                  disabled={createDay.isPending}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  onClick={() => setShowAddDayModal(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                   Add Day
@@ -539,6 +528,12 @@ export function TripDetailPage() {
       <AddChecklistModal
         isOpen={showAddChecklistModal}
         onClose={() => setShowAddChecklistModal(false)}
+        tripId={tripId}
+      />
+
+      <AddDayModal
+        isOpen={showAddDayModal}
+        onClose={() => setShowAddDayModal(false)}
         tripId={tripId}
       />
     </div>
