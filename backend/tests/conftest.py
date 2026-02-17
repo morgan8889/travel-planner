@@ -6,16 +6,70 @@ os.environ["SUPABASE_URL"] = "http://test.supabase.co"
 
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from uuid import UUID
 
 import jwt
 import pytest
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
+from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from travel_planner.db import get_db
 from travel_planner.main import app
+from travel_planner.models.trip import MemberRole, Trip, TripMember
+from travel_planner.models.user import UserProfile
+
+# Shared test constants
+TEST_USER_ID = UUID("123e4567-e89b-12d3-a456-426614174000")
+TEST_USER_EMAIL = "test@example.com"
+OTHER_USER_ID = UUID("223e4567-e89b-12d3-a456-426614174001")
+OTHER_USER_EMAIL = "other@example.com"
+TRIP_ID = UUID("333e4567-e89b-12d3-a456-426614174002")
+MEMBER_ID = UUID("443e4567-e89b-12d3-a456-426614174003")
+
+
+def make_user(
+    user_id: UUID = TEST_USER_ID,
+    email: str = TEST_USER_EMAIL,
+    display_name: str = "Test User",
+) -> MagicMock:
+    """Create a mock UserProfile."""
+    user = MagicMock(spec=UserProfile)
+    user.id = user_id
+    user.email = email
+    user.display_name = display_name
+    return user
+
+
+def make_trip(
+    trip_id: UUID = TRIP_ID,
+    members: list | None = None,
+) -> MagicMock:
+    """Create a mock Trip with sensible defaults."""
+    trip = MagicMock(spec=Trip)
+    trip.id = trip_id
+    trip.members = members if members is not None else []
+    return trip
+
+
+def make_member(
+    member_id: UUID = MEMBER_ID,
+    trip_id: UUID = TRIP_ID,
+    user_id: UUID = TEST_USER_ID,
+    role: MemberRole = MemberRole.owner,
+    user: MagicMock | None = None,
+) -> MagicMock:
+    """Create a mock TripMember."""
+    member = MagicMock(spec=TripMember)
+    member.id = member_id
+    member.trip_id = trip_id
+    member.user_id = user_id
+    member.role = role
+    member.user = user if user is not None else make_user(user_id=user_id)
+    return member
+
 
 # Generate RSA key pair for RS256 test tokens
 _test_private_key = rsa.generate_private_key(
@@ -71,6 +125,12 @@ def auth_headers() -> dict[str, str]:
 
 
 @pytest.fixture
+def client() -> TestClient:
+    """Create a test client for the FastAPI app."""
+    return TestClient(app)
+
+
+@pytest.fixture
 def override_get_db(mock_db_session: AsyncSession):
     """Override the get_db dependency with mock database."""
 
@@ -80,3 +140,27 @@ def override_get_db(mock_db_session: AsyncSession):
     app.dependency_overrides[get_db] = _get_test_db
     yield
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def itinerary_day_id() -> str:
+    """Return itinerary day ID as string."""
+    return "555e4567-e89b-12d3-a456-426614174004"
+
+
+@pytest.fixture
+def activity_id() -> str:
+    """Return activity ID as string."""
+    return "999e4567-e89b-12d3-a456-426614174008"
+
+
+@pytest.fixture
+def checklist_id() -> str:
+    """Return checklist ID as string."""
+    return "777e4567-e89b-12d3-a456-426614174006"
+
+
+@pytest.fixture
+def item_id() -> str:
+    """Return checklist item ID as string."""
+    return "666e4567-e89b-12d3-a456-426614174005"

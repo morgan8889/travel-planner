@@ -11,6 +11,7 @@ from sqlalchemy import (
     String,
     Text,
     Time,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.dialects.postgresql import UUID
@@ -39,12 +40,13 @@ class ImportStatus(enum.StrEnum):
 
 class ItineraryDay(Base):
     __tablename__ = "itinerary_days"
+    __table_args__ = (UniqueConstraint("trip_id", "date", name="uq_itinerary_day"),)
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     trip_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("trips.id")
+        UUID(as_uuid=True), ForeignKey("trips.id", ondelete="CASCADE")
     )
     date: Mapped[dt.date] = mapped_column(Date)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -61,7 +63,7 @@ class Activity(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     itinerary_day_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("itinerary_days.id")
+        UUID(as_uuid=True), ForeignKey("itinerary_days.id", ondelete="CASCADE")
     )
     title: Mapped[str] = mapped_column(String(255))
     category: Mapped[ActivityCategory] = mapped_column(Enum(ActivityCategory))
