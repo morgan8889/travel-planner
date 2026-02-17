@@ -37,12 +37,12 @@ async def create_checklist(
     await db.commit()
     await db.refresh(checklist)
 
-    return ChecklistResponse(
-        id=checklist.id,
-        trip_id=checklist.trip_id,
-        title=checklist.title,
-        items=[]
-    )
+    return ChecklistResponse.model_validate({
+        "id": checklist.id,
+        "trip_id": checklist.trip_id,
+        "title": checklist.title,
+        "items": [],
+    })
 
 
 @router.get("/trips/{trip_id}/checklists", response_model=list[ChecklistResponse])
@@ -77,22 +77,22 @@ async def list_checklists(
             checked = user_check.checked if user_check else False
 
             items.append(
-                ChecklistItemResponse(
-                    id=item.id,
-                    checklist_id=item.checklist_id,
-                    text=item.text,
-                    sort_order=item.sort_order,
-                    checked=checked
-                )
+                ChecklistItemResponse.model_validate({
+                    "id": item.id,
+                    "checklist_id": item.checklist_id,
+                    "text": item.text,
+                    "sort_order": item.sort_order,
+                    "checked": checked,
+                })
             )
 
         response_data.append(
-            ChecklistResponse(
-                id=checklist.id,
-                trip_id=checklist.trip_id,
-                title=checklist.title,
-                items=items
-            )
+            ChecklistResponse.model_validate({
+                "id": checklist.id,
+                "trip_id": checklist.trip_id,
+                "title": checklist.title,
+                "items": items,
+            })
         )
 
     return response_data
@@ -134,13 +134,13 @@ async def add_checklist_item(
     await db.commit()
     await db.refresh(item)
 
-    return ChecklistItemResponse(
-        id=item.id,
-        checklist_id=item.checklist_id,
-        text=item.text,
-        sort_order=item.sort_order,
-        checked=False  # New items are unchecked
-    )
+    return ChecklistItemResponse.model_validate({
+        "id": item.id,
+        "checklist_id": item.checklist_id,
+        "text": item.text,
+        "sort_order": item.sort_order,
+        "checked": False,  # New items are unchecked
+    })
 
 
 @router.post("/items/{item_id}/toggle", response_model=ChecklistItemResponse)
@@ -186,10 +186,10 @@ async def toggle_item_check(
     await db.commit()
     await db.refresh(user_check)
 
-    return ChecklistItemResponse(
-        id=item.id,
-        checklist_id=item.checklist_id,
-        text=item.text,
-        sort_order=item.sort_order,
-        checked=user_check.checked
-    )
+    return ChecklistItemResponse.model_validate({
+        "id": item.id,
+        "checklist_id": item.checklist_id,
+        "text": item.text,
+        "sort_order": item.sort_order,
+        "checked": user_check.checked,
+    })

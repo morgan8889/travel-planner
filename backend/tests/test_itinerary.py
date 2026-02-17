@@ -6,15 +6,20 @@ import pytest
 from fastapi.testclient import TestClient
 
 from travel_planner.models.itinerary import Activity, ActivityCategory, ItineraryDay
-from travel_planner.models.trip import MemberRole, Trip, TripMember
-from travel_planner.models.user import UserProfile
+from tests.conftest import (
+    OTHER_USER_EMAIL,
+    OTHER_USER_ID,
+    TRIP_ID,
+    create_test_token,
+    make_member,
+    make_trip,
+    make_user,
+)
 
-TEST_USER_ID = UUID("123e4567-e89b-12d3-a456-426614174000")
-TEST_USER_EMAIL = "test@example.com"
-OTHER_USER_ID = UUID("223e4567-e89b-12d3-a456-426614174001")
-OTHER_USER_EMAIL = "other@example.com"
-TRIP_ID = UUID("333e4567-e89b-12d3-a456-426614174002")
-MEMBER_ID = UUID("443e4567-e89b-12d3-a456-426614174003")
+# Local aliases matching the previous private naming convention
+_make_user = make_user
+_make_trip = make_trip
+_make_member = make_member
 
 
 @pytest.fixture
@@ -26,51 +31,8 @@ def trip_id() -> str:
 @pytest.fixture
 def other_user_headers() -> dict[str, str]:
     """Create authorization headers for a different user."""
-    from tests.conftest import create_test_token
-
     token = create_test_token(str(OTHER_USER_ID), OTHER_USER_EMAIL)
     return {"Authorization": f"Bearer {token}"}
-
-
-def _make_user(
-    user_id: UUID = TEST_USER_ID,
-    email: str = TEST_USER_EMAIL,
-    display_name: str = "Test User",
-) -> MagicMock:
-    """Create a mock UserProfile."""
-    user = MagicMock(spec=UserProfile)
-    user.id = user_id
-    user.email = email
-    user.display_name = display_name
-    return user
-
-
-def _make_trip(
-    trip_id: UUID = TRIP_ID,
-    members: list | None = None,
-) -> MagicMock:
-    """Create a mock Trip with sensible defaults."""
-    trip = MagicMock(spec=Trip)
-    trip.id = trip_id
-    trip.members = members if members is not None else []
-    return trip
-
-
-def _make_member(
-    member_id: UUID = MEMBER_ID,
-    trip_id: UUID = TRIP_ID,
-    user_id: UUID = TEST_USER_ID,
-    role: MemberRole = MemberRole.owner,
-    user: MagicMock | None = None,
-) -> MagicMock:
-    """Create a mock TripMember."""
-    member = MagicMock(spec=TripMember)
-    member.id = member_id
-    member.trip_id = trip_id
-    member.user_id = user_id
-    member.role = role
-    member.user = user if user is not None else _make_user(user_id=user_id)
-    return member
 
 
 def test_list_itinerary_days_empty(

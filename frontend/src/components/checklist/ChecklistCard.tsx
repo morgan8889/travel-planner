@@ -11,6 +11,7 @@ interface ChecklistCardProps {
 export function ChecklistCard({ checklist, tripId }: ChecklistCardProps) {
   const [showAddForm, setShowAddForm] = useState(false)
   const [newItemText, setNewItemText] = useState('')
+  const [pendingToggleId, setPendingToggleId] = useState<string | null>(null)
 
   const addItemMutation = useAddChecklistItem(tripId)
   const toggleMutation = useToggleChecklistItem(tripId)
@@ -40,10 +41,13 @@ export function ChecklistCard({ checklist, tripId }: ChecklistCardProps) {
   }
 
   const handleToggle = async (itemId: string) => {
+    setPendingToggleId(itemId)
     try {
       await toggleMutation.mutateAsync(itemId)
     } catch (error) {
       // Error is captured by mutation state and displayed
+    } finally {
+      setPendingToggleId(null)
     }
   }
 
@@ -123,7 +127,7 @@ export function ChecklistCard({ checklist, tripId }: ChecklistCardProps) {
                 type="checkbox"
                 checked={item.checked}
                 onChange={() => handleToggle(item.id)}
-                disabled={toggleMutation.isPending}
+                disabled={pendingToggleId === item.id}
                 className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
               />
               <span className={item.checked ? 'line-through text-gray-500' : 'text-gray-900'}>

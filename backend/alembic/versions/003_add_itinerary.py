@@ -49,6 +49,7 @@ def upgrade() -> None:
         ),
         sa.Column("date", sa.Date, nullable=False),
         sa.Column("notes", sa.Text, nullable=True),
+        sa.UniqueConstraint("trip_id", "date", name="uq_itinerary_day"),
     )
 
     op.create_table(

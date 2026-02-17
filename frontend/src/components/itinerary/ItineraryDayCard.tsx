@@ -40,7 +40,17 @@ export function ItineraryDayCard({ day, tripId }: ItineraryDayCardProps) {
       </div>
 
       {isLoading ? (
-        <div className="text-sm text-gray-500 text-center py-8">Loading activities...</div>
+        <div className="space-y-2">
+          {[1, 2].map((i) => (
+            <div key={i} className="animate-pulse flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100">
+              <div className="w-8 h-8 bg-gray-200 rounded-full flex-shrink-0" />
+              <div className="flex-1 space-y-1.5">
+                <div className="h-3.5 bg-gray-200 rounded w-2/3" />
+                <div className="h-3 bg-gray-100 rounded w-1/3" />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : isError ? (
         <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-sm text-red-600">
