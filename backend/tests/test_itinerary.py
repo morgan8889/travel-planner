@@ -432,3 +432,310 @@ def test_delete_activity(
         f"/itinerary/activities/{activity_id}", headers=auth_headers
     )
     assert response.status_code == 204
+
+
+def test_reorder_activities(
+    client: TestClient,
+    auth_headers: dict,
+    itinerary_day_id: str,
+    override_get_db,
+    mock_db_session,
+):
+    """Reorder activities reverses sort_order"""
+    day_id = UUID(itinerary_day_id)
+    owner_user = _make_user()
+    owner_member = _make_member(user=owner_user)
+    trip = _make_trip(members=[owner_member])
+
+    day = MagicMock(spec=ItineraryDay)
+    day.id = day_id
+    day.trip_id = TRIP_ID
+
+    activity1 = MagicMock(spec=Activity)
+    activity1.id = UUID("999e4567-e89b-12d3-a456-426614174008")
+    activity1.itinerary_day_id = day_id
+    activity1.title = "Breakfast"
+    activity1.category = ActivityCategory.food
+    activity1.start_time = None
+    activity1.end_time = None
+    activity1.location = None
+    activity1.notes = None
+    activity1.confirmation_number = None
+    activity1.sort_order = 0
+
+    activity2 = MagicMock(spec=Activity)
+    activity2.id = UUID("aaae4567-e89b-12d3-a456-426614174009")
+    activity2.itinerary_day_id = day_id
+    activity2.title = "Eiffel Tower"
+    activity2.category = ActivityCategory.activity
+    activity2.start_time = None
+    activity2.end_time = None
+    activity2.location = "Champ de Mars"
+    activity2.notes = None
+    activity2.confirmation_number = None
+    activity2.sort_order = 1
+
+    # verify_day_access: get day, then verify_trip_member
+    result_mock1 = MagicMock()
+    result_mock1.scalar_one_or_none.return_value = day
+
+    result_mock2 = MagicMock()
+    result_mock2.scalar_one_or_none.return_value = trip
+
+    # Third call: select activities for this day
+    result_mock3 = MagicMock()
+    result_mock3.scalars.return_value.all.return_value = [activity1, activity2]
+
+    mock_db_session.execute = AsyncMock(
+        side_effect=[result_mock1, result_mock2, result_mock3]
+    )
+    mock_db_session.commit = AsyncMock()
+
+    # Reverse the order: activity2 first, activity1 second
+    response = client.patch(
+        f"/itinerary/days/{itinerary_day_id}/reorder",
+        headers=auth_headers,
+        json={"activity_ids": [str(activity2.id), str(activity1.id)]},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 2
+    assert data[0]["id"] == str(activity2.id)
+    assert data[0]["sort_order"] == 0
+    assert data[1]["id"] == str(activity1.id)
+    assert data[1]["sort_order"] == 1
+
+
+def test_reorder_activities_invalid_id(
+    client: TestClient,
+    auth_headers: dict,
+    itinerary_day_id: str,
+    override_get_db,
+    mock_db_session,
+):
+    """Reorder with unknown activity ID returns 400"""
+    day_id = UUID(itinerary_day_id)
+    owner_user = _make_user()
+    owner_member = _make_member(user=owner_user)
+    trip = _make_trip(members=[owner_member])
+
+    day = MagicMock(spec=ItineraryDay)
+    day.id = day_id
+    day.trip_id = TRIP_ID
+
+    # verify_day_access
+    result_mock1 = MagicMock()
+    result_mock1.scalar_one_or_none.return_value = day
+
+    result_mock2 = MagicMock()
+    result_mock2.scalar_one_or_none.return_value = trip
+
+    # Activities query returns empty
+    result_mock3 = MagicMock()
+    result_mock3.scalars.return_value.all.return_value = []
+
+    mock_db_session.execute = AsyncMock(
+        side_effect=[result_mock1, result_mock2, result_mock3]
+    )
+
+    response = client.patch(
+        f"/itinerary/days/{itinerary_day_id}/reorder",
+        headers=auth_headers,
+        json={"activity_ids": ["00000000-0000-0000-0000-000000000099"]},
+    )
+    assert response.status_code == 400
+
+
+def test_delete_itinerary_day(
+    client: TestClient,
+    auth_headers: dict,
+    itinerary_day_id: str,
+    override_get_db,
+    mock_db_session,
+):
+    """Delete itinerary day returns 204"""
+    day_id = UUID(itinerary_day_id)
+    owner_user = _make_user()
+    owner_member = _make_member(user=owner_user)
+    trip = _make_trip(members=[owner_member])
+
+    day = MagicMock(spec=ItineraryDay)
+    day.id = day_id
+    day.trip_id = TRIP_ID
+
+    # verify_day_access
+    result_mock1 = MagicMock()
+    result_mock1.scalar_one_or_none.return_value = day
+
+    result_mock2 = MagicMock()
+    result_mock2.scalar_one_or_none.return_value = trip
+
+    mock_db_session.execute = AsyncMock(
+        side_effect=[result_mock1, result_mock2]
+    )
+    mock_db_session.delete = AsyncMock()
+    mock_db_session.commit = AsyncMock()
+
+    response = client.delete(
+        f"/itinerary/days/{itinerary_day_id}", headers=auth_headers
+    )
+    assert response.status_code == 204
+
+
+def test_delete_itinerary_day_not_member(
+    client: TestClient,
+    other_user_headers: dict,
+    itinerary_day_id: str,
+    override_get_db,
+    mock_db_session,
+):
+    """Non-member cannot delete itinerary day"""
+    day_id = UUID(itinerary_day_id)
+
+    day = MagicMock(spec=ItineraryDay)
+    day.id = day_id
+    day.trip_id = TRIP_ID
+
+    # verify_day_access: get day succeeds
+    result_mock1 = MagicMock()
+    result_mock1.scalar_one_or_none.return_value = day
+
+    # verify_trip_member: returns None (not a member)
+    result_mock2 = MagicMock()
+    result_mock2.scalar_one_or_none.return_value = None
+
+    mock_db_session.execute = AsyncMock(
+        side_effect=[result_mock1, result_mock2]
+    )
+
+    response = client.delete(
+        f"/itinerary/days/{itinerary_day_id}", headers=other_user_headers
+    )
+    assert response.status_code == 403
+
+
+def test_generate_itinerary_days(
+    client: TestClient,
+    auth_headers: dict,
+    trip_id: str,
+    override_get_db,
+    mock_db_session,
+):
+    """Generate itinerary days creates one day per date in trip range"""
+    owner_user = _make_user()
+    owner_member = _make_member(user=owner_user)
+    trip = _make_trip(members=[owner_member])
+    trip.start_date = date(2026, 3, 1)
+    trip.end_date = date(2026, 3, 3)
+
+    # verify_trip_member
+    result_mock1 = MagicMock()
+    result_mock1.scalar_one_or_none.return_value = trip
+
+    # Existing dates query - none exist
+    result_mock2 = MagicMock()
+    result_mock2.scalars.return_value.all.return_value = []
+
+    # Final query: return all days with counts
+    day1 = MagicMock(spec=ItineraryDay)
+    day1.id = UUID("aaa00000-0000-0000-0000-000000000001")
+    day1.trip_id = TRIP_ID
+    day1.date = date(2026, 3, 1)
+    day1.notes = None
+
+    day2 = MagicMock(spec=ItineraryDay)
+    day2.id = UUID("aaa00000-0000-0000-0000-000000000002")
+    day2.trip_id = TRIP_ID
+    day2.date = date(2026, 3, 2)
+    day2.notes = None
+
+    day3 = MagicMock(spec=ItineraryDay)
+    day3.id = UUID("aaa00000-0000-0000-0000-000000000003")
+    day3.trip_id = TRIP_ID
+    day3.date = date(2026, 3, 3)
+    day3.notes = None
+
+    result_mock3 = MagicMock()
+    result_mock3.__iter__ = MagicMock(
+        return_value=iter([(day1, 0), (day2, 0), (day3, 0)])
+    )
+
+    mock_db_session.execute = AsyncMock(
+        side_effect=[result_mock1, result_mock2, result_mock3]
+    )
+    mock_db_session.add = MagicMock()
+    mock_db_session.commit = AsyncMock()
+    mock_db_session.refresh = AsyncMock()
+
+    response = client.post(
+        f"/itinerary/trips/{trip_id}/days/generate", headers=auth_headers
+    )
+    assert response.status_code == 201
+    data = response.json()
+    assert len(data) == 3
+    assert data[0]["date"] == "2026-03-01"
+    assert data[1]["date"] == "2026-03-02"
+    assert data[2]["date"] == "2026-03-03"
+
+
+def test_generate_itinerary_days_skips_existing(
+    client: TestClient,
+    auth_headers: dict,
+    trip_id: str,
+    override_get_db,
+    mock_db_session,
+):
+    """Generate days skips dates that already have an itinerary day"""
+    owner_user = _make_user()
+    owner_member = _make_member(user=owner_user)
+    trip = _make_trip(members=[owner_member])
+    trip.start_date = date(2026, 3, 1)
+    trip.end_date = date(2026, 3, 3)
+
+    # verify_trip_member
+    result_mock1 = MagicMock()
+    result_mock1.scalar_one_or_none.return_value = trip
+
+    # Existing dates query - March 2 already exists
+    result_mock2 = MagicMock()
+    result_mock2.scalars.return_value.all.return_value = [date(2026, 3, 2)]
+
+    # Final query: return all 3 days (2 new + 1 existing)
+    day1 = MagicMock(spec=ItineraryDay)
+    day1.id = UUID("aaa00000-0000-0000-0000-000000000001")
+    day1.trip_id = TRIP_ID
+    day1.date = date(2026, 3, 1)
+    day1.notes = None
+
+    day2 = MagicMock(spec=ItineraryDay)
+    day2.id = UUID("aaa00000-0000-0000-0000-000000000002")
+    day2.trip_id = TRIP_ID
+    day2.date = date(2026, 3, 2)
+    day2.notes = None
+
+    day3 = MagicMock(spec=ItineraryDay)
+    day3.id = UUID("aaa00000-0000-0000-0000-000000000003")
+    day3.trip_id = TRIP_ID
+    day3.date = date(2026, 3, 3)
+    day3.notes = None
+
+    result_mock3 = MagicMock()
+    result_mock3.__iter__ = MagicMock(
+        return_value=iter([(day1, 0), (day2, 1), (day3, 0)])
+    )
+
+    mock_db_session.execute = AsyncMock(
+        side_effect=[result_mock1, result_mock2, result_mock3]
+    )
+    mock_db_session.add = MagicMock()
+    mock_db_session.commit = AsyncMock()
+    mock_db_session.refresh = AsyncMock()
+
+    response = client.post(
+        f"/itinerary/trips/{trip_id}/days/generate", headers=auth_headers
+    )
+    assert response.status_code == 201
+    data = response.json()
+    assert len(data) == 3
+    # Verify only 2 days were added (not the existing one)
+    assert mock_db_session.add.call_count == 2
