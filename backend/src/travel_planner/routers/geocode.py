@@ -1,3 +1,5 @@
+from urllib.parse import quote
+
 import httpx
 from fastapi import APIRouter, Query
 
@@ -13,26 +15,29 @@ MAPBOX_GEOCODING_URL = "https://api.mapbox.com/geocoding/v5/mapbox.places/{query
 @router.get("/search", response_model=list[GeocodeSuggestion])
 async def search(
     _user_id: CurrentUserId,
-    q: str = Query(..., min_length=1),
+    q: str = Query(..., min_length=1, max_length=256),
     limit: int = Query(default=5, ge=1, le=10),
 ) -> list[GeocodeSuggestion]:
-    """Proxy to Mapbox Geocoding API. Returns empty list when token is not configured."""
+    """Proxy to Mapbox Geocoding API. Returns empty list when token not configured."""
     if not settings.mapbox_access_token:
         return []
 
-    url = MAPBOX_GEOCODING_URL.format(query=q)
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            url,
-            params={
-                "access_token": settings.mapbox_access_token,
-                "limit": limit,
-                "types": "place,locality,neighborhood,address,poi",
-            },
-            timeout=5.0,
-        )
-        response.raise_for_status()
-        data = response.json()
+    url = MAPBOX_GEOCODING_URL.format(query=quote(q, safe=""))
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                url,
+                params={
+                    "access_token": settings.mapbox_access_token,
+                    "limit": limit,
+                    "types": "place,locality,neighborhood,address,poi",
+                },
+                timeout=5.0,
+            )
+            response.raise_for_status()
+            data = response.json()
+    except (httpx.HTTPStatusError, httpx.RequestError):
+        return []
 
     suggestions: list[GeocodeSuggestion] = []
     for feature in data.get("features", []):

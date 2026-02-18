@@ -27,8 +27,8 @@ class ActivityCreate(BaseModel):
     start_time: time | None = None
     end_time: time | None = None
     location: str | None = None
-    latitude: float | None = None
-    longitude: float | None = None
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
     notes: str | None = None
     confirmation_number: str | None = None
 
@@ -49,8 +49,8 @@ class ActivityUpdate(BaseModel):
     start_time: time | None = None
     end_time: time | None = None
     location: str | None = None
-    latitude: float | None = None
-    longitude: float | None = None
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
     notes: str | None = None
     confirmation_number: str | None = None
     sort_order: int | None = None
