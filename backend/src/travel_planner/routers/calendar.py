@@ -25,8 +25,8 @@ router = APIRouter(prefix="/calendar", tags=["calendar"])
 @router.post("/plans", response_model=AnnualPlanResponse, status_code=201)
 async def create_annual_plan(
     plan_data: AnnualPlanCreate,
+    user_id: CurrentUserId,
     db: AsyncSession = Depends(get_db),
-    user_id: CurrentUserId = None,
 ):
     """Create an annual plan for a year. One plan per user per year."""
     result = await db.execute(
@@ -35,7 +35,10 @@ async def create_annual_plan(
         .where(AnnualPlan.year == plan_data.year)
     )
     if result.scalar_one_or_none() is not None:
-        raise HTTPException(status_code=409, detail="Annual plan already exists for this year")
+        raise HTTPException(
+            status_code=409,
+            detail="Annual plan already exists for this year",
+        )
 
     plan = AnnualPlan(
         user_id=user_id,
@@ -52,8 +55,8 @@ async def create_annual_plan(
 @router.get("/plans/{year}", response_model=CalendarYearResponse)
 async def get_annual_plan(
     year: int,
+    user_id: CurrentUserId,
     db: AsyncSession = Depends(get_db),
-    user_id: CurrentUserId = None,
 ):
     """Get annual plan with blocks and trips for a given year."""
     result = await db.execute(
@@ -94,8 +97,8 @@ async def get_annual_plan(
 @router.post("/blocks", response_model=CalendarBlockResponse, status_code=201)
 async def create_calendar_block(
     block_data: CalendarBlockCreate,
+    user_id: CurrentUserId,
     db: AsyncSession = Depends(get_db),
-    user_id: CurrentUserId = None,
 ):
     """Create a calendar block (PTO, holiday, etc.) on an annual plan."""
     result = await db.execute(
@@ -105,7 +108,10 @@ async def create_calendar_block(
     if plan is None:
         raise HTTPException(status_code=404, detail="Annual plan not found")
     if plan.user_id != user_id:
-        raise HTTPException(status_code=403, detail="Not authorized to modify this plan")
+        raise HTTPException(
+            status_code=403,
+            detail="Not authorized to modify this plan",
+        )
 
     block = CalendarBlock(
         annual_plan_id=block_data.annual_plan_id,
@@ -126,13 +132,11 @@ async def create_calendar_block(
 async def update_calendar_block(
     block_id: UUID,
     block_data: CalendarBlockUpdate,
+    user_id: CurrentUserId,
     db: AsyncSession = Depends(get_db),
-    user_id: CurrentUserId = None,
 ):
     """Update fields on a calendar block."""
-    result = await db.execute(
-        select(CalendarBlock).where(CalendarBlock.id == block_id)
-    )
+    result = await db.execute(select(CalendarBlock).where(CalendarBlock.id == block_id))
     block = result.scalar_one_or_none()
     if block is None:
         raise HTTPException(status_code=404, detail="Calendar block not found")
@@ -142,7 +146,10 @@ async def update_calendar_block(
     )
     plan = plan_result.scalar_one_or_none()
     if plan is None or plan.user_id != user_id:
-        raise HTTPException(status_code=403, detail="Not authorized to modify this block")
+        raise HTTPException(
+            status_code=403,
+            detail="Not authorized to modify this block",
+        )
 
     for field, value in block_data.model_dump(exclude_unset=True).items():
         setattr(block, field, value)
@@ -156,13 +163,11 @@ async def update_calendar_block(
 @router.delete("/blocks/{block_id}", status_code=204)
 async def delete_calendar_block(
     block_id: UUID,
+    user_id: CurrentUserId,
     db: AsyncSession = Depends(get_db),
-    user_id: CurrentUserId = None,
 ):
     """Delete a calendar block."""
-    result = await db.execute(
-        select(CalendarBlock).where(CalendarBlock.id == block_id)
-    )
+    result = await db.execute(select(CalendarBlock).where(CalendarBlock.id == block_id))
     block = result.scalar_one_or_none()
     if block is None:
         raise HTTPException(status_code=404, detail="Calendar block not found")
@@ -172,7 +177,10 @@ async def delete_calendar_block(
     )
     plan = plan_result.scalar_one_or_none()
     if plan is None or plan.user_id != user_id:
-        raise HTTPException(status_code=403, detail="Not authorized to delete this block")
+        raise HTTPException(
+            status_code=403,
+            detail="Not authorized to delete this block",
+        )
 
     await db.delete(block)
     await db.commit()
