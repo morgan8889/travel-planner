@@ -3,7 +3,7 @@ import { TriangleAlert, ArrowLeft, ChevronRight, SquarePen, Calendar, Trash2, Ma
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { useTrip, useUpdateTrip, useDeleteTrip } from '../hooks/useTrips'
 import { useAddMember, useRemoveMember, useUpdateMemberRole } from '../hooks/useMembers'
-import { useItineraryDays } from '../hooks/useItinerary'
+import { useItineraryDays, useGenerateDays } from '../hooks/useItinerary'
 import { useChecklists } from '../hooks/useChecklists'
 import { useAuth } from '../contexts/AuthContext'
 import { TripStatusBadge } from '../components/trips/TripStatusBadge'
@@ -91,6 +91,7 @@ export function TripDetailPage() {
   // Itinerary and Checklist hooks
   const { data: itineraryDays, isLoading: daysLoading, isError: daysError, error: daysErrorMsg } = useItineraryDays(tripId)
   const { data: checklists, isLoading: checklistsLoading, isError: checklistsError, error: checklistsErrorMsg } = useChecklists(tripId)
+  const generateDays = useGenerateDays(tripId)
 
   const [isEditing, setIsEditing] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -413,9 +414,27 @@ export function TripDetailPage() {
                 </div>
               ) : (
                 <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-gray-200 p-12 text-center">
-                  <p className="text-gray-600 mb-4">
-                    No itinerary days yet. Click "Add Day" to start planning your trip.
-                  </p>
+                  <p className="text-gray-600 mb-4">No itinerary days yet.</p>
+                  <div className="flex items-center justify-center gap-3">
+                    <button
+                      onClick={() => generateDays.mutate()}
+                      disabled={generateDays.isPending}
+                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    >
+                      {generateDays.isPending ? 'Generating...' : 'Generate Days from Trip Dates'}
+                    </button>
+                    <button
+                      onClick={() => setShowAddDayModal(true)}
+                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Add Day Manually
+                    </button>
+                  </div>
+                  {generateDays.isError && (
+                    <p className="text-sm text-red-600 mt-2">
+                      {generateDays.error instanceof Error ? generateDays.error.message : 'Failed to generate days'}
+                    </p>
+                  )}
                 </div>
               )}
             </>
