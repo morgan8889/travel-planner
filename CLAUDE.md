@@ -102,6 +102,22 @@ See `.claude/rules/e2e-validation.md` for the full browser verification protocol
 - Page structure: loading skeleton → error state → empty state → content (see `TripsPage.tsx`)
 - Components live in `components/<feature>/` directories
 - Tests in `__tests__/` directory, named `<feature>.test.tsx`
+- **Icons**: Use `lucide-react` only. Do not use Heroicons or any other icon library.
+- **No emoji in code**: Do not add emoji characters in UI components, labels, or source code.
+
+## Pre-Commit Checklist
+
+Before committing or creating a PR, **always** run lint, format, type checks, and tests for any code you changed:
+
+```bash
+# Backend — run all four
+cd backend && uv run ruff check . && uv run ruff format --check . && uv run pyright && uv run pytest
+
+# Frontend — run all three
+cd frontend && npx tsc --noEmit && npm run lint && npx vitest run
+```
+
+Fix any failures before committing. Do not skip or disable checks.
 
 ## Key Architecture Notes
 
