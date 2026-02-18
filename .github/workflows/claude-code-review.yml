@@ -40,5 +40,4 @@ jobs:
           plugins: 'code-review@claude-code-plugins'
           allowed_bots: 'claude'
           prompt: '/code-review:code-review --comment ${{ github.repository }}/pull/${{ github.event.pull_request.number }}'
-          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
-          # or https://code.claude.com/docs/en/cli-reference for available options
+          claude_args: '--allowedTools "Bash(gh api:*),Bash(gh pr comment:*),Bash(gh pr review:*)"'
