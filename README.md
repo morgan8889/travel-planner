@@ -6,9 +6,10 @@ A full-stack travel planning application with AI-powered trip recommendations.
 
 ```
 travel-planner/
-├── backend/          # FastAPI backend with Python
-├── frontend/         # React + TypeScript frontend
-└── MANUAL_TESTING.md # Manual testing setup guide
+├── backend/            # FastAPI backend with Python
+├── frontend/           # React + TypeScript frontend
+├── docs/plans/         # Design docs and implementation plans
+└── .claude/rules/      # Claude Code rules (testing, e2e validation)
 ```
 
 ## Tech Stack
@@ -30,16 +31,11 @@ travel-planner/
 
 ## Getting Started
 
-### 🚀 New to this project?
-
-**Choose your path:**
-- **Quick Start**: Follow the [QUICKSTART.md](./QUICKSTART.md) checklist (15-20 min)
-- **Detailed Setup**: See [MANUAL_TESTING.md](./MANUAL_TESTING.md) for comprehensive instructions
-
 ### Prerequisites
 
 - Python 3.10+
 - Node.js 18+
+- [uv](https://docs.astral.sh/uv/) (Python package manager)
 - PostgreSQL (or use Supabase)
 - A Supabase account (for authentication)
 
@@ -69,6 +65,7 @@ travel-planner/
    ```bash
    cd backend
    uv sync && uv sync --dev
+   uv run alembic upgrade head
    uv run uvicorn travel_planner.main:app --port 8000
    ```
 
@@ -88,19 +85,17 @@ travel-planner/
 
 This project uses **Supabase Auth with RS256 JWT tokens**. The implementation:
 
-- ✅ Uses RS256 (asymmetric) instead of HS256 (symmetric)
-- ✅ Fetches public keys from JWKS endpoint automatically
-- ✅ Caches JWKS keys for 1 hour
-- ✅ No JWT secret needed in environment variables
-- ✅ Automatic key rotation support
+- Uses RS256 (asymmetric) instead of HS256 (symmetric)
+- Fetches public keys from JWKS endpoint automatically
+- Caches JWKS keys for 1 hour
+- No JWT secret needed in environment variables
+- Automatic key rotation support
 
 ### Required Credentials
 
 You only need:
 - `SUPABASE_URL` - Your Supabase project URL
 - `SUPABASE_KEY` - Your Supabase anon/public key
-
-See [MANUAL_TESTING.md](./MANUAL_TESTING.md) for detailed setup instructions.
 
 ## Development
 
@@ -115,7 +110,7 @@ uv run pytest
 Frontend:
 ```bash
 cd frontend
-npm test
+npx vitest run
 ```
 
 ### Code Quality
@@ -123,8 +118,8 @@ npm test
 Backend:
 ```bash
 cd backend
-ruff check .
-ruff format .
+uv run ruff check .
+uv run ruff format --check .
 ```
 
 Frontend:
@@ -133,30 +128,19 @@ cd frontend
 npm run lint
 ```
 
-## Manual Testing
-
-For comprehensive manual testing instructions including:
-- Environment setup
-- Authentication flow testing
-- API endpoint testing
-- Troubleshooting guide
-
-See **[MANUAL_TESTING.md](./MANUAL_TESTING.md)**
-
-## Database Migrations
+### Database Migrations
 
 ```bash
 cd backend
-source .venv/bin/activate
-
-# Create a new migration
-alembic revision --autogenerate -m "description"
 
 # Apply migrations
-alembic upgrade head
+uv run alembic upgrade head
+
+# Create a new migration
+uv run alembic revision --autogenerate -m "description"
 
 # Rollback
-alembic downgrade -1
+uv run alembic downgrade -1
 ```
 
 ## API Documentation
@@ -170,7 +154,7 @@ The backend automatically generates interactive API documentation:
 ### Phase 1: Project Scaffolding & Database
 - ✅ FastAPI backend with SQLAlchemy + asyncpg
 - ✅ React + Vite + TanStack Router/Query frontend
-- ✅ Database models (14 tables) and Alembic migrations
+- ✅ Database models and Alembic migrations
 - ✅ Tailwind CSS styling
 
 ### Phase 2: Auth & User Profiles
@@ -179,39 +163,26 @@ The backend automatically generates interactive API documentation:
 - ✅ Protected API endpoints
 - ✅ Magic link + anonymous sign-in frontend flow
 
-### Phase 3: Trip CRUD (In Progress)
-- ✅ Trip CRUD API endpoints
-- ✅ Trip member management (invite, remove, roles)
+### Phase 3: Trip CRUD, Itinerary & Checklists
+- ✅ Trip CRUD API endpoints with member management
 - ✅ Trip list page with status filter pills
 - ✅ Trip detail page with edit, status transitions, members sidebar
-- ✅ New trip creation page
-- 🔄 Trip dashboard tabs (Itinerary | Checklists | Chat | Imports)
+- ✅ Day-by-day itinerary builder with activity CRUD
+- ✅ Checklists with per-user check state and templates
 
 ### Phase 4: Annual Calendar
-- 🔲 Annual plan & calendar block API
-- 🔲 12-month year grid calendar view
-- 🔲 PTO/holiday block management
-- 🔲 Drag-to-create trips from calendar
-- 🔲 Public holiday auto-detection
+- ✅ Annual plan & calendar block API
+- ✅ 12-month year grid calendar view
+- ✅ PTO/holiday/trip block management
+- ✅ Create blocks from calendar UI
 
-### Phase 5: Itinerary Builder
-- 🔲 Itinerary day + activity CRUD API
-- 🔲 Day-by-day timeline with drag-and-drop reorder
-
-### Phase 6: Checklists
-- 🔲 Checklist CRUD with per-user check state
-- 🔲 Checklist templates (packing, documents, pre-departure)
-
-### Phase 7: AI Features
+### Phase 5: AI Features
 - 🔲 AI itinerary generation + chat assistant + checklist generation
 
-### Phase 8: Gmail Import
+### Phase 6: Gmail Import
 - 🔲 Gmail OAuth + AI-powered booking parsing + import review UI
 
-### Phase 9: Frontend AI Polish
-- 🔲 AI generate buttons in itinerary and checklist views
-
-### Phase 10: Integration & Deployment
+### Phase 7: Integration & Deployment
 - 🔲 End-to-end integration tests + Docker + deployment config
 
 ## Contributing
