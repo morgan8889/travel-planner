@@ -18,6 +18,8 @@ export interface TripSummary {
   end_date: string
   status: TripStatus
   notes: string | null
+  destination_latitude: number | null
+  destination_longitude: number | null
   parent_trip_id: string | null
   created_at: string
   member_count: number
@@ -35,6 +37,8 @@ export interface TripCreate {
   end_date: string
   status?: TripStatus
   notes?: string | null
+  destination_latitude?: number | null
+  destination_longitude?: number | null
   parent_trip_id?: string | null
 }
 
@@ -45,7 +49,17 @@ export interface TripUpdate {
   end_date?: string
   status?: TripStatus
   notes?: string | null
+  destination_latitude?: number | null
+  destination_longitude?: number | null
   parent_trip_id?: string | null
+}
+
+export interface GeocodeSuggestion {
+  place_name: string
+  latitude: number
+  longitude: number
+  place_type: string
+  context: string | null
 }
 
 export type ActivityCategory = 'transport' | 'food' | 'activity' | 'lodging'
@@ -66,6 +80,8 @@ export interface Activity {
   start_time: string | null
   end_time: string | null
   location: string | null
+  latitude: number | null
+  longitude: number | null
   notes: string | null
   confirmation_number: string | null
   sort_order: number
@@ -82,6 +98,8 @@ export interface CreateActivity {
   start_time?: string | null
   end_time?: string | null
   location?: string | null
+  latitude?: number | null
+  longitude?: number | null
   notes?: string | null
   confirmation_number?: string | null
 }
@@ -92,6 +110,8 @@ export interface UpdateActivity {
   start_time?: string | null
   end_time?: string | null
   location?: string | null
+  latitude?: number | null
+  longitude?: number | null
   notes?: string | null
   confirmation_number?: string | null
   sort_order?: number

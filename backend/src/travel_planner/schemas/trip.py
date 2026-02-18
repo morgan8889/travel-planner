@@ -13,6 +13,8 @@ class TripCreate(BaseModel):
     end_date: date
     status: TripStatus = TripStatus.dreaming
     notes: str | None = None
+    destination_latitude: float | None = None
+    destination_longitude: float | None = None
     parent_trip_id: uuid.UUID | None = None
 
     @model_validator(mode="after")
@@ -29,6 +31,8 @@ class TripUpdate(BaseModel):
     end_date: date | None = None
     status: TripStatus | None = None
     notes: str | None = None
+    destination_latitude: float | None = None
+    destination_longitude: float | None = None
     parent_trip_id: uuid.UUID | None = None
 
     @model_validator(mode="after")
@@ -59,6 +63,8 @@ class TripSummary(BaseModel):
     end_date: date
     status: TripStatus
     notes: str | None
+    destination_latitude: float | None = None
+    destination_longitude: float | None = None
     parent_trip_id: uuid.UUID | None
     created_at: datetime
     member_count: int
@@ -73,6 +79,8 @@ class TripResponse(BaseModel):
     end_date: date
     status: TripStatus
     notes: str | None
+    destination_latitude: float | None = None
+    destination_longitude: float | None = None
     parent_trip_id: uuid.UUID | None
     created_at: datetime
     members: list[TripMemberResponse]
