@@ -83,3 +83,41 @@ export function useDeleteActivity(tripId: string) {
     },
   })
 }
+
+export function useReorderActivities(dayId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (activityIds: string[]) => {
+      const { data } = await itineraryApi.reorderActivities(dayId, activityIds)
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: itineraryKeys.activities(dayId) })
+    },
+  })
+}
+
+export function useDeleteDay(tripId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (dayId: string) => {
+      await itineraryApi.deleteDay(dayId)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: itineraryKeys.days(tripId) })
+    },
+  })
+}
+
+export function useGenerateDays(tripId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await itineraryApi.generateDays(tripId)
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: itineraryKeys.days(tripId) })
+    },
+  })
+}
