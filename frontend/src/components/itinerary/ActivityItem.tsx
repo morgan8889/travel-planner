@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { Trash2 } from 'lucide-react'
+import { GripVertical, Trash2 } from 'lucide-react'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import type { Activity, ActivityCategory } from '../../lib/types'
 import { useDeleteActivity } from '../../hooks/useItinerary'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
@@ -20,6 +22,21 @@ export function ActivityItem({ activity, tripId }: ActivityItemProps) {
   const deleteActivity = useDeleteActivity(tripId)
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
 
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: activity.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
   const handleDelete = () => {
     deleteActivity.mutate({
       activityId: activity.id,
@@ -36,7 +53,18 @@ export function ActivityItem({ activity, tripId }: ActivityItemProps) {
 
   return (
     <>
-      <div className="flex items-start gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
+      <div
+        ref={setNodeRef}
+        style={style}
+        className="flex items-start gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-shadow"
+      >
+        <button
+          className="flex-shrink-0 mt-1 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 touch-none"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="w-4 h-4" />
+        </button>
         <div className="text-2xl flex-shrink-0 mt-0.5">
           {CATEGORY_ICONS[activity.category]}
         </div>

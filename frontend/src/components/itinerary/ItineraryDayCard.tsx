@@ -1,7 +1,21 @@
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
 import type { ItineraryDay } from '../../lib/types'
-import { useActivities } from '../../hooks/useItinerary'
+import { useActivities, useReorderActivities } from '../../hooks/useItinerary'
 import { ActivityItem } from './ActivityItem'
 import { AddActivityModal } from './AddActivityModal'
 
@@ -12,7 +26,28 @@ interface ItineraryDayCardProps {
 
 export function ItineraryDayCard({ day, tripId }: ItineraryDayCardProps) {
   const { data: activities, isLoading, isError, error } = useActivities(day.id)
+  const reorderActivities = useReorderActivities(day.id)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id || !activities) return
+
+    const oldIndex = activities.findIndex((a) => a.id === active.id)
+    const newIndex = activities.findIndex((a) => a.id === over.id)
+    if (oldIndex === -1 || newIndex === -1) return
+
+    const reordered = [...activities]
+    const [moved] = reordered.splice(oldIndex, 1)
+    reordered.splice(newIndex, 0, moved)
+
+    reorderActivities.mutate(reordered.map((a) => a.id))
+  }
 
   const formattedDate = new Date(day.date + 'T00:00:00').toLocaleDateString('en-US', {
     weekday: 'long',
@@ -58,11 +93,15 @@ export function ItineraryDayCard({ day, tripId }: ItineraryDayCardProps) {
           </p>
         </div>
       ) : activities && activities.length > 0 ? (
-        <div className="space-y-2">
-          {activities.map((activity) => (
-            <ActivityItem key={activity.id} activity={activity} tripId={tripId} />
-          ))}
-        </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={activities.map(a => a.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-2">
+              {activities.map((activity) => (
+                <ActivityItem key={activity.id} activity={activity} tripId={tripId} />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       ) : (
         <div className="text-sm text-gray-500 text-center py-8">
           No activities yet. Click "Add Activity" to get started.
