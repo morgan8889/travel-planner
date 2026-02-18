@@ -570,9 +570,7 @@ def test_delete_itinerary_day(
     result_mock2 = MagicMock()
     result_mock2.scalar_one_or_none.return_value = trip
 
-    mock_db_session.execute = AsyncMock(
-        side_effect=[result_mock1, result_mock2]
-    )
+    mock_db_session.execute = AsyncMock(side_effect=[result_mock1, result_mock2])
     mock_db_session.delete = AsyncMock()
     mock_db_session.commit = AsyncMock()
 
@@ -604,9 +602,7 @@ def test_delete_itinerary_day_not_member(
     result_mock2 = MagicMock()
     result_mock2.scalar_one_or_none.return_value = None
 
-    mock_db_session.execute = AsyncMock(
-        side_effect=[result_mock1, result_mock2]
-    )
+    mock_db_session.execute = AsyncMock(side_effect=[result_mock1, result_mock2])
 
     response = client.delete(
         f"/itinerary/days/{itinerary_day_id}", headers=other_user_headers
