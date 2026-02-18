@@ -40,7 +40,7 @@ export function AddChecklistModal({ isOpen, onClose, tripId }: AddChecklistModal
     <Modal isOpen={isOpen} onClose={handleClose} title="Create Checklist">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="title" className="block text-sm font-medium text-cloud-700 mb-1">
             Title *
           </label>
           <input
@@ -51,7 +51,7 @@ export function AddChecklistModal({ isOpen, onClose, tripId }: AddChecklistModal
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g., Packing List"
             disabled={createMutation.isPending}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+            className="w-full px-3 py-2 border border-cloud-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50"
             autoFocus
           />
         </div>
@@ -71,14 +71,14 @@ export function AddChecklistModal({ isOpen, onClose, tripId }: AddChecklistModal
             type="button"
             onClick={handleClose}
             disabled={createMutation.isPending}
-            className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+            className="flex-1 px-4 py-2 text-cloud-700 bg-cloud-100 rounded-lg hover:bg-cloud-200 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={createMutation.isPending}
-            className="flex-1 px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {createMutation.isPending ? 'Creating...' : 'Create'}
           </button>

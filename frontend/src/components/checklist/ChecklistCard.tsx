@@ -55,17 +55,17 @@ export function ChecklistCard({ checklist, tripId }: ChecklistCardProps) {
   const totalCount = checklist.items.length
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-4">
+    <div className="bg-white border border-cloud-200 rounded-xl p-4">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">{checklist.title}</h3>
-          <p className="text-sm text-gray-600 mt-0.5">
+          <h3 className="text-lg font-semibold text-cloud-900">{checklist.title}</h3>
+          <p className="text-sm text-cloud-600 mt-0.5">
             {completedCount} of {totalCount} completed
           </p>
         </div>
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+          className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
           aria-label="Add item"
         >
           <Plus className="w-5 h-5" />
@@ -81,13 +81,13 @@ export function ChecklistCard({ checklist, tripId }: ChecklistCardProps) {
               onChange={(e) => setNewItemText(e.target.value)}
               placeholder="New item..."
               disabled={addItemMutation.isPending}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+              className="flex-1 px-3 py-2 border border-cloud-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50"
               autoFocus
             />
             <button
               type="submit"
               disabled={addItemMutation.isPending || !newItemText.trim()}
-              className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Add
             </button>
@@ -95,7 +95,7 @@ export function ChecklistCard({ checklist, tripId }: ChecklistCardProps) {
               type="button"
               onClick={handleCancel}
               disabled={addItemMutation.isPending}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+              className="px-4 py-2 text-cloud-700 bg-cloud-100 rounded-lg hover:bg-cloud-200 transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
@@ -114,23 +114,23 @@ export function ChecklistCard({ checklist, tripId }: ChecklistCardProps) {
 
       <div className="space-y-2">
         {checklist.items.length === 0 ? (
-          <p className="text-sm text-gray-500 text-center py-4">
+          <p className="text-sm text-cloud-500 text-center py-4">
             No items yet. Click 'Add item' button to get started.
           </p>
         ) : (
           checklist.items.map((item) => (
             <label
               key={item.id}
-              className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+              className="flex items-center gap-3 p-2 rounded-lg hover:bg-cloud-50 cursor-pointer transition-colors"
             >
               <input
                 type="checkbox"
                 checked={item.checked}
                 onChange={() => handleToggle(item.id)}
                 disabled={pendingToggleId === item.id}
-                className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                className="w-5 h-5 rounded border-cloud-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
               />
-              <span className={item.checked ? 'line-through text-gray-500' : 'text-gray-900'}>
+              <span className={item.checked ? 'line-through text-cloud-500' : 'text-cloud-900'}>
                 {item.text}
               </span>
             </label>

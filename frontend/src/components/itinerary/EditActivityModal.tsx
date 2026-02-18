@@ -50,7 +50,7 @@ export function EditActivityModal({ isOpen, onClose, activity, tripId }: EditAct
     <Modal isOpen={isOpen} onClose={onClose} title="Edit Activity">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="edit-title" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="edit-title" className="block text-sm font-medium text-cloud-700 mb-1">
             Title *
           </label>
           <input
@@ -60,12 +60,12 @@ export function EditActivityModal({ isOpen, onClose, activity, tripId }: EditAct
             value={formData.title}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             disabled={updateActivity.isPending}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+            className="w-full px-3 py-2 border border-cloud-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50"
           />
         </div>
 
         <div>
-          <span className="block text-sm font-medium text-gray-700 mb-1">Category *</span>
+          <span className="block text-sm font-medium text-cloud-700 mb-1">Category *</span>
           <CategorySelector
             value={formData.category}
             onChange={(cat) => setFormData({ ...formData, category: cat })}
@@ -75,7 +75,7 @@ export function EditActivityModal({ isOpen, onClose, activity, tripId }: EditAct
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label htmlFor="edit-start_time" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="edit-start_time" className="block text-sm font-medium text-cloud-700 mb-1">
               Start Time
             </label>
             <input
@@ -84,11 +84,11 @@ export function EditActivityModal({ isOpen, onClose, activity, tripId }: EditAct
               value={formData.start_time}
               onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
               disabled={updateActivity.isPending}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+              className="w-full px-3 py-2 border border-cloud-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50"
             />
           </div>
           <div>
-            <label htmlFor="edit-end_time" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="edit-end_time" className="block text-sm font-medium text-cloud-700 mb-1">
               End Time
             </label>
             <input
@@ -97,13 +97,13 @@ export function EditActivityModal({ isOpen, onClose, activity, tripId }: EditAct
               value={formData.end_time}
               onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
               disabled={updateActivity.isPending}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+              className="w-full px-3 py-2 border border-cloud-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50"
             />
           </div>
         </div>
 
         <div>
-          <label htmlFor="edit-location" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="edit-location" className="block text-sm font-medium text-cloud-700 mb-1">
             Location
           </label>
           <input
@@ -112,12 +112,12 @@ export function EditActivityModal({ isOpen, onClose, activity, tripId }: EditAct
             value={formData.location}
             onChange={(e) => setFormData({ ...formData, location: e.target.value })}
             disabled={updateActivity.isPending}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+            className="w-full px-3 py-2 border border-cloud-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50"
           />
         </div>
 
         <div>
-          <label htmlFor="edit-notes" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="edit-notes" className="block text-sm font-medium text-cloud-700 mb-1">
             Notes
           </label>
           <textarea
@@ -126,12 +126,12 @@ export function EditActivityModal({ isOpen, onClose, activity, tripId }: EditAct
             value={formData.notes}
             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             disabled={updateActivity.isPending}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none disabled:opacity-50"
+            className="w-full px-3 py-2 border border-cloud-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none disabled:opacity-50"
           />
         </div>
 
         <div>
-          <label htmlFor="edit-confirmation_number" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="edit-confirmation_number" className="block text-sm font-medium text-cloud-700 mb-1">
             Confirmation Number
           </label>
           <input
@@ -140,7 +140,7 @@ export function EditActivityModal({ isOpen, onClose, activity, tripId }: EditAct
             value={formData.confirmation_number}
             onChange={(e) => setFormData({ ...formData, confirmation_number: e.target.value })}
             disabled={updateActivity.isPending}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+            className="w-full px-3 py-2 border border-cloud-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50"
           />
         </div>
 
@@ -159,14 +159,14 @@ export function EditActivityModal({ isOpen, onClose, activity, tripId }: EditAct
             type="button"
             onClick={onClose}
             disabled={updateActivity.isPending}
-            className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+            className="flex-1 px-4 py-2 text-cloud-700 bg-cloud-100 rounded-lg hover:bg-cloud-200 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={updateActivity.isPending}
-            className="flex-1 px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {updateActivity.isPending ? 'Saving...' : 'Save Changes'}
           </button>
