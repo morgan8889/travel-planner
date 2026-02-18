@@ -1,5 +1,5 @@
 import httpx
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Query
 
 from travel_planner.auth import CurrentUserId
 from travel_planner.config import settings
@@ -12,9 +12,9 @@ MAPBOX_GEOCODING_URL = "https://api.mapbox.com/geocoding/v5/mapbox.places/{query
 
 @router.get("/search", response_model=list[GeocodeSuggestion])
 async def search(
+    _user_id: CurrentUserId,
     q: str = Query(..., min_length=1),
     limit: int = Query(default=5, ge=1, le=10),
-    _user_id: str = Depends(CurrentUserId),
 ) -> list[GeocodeSuggestion]:
     """Proxy to Mapbox Geocoding API. Returns empty list when token is not configured."""
     if not settings.mapbox_access_token:

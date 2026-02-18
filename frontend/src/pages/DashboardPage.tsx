@@ -18,7 +18,7 @@ function getDisplayName(email: string | undefined): string {
 
 function UpcomingTripCard({ trip }: { trip: { id: string; destination: string; start_date: string; end_date: string; status: import('../lib/types').TripStatus } }) {
   const start = new Date(trip.start_date + 'T00:00:00')
-  const daysUntil = Math.ceil((start.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+  const daysUntil = Math.ceil((start.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
   const daysText = daysUntil > 1 ? `in ${daysUntil} days` : daysUntil === 1 ? 'tomorrow' : daysUntil === 0 ? 'today' : `${Math.abs(daysUntil)} days ago`
 
   return (
