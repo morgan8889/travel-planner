@@ -11,15 +11,29 @@ Monorepo with two main directories:
 
 ## Key Files
 
+### Backend
 - `backend/src/travel_planner/main.py` — FastAPI app entry point, router registration
 - `backend/src/travel_planner/auth.py` — JWKS JWT verification, `CurrentUserId` dependency
 - `backend/src/travel_planner/db.py` — Async SQLAlchemy engine + session factory
 - `backend/src/travel_planner/config.py` — Pydantic Settings (env vars)
+- `backend/src/travel_planner/deps.py` — Shared dependency helpers (trip authorization)
+- `backend/src/travel_planner/routers/trips.py` — Trip CRUD + member management
+- `backend/src/travel_planner/routers/itinerary.py` — Itinerary day + activity CRUD
+- `backend/src/travel_planner/routers/checklist.py` — Checklist + item CRUD
+- `backend/src/travel_planner/routers/calendar.py` — Annual plan + calendar blocks
 - `backend/tests/conftest.py` — Test fixtures: RSA key pairs, `auth_headers`, `mock_db_session`
+
+### Frontend
 - `frontend/src/router.tsx` — TanStack Router route definitions
 - `frontend/src/lib/api.ts` — Axios instance with JWT interceptors
+- `frontend/src/lib/types.ts` — Shared TypeScript interfaces
 - `frontend/src/contexts/AuthContext.tsx` — Auth state management, session loading gate
 - `frontend/src/lib/supabase.ts` — Supabase client initialization
+- `frontend/src/hooks/useTrips.ts` — Trip queries + mutations
+- `frontend/src/hooks/useMembers.ts` — Member queries + mutations
+- `frontend/src/hooks/useItinerary.ts` — Itinerary queries + mutations
+- `frontend/src/hooks/useChecklists.ts` — Checklist queries + mutations
+- `frontend/src/hooks/useCalendar.ts` — Calendar queries + mutations
 
 ## Environment
 
@@ -67,20 +81,11 @@ cd backend && uv run alembic revision -m "desc"    # create new migration
 
 ## Testing
 
-### Backend (pytest)
+See `.claude/rules/testing.md` for detailed patterns, fixtures, and examples.
 
-- `cd backend && uv run pytest tests/test_trips.py -v` — run specific file
-- `cd backend && uv run pytest tests/test_trips.py::test_create_trip -v` — run specific test
-- Use `client` fixture from `conftest.py` for API tests
-- Mock auth with dependency overrides on `get_current_user` (see `conftest.py`)
-- Test helpers: `_make_trip()`, `_make_member()` in each test file
+## E2E Validation
 
-### Frontend (vitest)
-
-- `cd frontend && npx vitest run src/__tests__/trips.test.tsx` — run specific file
-- `cd frontend && npx vitest src/__tests__/trips.test.tsx` — watch mode
-- Mock API calls with `vi.mock` on `../lib/api`
-- Mock auth context when components require a session
+See `.claude/rules/e2e-validation.md` for the full browser verification protocol.
 
 ## Code Style
 
@@ -97,19 +102,6 @@ cd backend && uv run alembic revision -m "desc"    # create new migration
 - Page structure: loading skeleton → error state → empty state → content (see `TripsPage.tsx`)
 - Components live in `components/<feature>/` directories
 - Tests in `__tests__/` directory, named `<feature>.test.tsx`
-
-## E2E Validation
-
-After significant changes, verify beyond unit tests:
-
-1. Run `tsc --noEmit` and `vitest run`
-2. Start both servers (backend `:8000`, frontend `:5173`)
-3. **Auth testing**: Use Supabase anonymous sign-in (`POST /auth/v1/signup` with empty body + `apikey` header) to get a session, inject into localStorage, reload
-4. **Stale session**: Inject expired JWT into `sb-rinmqfynbjsqitjzxrnt-auth-token` localStorage key, verify graceful recovery (no spinners, no 401 storms)
-5. Monitor uvicorn logs for unexpected 401s, 500s, or request storms
-6. Use `browser_network_requests` and `browser_console_messages` for errors
-7. Test full CRUD — don't just load pages
-8. Clean up: stop servers, close browser, kill processes on ports 8000/5173
 
 ## Key Architecture Notes
 
