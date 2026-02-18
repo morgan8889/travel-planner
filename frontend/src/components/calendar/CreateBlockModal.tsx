@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Modal } from '../ui/Modal'
 import type { BlockType, CreateCalendarBlock } from '../../lib/types'
 
@@ -11,29 +11,11 @@ interface CreateBlockModalProps {
 
 export function CreateBlockModal({ isOpen, onClose, onSubmit, initialDates }: CreateBlockModalProps) {
   const [type, setType] = useState<BlockType>('pto')
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
+  const [startDate, setStartDate] = useState(initialDates?.start ?? '')
+  const [endDate, setEndDate] = useState(initialDates?.end ?? '')
   const [destination, setDestination] = useState('')
   const [notes, setNotes] = useState('')
   const [error, setError] = useState('')
-
-  useEffect(() => {
-    if (initialDates) {
-      setStartDate(initialDates.start)
-      setEndDate(initialDates.end)
-    }
-  }, [initialDates])
-
-  useEffect(() => {
-    if (!isOpen) {
-      setType('pto')
-      setStartDate('')
-      setEndDate('')
-      setDestination('')
-      setNotes('')
-      setError('')
-    }
-  }, [isOpen])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

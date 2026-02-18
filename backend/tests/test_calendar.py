@@ -5,25 +5,17 @@ from uuid import UUID
 import pytest
 from pydantic import ValidationError
 
-from travel_planner.models.calendar import AnnualPlan, BlockType, CalendarBlock
-from travel_planner.models.trip import Trip, TripMember
-from travel_planner.schemas.calendar import (
-    AnnualPlanCreate,
-    AnnualPlanResponse,
-    CalendarBlockCreate,
-    CalendarBlockResponse,
-    CalendarBlockUpdate,
-    CalendarYearResponse,
-)
 from tests.conftest import (
+    OTHER_USER_ID,
     TEST_USER_ID,
     TRIP_ID,
-    make_trip,
-    make_member,
-    make_user,
-    create_test_token,
-    OTHER_USER_ID,
-    OTHER_USER_EMAIL,
+)
+from travel_planner.models.calendar import AnnualPlan, BlockType, CalendarBlock
+from travel_planner.models.trip import Trip
+from travel_planner.schemas.calendar import (
+    AnnualPlanCreate,
+    CalendarBlockCreate,
+    CalendarBlockUpdate,
 )
 
 PLAN_ID = UUID("aaa14567-e89b-12d3-a456-426614174010")
@@ -31,6 +23,7 @@ BLOCK_ID = UUID("bbb24567-e89b-12d3-a456-426614174011")
 
 
 # --- Schema Tests ---
+
 
 def test_annual_plan_create_valid():
     plan = AnnualPlanCreate(year=2026, notes="My travel year")
@@ -46,23 +39,25 @@ def test_annual_plan_create_no_notes():
 def test_calendar_block_create_valid():
     block = CalendarBlockCreate(
         annual_plan_id=PLAN_ID,
-        type="pto",
+        type=BlockType.pto,
         start_date=date(2026, 7, 1),
         end_date=date(2026, 7, 5),
         destination="Beach",
         notes="Summer break",
     )
     assert block.annual_plan_id == PLAN_ID
-    assert block.type == "pto"
+    assert block.type == BlockType.pto
     assert block.start_date == date(2026, 7, 1)
     assert block.end_date == date(2026, 7, 5)
 
 
 def test_calendar_block_create_end_before_start():
-    with pytest.raises(ValidationError, match="end_date must be on or after start_date"):
+    with pytest.raises(
+        ValidationError, match="end_date must be on or after start_date"
+    ):
         CalendarBlockCreate(
             annual_plan_id=PLAN_ID,
-            type="pto",
+            type=BlockType.pto,
             start_date=date(2026, 7, 5),
             end_date=date(2026, 7, 1),
         )
@@ -76,9 +71,8 @@ def test_calendar_block_update_partial():
 
 # --- API Tests ---
 
-def test_create_annual_plan(
-    client, auth_headers, override_get_db, mock_db_session
-):
+
+def test_create_annual_plan(client, auth_headers, override_get_db, mock_db_session):
     """Create annual plan for a year"""
     result_mock1 = MagicMock()
     result_mock1.scalar_one_or_none.return_value = None
@@ -89,7 +83,8 @@ def test_create_annual_plan(
 
     async def mock_refresh(obj):
         obj.id = PLAN_ID
-        from datetime import datetime, UTC
+        from datetime import UTC, datetime
+
         obj.created_at = datetime(2026, 1, 1, tzinfo=UTC)
 
     mock_db_session.refresh = AsyncMock(side_effect=mock_refresh)
@@ -126,11 +121,9 @@ def test_create_annual_plan_duplicate(
     assert response.status_code == 409
 
 
-def test_get_annual_plan_year(
-    client, auth_headers, override_get_db, mock_db_session
-):
+def test_get_annual_plan_year(client, auth_headers, override_get_db, mock_db_session):
     """Get annual plan with blocks and trips for a year"""
-    from datetime import datetime, UTC
+    from datetime import UTC, datetime
 
     plan = MagicMock(spec=AnnualPlan)
     plan.id = PLAN_ID
@@ -197,9 +190,7 @@ def test_get_annual_plan_year_no_plan(
     result_mock2 = MagicMock()
     result_mock2.scalars.return_value.all.return_value = [trip]
 
-    mock_db_session.execute = AsyncMock(
-        side_effect=[result_mock1, result_mock2]
-    )
+    mock_db_session.execute = AsyncMock(side_effect=[result_mock1, result_mock2])
 
     response = client.get("/calendar/plans/2026", headers=auth_headers)
     assert response.status_code == 200
@@ -210,11 +201,9 @@ def test_get_annual_plan_year_no_plan(
     assert data["trips"][0]["destination"] == "Tokyo"
 
 
-def test_create_calendar_block(
-    client, auth_headers, override_get_db, mock_db_session
-):
+def test_create_calendar_block(client, auth_headers, override_get_db, mock_db_session):
     """Create a calendar block on an existing plan owned by the user."""
-    from datetime import datetime, UTC
+    from datetime import UTC, datetime
 
     plan = MagicMock(spec=AnnualPlan)
     plan.id = PLAN_ID
@@ -263,7 +252,7 @@ def test_create_calendar_block_not_owner(
     client, auth_headers, override_get_db, mock_db_session
 ):
     """Cannot create a block on a plan owned by another user."""
-    from datetime import datetime, UTC
+    from datetime import UTC, datetime
 
     plan = MagicMock(spec=AnnualPlan)
     plan.id = PLAN_ID
@@ -290,11 +279,9 @@ def test_create_calendar_block_not_owner(
     assert response.status_code == 403
 
 
-def test_update_calendar_block(
-    client, auth_headers, override_get_db, mock_db_session
-):
+def test_update_calendar_block(client, auth_headers, override_get_db, mock_db_session):
     """Update notes on an existing block owned by the user."""
-    from datetime import datetime, UTC
+    from datetime import UTC, datetime
 
     block = MagicMock(spec=CalendarBlock)
     block.id = BLOCK_ID
@@ -318,9 +305,7 @@ def test_update_calendar_block(
     result_mock2 = MagicMock()
     result_mock2.scalar_one_or_none.return_value = plan
 
-    mock_db_session.execute = AsyncMock(
-        side_effect=[result_mock1, result_mock2]
-    )
+    mock_db_session.execute = AsyncMock(side_effect=[result_mock1, result_mock2])
     mock_db_session.commit = AsyncMock()
 
     async def mock_refresh(obj):
@@ -338,11 +323,9 @@ def test_update_calendar_block(
     assert data["notes"] == "Updated notes"
 
 
-def test_delete_calendar_block(
-    client, auth_headers, override_get_db, mock_db_session
-):
+def test_delete_calendar_block(client, auth_headers, override_get_db, mock_db_session):
     """Delete a block owned by the user returns 204."""
-    from datetime import datetime, UTC
+    from datetime import UTC, datetime
 
     block = MagicMock(spec=CalendarBlock)
     block.id = BLOCK_ID
@@ -366,9 +349,7 @@ def test_delete_calendar_block(
     result_mock2 = MagicMock()
     result_mock2.scalar_one_or_none.return_value = plan
 
-    mock_db_session.execute = AsyncMock(
-        side_effect=[result_mock1, result_mock2]
-    )
+    mock_db_session.execute = AsyncMock(side_effect=[result_mock1, result_mock2])
     mock_db_session.delete = AsyncMock()
     mock_db_session.commit = AsyncMock()
 

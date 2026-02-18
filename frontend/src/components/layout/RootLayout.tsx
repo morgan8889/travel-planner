@@ -1,5 +1,5 @@
 import { Outlet, Link } from '@tanstack/react-router'
-import { Plane, Calendar } from 'lucide-react'
+import { Plane } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
 export function RootLayout() {
