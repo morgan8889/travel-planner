@@ -75,3 +75,7 @@ class ActivityResponse(BaseModel):
     notes: str | None
     confirmation_number: str | None
     sort_order: int
+
+
+class ReorderActivities(BaseModel):
+    activity_ids: list[UUID] = Field(..., min_length=1)
