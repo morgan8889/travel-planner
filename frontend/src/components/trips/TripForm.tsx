@@ -100,7 +100,7 @@ export function TripForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Trip Type Selector */}
       <div>
-        <label className="block text-sm font-medium text-stone-700 mb-3">
+        <label className="block text-sm font-medium text-cloud-700 mb-3">
           Trip Type
         </label>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -111,20 +111,20 @@ export function TripForm({
               onClick={() => setType(option.value)}
               className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 ${
                 type === option.value
-                  ? 'border-blue-500 bg-blue-50 shadow-md ring-1 ring-blue-500/20'
-                  : 'border-stone-200 bg-white hover:border-blue-200 hover:bg-blue-50/30'
+                  ? 'border-indigo-500 bg-indigo-50 shadow-md ring-1 ring-indigo-500/20'
+                  : 'border-cloud-200 bg-white hover:border-indigo-200 hover:bg-indigo-50/30'
               }`}
             >
-              <option.Icon className={`w-8 h-8 ${type === option.value ? 'text-blue-600' : 'text-stone-400'}`} />
-              <span className={`text-sm font-semibold ${type === option.value ? 'text-blue-700' : 'text-stone-900'}`}>
+              <option.Icon className={`w-8 h-8 ${type === option.value ? 'text-indigo-600' : 'text-cloud-400'}`} />
+              <span className={`text-sm font-semibold ${type === option.value ? 'text-indigo-700' : 'text-cloud-900'}`}>
                 {option.label}
               </span>
-              <span className={`text-xs text-center ${type === option.value ? 'text-blue-600' : 'text-stone-500'}`}>
+              <span className={`text-xs text-center ${type === option.value ? 'text-indigo-600' : 'text-cloud-500'}`}>
                 {option.description}
               </span>
               {type === option.value && (
                 <div className="absolute top-2 right-2">
-                  <CircleCheck className="w-5 h-5 text-blue-500" />
+                  <CircleCheck className="w-5 h-5 text-indigo-500" />
                 </div>
               )}
             </button>
@@ -134,7 +134,7 @@ export function TripForm({
 
       {/* Destination */}
       <div>
-        <label htmlFor="destination" className="block text-sm font-medium text-stone-700 mb-1.5">
+        <label htmlFor="destination" className="block text-sm font-medium text-cloud-700 mb-1.5">
           Destination
         </label>
         <input
@@ -146,8 +146,8 @@ export function TripForm({
             if (errors.destination) setErrors((prev) => ({ ...prev, destination: '' }))
           }}
           placeholder="Where are you going?"
-          className={`w-full px-4 py-2.5 border rounded-lg transition-colors focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-            errors.destination ? 'border-red-300 bg-red-50' : 'border-stone-300'
+          className={`w-full px-4 py-2.5 border rounded-lg transition-colors focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+            errors.destination ? 'border-red-300 bg-red-50' : 'border-cloud-300'
           }`}
         />
         {errors.destination && (
@@ -158,7 +158,7 @@ export function TripForm({
       {/* Date Range */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label htmlFor="start-date" className="block text-sm font-medium text-stone-700 mb-1.5">
+          <label htmlFor="start-date" className="block text-sm font-medium text-cloud-700 mb-1.5">
             Start Date
           </label>
           <input
@@ -172,8 +172,8 @@ export function TripForm({
                 setErrors((prev) => ({ ...prev, endDate: '' }))
               }
             }}
-            className={`w-full px-4 py-2.5 border rounded-lg transition-colors focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-              errors.startDate ? 'border-red-300 bg-red-50' : 'border-stone-300'
+            className={`w-full px-4 py-2.5 border rounded-lg transition-colors focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+              errors.startDate ? 'border-red-300 bg-red-50' : 'border-cloud-300'
             }`}
           />
           {errors.startDate && (
@@ -181,7 +181,7 @@ export function TripForm({
           )}
         </div>
         <div>
-          <label htmlFor="end-date" className="block text-sm font-medium text-stone-700 mb-1.5">
+          <label htmlFor="end-date" className="block text-sm font-medium text-cloud-700 mb-1.5">
             End Date
           </label>
           <input
@@ -192,8 +192,8 @@ export function TripForm({
               setEndDate(e.target.value)
               if (errors.endDate) setErrors((prev) => ({ ...prev, endDate: '' }))
             }}
-            className={`w-full px-4 py-2.5 border rounded-lg transition-colors focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-              errors.endDate ? 'border-red-300 bg-red-50' : 'border-stone-300'
+            className={`w-full px-4 py-2.5 border rounded-lg transition-colors focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+              errors.endDate ? 'border-red-300 bg-red-50' : 'border-cloud-300'
             }`}
           />
           {errors.endDate && (
@@ -204,14 +204,14 @@ export function TripForm({
 
       {/* Status */}
       <div>
-        <label htmlFor="status" className="block text-sm font-medium text-stone-700 mb-1.5">
+        <label htmlFor="status" className="block text-sm font-medium text-cloud-700 mb-1.5">
           Status
         </label>
         <select
           id="status"
           value={status}
           onChange={(e) => setStatus(e.target.value as TripStatus)}
-          className="w-full px-4 py-2.5 border border-stone-300 rounded-lg transition-colors focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+          className="w-full px-4 py-2.5 border border-cloud-300 rounded-lg transition-colors focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
         >
           {statusOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -224,15 +224,15 @@ export function TripForm({
       {/* Parent Trip */}
       {showParentTrip && (
         <div>
-          <label htmlFor="parent-trip" className="block text-sm font-medium text-stone-700 mb-1.5">
+          <label htmlFor="parent-trip" className="block text-sm font-medium text-cloud-700 mb-1.5">
             Part of Sabbatical
-            <span className="text-stone-400 font-normal ml-1">(optional)</span>
+            <span className="text-cloud-400 font-normal ml-1">(optional)</span>
           </label>
           <select
             id="parent-trip"
             value={parentTripId ?? ''}
             onChange={(e) => setParentTripId(e.target.value || null)}
-            className="w-full px-4 py-2.5 border border-stone-300 rounded-lg transition-colors focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+            className="w-full px-4 py-2.5 border border-cloud-300 rounded-lg transition-colors focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
           >
             <option value="">None</option>
             {sabbaticals.map((s) => (
@@ -246,9 +246,9 @@ export function TripForm({
 
       {/* Notes */}
       <div>
-        <label htmlFor="notes" className="block text-sm font-medium text-stone-700 mb-1.5">
+        <label htmlFor="notes" className="block text-sm font-medium text-cloud-700 mb-1.5">
           Notes
-          <span className="text-stone-400 font-normal ml-1">(optional)</span>
+          <span className="text-cloud-400 font-normal ml-1">(optional)</span>
         </label>
         <textarea
           id="notes"
@@ -256,7 +256,7 @@ export function TripForm({
           onChange={(e) => setNotes(e.target.value)}
           rows={3}
           placeholder="Any additional details about the trip..."
-          className="w-full px-4 py-2.5 border border-stone-300 rounded-lg transition-colors focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+          className="w-full px-4 py-2.5 border border-cloud-300 rounded-lg transition-colors focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
         />
       </div>
 
@@ -266,14 +266,14 @@ export function TripForm({
           type="button"
           onClick={onCancel}
           disabled={isLoading}
-          className="px-5 py-2.5 text-sm font-medium text-stone-700 bg-white border border-stone-300 rounded-lg hover:bg-stone-50 transition-colors disabled:opacity-50"
+          className="px-5 py-2.5 text-sm font-medium text-cloud-700 bg-white border border-cloud-300 rounded-lg hover:bg-cloud-50 transition-colors disabled:opacity-50"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={isLoading}
-          className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg active:scale-[0.98] transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg active:scale-[0.98] transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50"
         >
           {isLoading && <LoadingSpinner size="sm" />}
           {submitLabel}

@@ -32,22 +32,22 @@ export function AuthForm() {
 
   if (status === 'sent') {
     return (
-      <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-cloud-50 flex items-center justify-center px-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-md p-8">
           <div className="text-center">
             <div className="mb-4">
               <Mail className="mx-auto h-12 w-12 text-green-500" />
             </div>
-            <h2 className="text-2xl font-bold text-stone-900 mb-2">
+            <h2 className="text-2xl font-bold text-cloud-900 mb-2">
               Check your email
             </h2>
-            <p className="text-stone-600 mb-6">
+            <p className="text-cloud-600 mb-6">
               We sent a magic link to <strong>{email}</strong>. Click the link
               in the email to sign in.
             </p>
             <button
               onClick={handleReset}
-              className="text-blue-600 hover:text-blue-700 font-medium"
+              className="text-indigo-600 hover:text-indigo-700 font-medium"
             >
               Use a different email
             </button>
@@ -58,20 +58,20 @@ export function AuthForm() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-cloud-50 flex items-center justify-center px-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-md p-8">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-stone-900 mb-2">
+          <h2 className="text-3xl font-bold text-cloud-900 mb-2">
             Welcome to Travel Planner
           </h2>
-          <p className="text-stone-600">Sign in with your email</p>
+          <p className="text-cloud-600">Sign in with your email</p>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label
               htmlFor="email"
-              className="block text-sm font-medium text-stone-700 mb-2"
+              className="block text-sm font-medium text-cloud-700 mb-2"
             >
               Email address
             </label>
@@ -81,7 +81,7 @@ export function AuthForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-cloud-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               placeholder="you@example.com"
               disabled={status === 'submitting'}
             />
@@ -96,7 +96,7 @@ export function AuthForm() {
           <button
             type="submit"
             disabled={status === 'submitting'}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-4 rounded-lg active:scale-[0.99] disabled:bg-stone-400 disabled:cursor-not-allowed font-medium transition-all duration-200"
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 px-4 rounded-lg active:scale-[0.99] disabled:bg-cloud-400 disabled:cursor-not-allowed font-medium transition-all duration-200"
           >
             {status === 'submitting' ? 'Sending...' : 'Send Magic Link'}
           </button>

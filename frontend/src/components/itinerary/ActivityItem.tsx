@@ -60,25 +60,25 @@ export function ActivityItem({ activity, tripId }: ActivityItemProps) {
       <div
         ref={setNodeRef}
         style={style}
-        className="flex items-start gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-shadow"
+        className="flex items-start gap-3 p-3 bg-white border border-cloud-200 rounded-lg hover:shadow-sm transition-shadow"
       >
         <button
-          className="flex-shrink-0 mt-1 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 touch-none"
+          className="flex-shrink-0 mt-1 cursor-grab active:cursor-grabbing text-cloud-400 hover:text-cloud-600 touch-none"
           {...attributes}
           {...listeners}
         >
           <GripVertical className="w-4 h-4" />
         </button>
-        <div className="flex-shrink-0 mt-0.5 text-gray-400">
+        <div className="flex-shrink-0 mt-0.5 text-cloud-400">
           <CategoryIcon className="w-5 h-5" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <h4 className="font-medium text-gray-900 break-words">{activity.title}</h4>
+            <h4 className="font-medium text-cloud-900 break-words">{activity.title}</h4>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setIsEditOpen(true)}
-                className="flex-shrink-0 p-1 text-gray-400 hover:text-blue-600 rounded transition-colors"
+                className="flex-shrink-0 p-1 text-cloud-400 hover:text-indigo-600 rounded transition-colors"
                 aria-label="Edit activity"
               >
                 <Pencil className="w-4 h-4" />
@@ -86,7 +86,7 @@ export function ActivityItem({ activity, tripId }: ActivityItemProps) {
               <button
                 onClick={() => setIsConfirmOpen(true)}
                 disabled={deleteActivity.isPending}
-                className="flex-shrink-0 p-1 text-gray-400 hover:text-red-600 rounded transition-colors disabled:opacity-50"
+                className="flex-shrink-0 p-1 text-cloud-400 hover:text-red-600 rounded transition-colors disabled:opacity-50"
                 aria-label="Delete activity"
               >
                 <Trash2 className="w-4 h-4" />
@@ -94,16 +94,16 @@ export function ActivityItem({ activity, tripId }: ActivityItemProps) {
             </div>
           </div>
           {timeRange && (
-            <p className="text-sm text-gray-600 mt-1">{timeRange}</p>
+            <p className="text-sm text-cloud-600 mt-1">{timeRange}</p>
           )}
           {activity.location && (
-            <p className="text-sm text-gray-600 mt-1">{activity.location}</p>
+            <p className="text-sm text-cloud-600 mt-1">{activity.location}</p>
           )}
           {activity.notes && (
-            <p className="text-sm text-gray-500 mt-1">{activity.notes}</p>
+            <p className="text-sm text-cloud-500 mt-1">{activity.notes}</p>
           )}
           {activity.confirmation_number && (
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-cloud-400 mt-1">
               Confirmation: {activity.confirmation_number}
             </p>
           )}

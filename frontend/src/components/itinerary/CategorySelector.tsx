@@ -35,7 +35,7 @@ export function CategorySelector({ value, onChange, disabled }: CategorySelector
             'disabled:opacity-50 disabled:cursor-not-allowed',
             value === cat
               ? 'bg-indigo-50 border-indigo-300 text-indigo-700'
-              : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50',
+              : 'bg-white border-cloud-200 text-cloud-600 hover:bg-cloud-50',
           ].join(' ')}
         >
           <Icon className="w-4 h-4" />

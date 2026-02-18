@@ -43,7 +43,7 @@ export function CreateBlockModal({ isOpen, onClose, onSubmit, initialDates }: Cr
     <Modal isOpen={isOpen} onClose={onClose} title="Add Calendar Block">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-stone-700 mb-1">Type</label>
+          <label className="block text-sm font-medium text-cloud-700 mb-1">Type</label>
           <div className="flex gap-2">
             {([
               { value: 'pto', label: 'PTO', color: 'bg-amber-400' },
@@ -56,8 +56,8 @@ export function CreateBlockModal({ isOpen, onClose, onSubmit, initialDates }: Cr
                 className={`
                   flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border transition-colors
                   ${type === opt.value
-                    ? 'border-blue-300 bg-blue-50 text-blue-700'
-                    : 'border-stone-200 text-stone-600 hover:bg-stone-50'}
+                    ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
+                    : 'border-cloud-200 text-cloud-600 hover:bg-cloud-50'}
                 `}
               >
                 <div className={`w-2.5 h-2.5 rounded-full ${opt.color}`} />
@@ -69,7 +69,7 @@ export function CreateBlockModal({ isOpen, onClose, onSubmit, initialDates }: Cr
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label htmlFor="start-date" className="block text-sm font-medium text-stone-700 mb-1">
+            <label htmlFor="start-date" className="block text-sm font-medium text-cloud-700 mb-1">
               Start Date
             </label>
             <input
@@ -77,12 +77,12 @@ export function CreateBlockModal({ isOpen, onClose, onSubmit, initialDates }: Cr
               type="date"
               value={startDate}
               onChange={e => setStartDate(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 text-sm border border-cloud-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               required
             />
           </div>
           <div>
-            <label htmlFor="end-date" className="block text-sm font-medium text-stone-700 mb-1">
+            <label htmlFor="end-date" className="block text-sm font-medium text-cloud-700 mb-1">
               End Date
             </label>
             <input
@@ -90,15 +90,15 @@ export function CreateBlockModal({ isOpen, onClose, onSubmit, initialDates }: Cr
               type="date"
               value={endDate}
               onChange={e => setEndDate(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 text-sm border border-cloud-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               required
             />
           </div>
         </div>
 
         <div>
-          <label htmlFor="destination" className="block text-sm font-medium text-stone-700 mb-1">
-            Destination <span className="text-stone-400">(optional)</span>
+          <label htmlFor="destination" className="block text-sm font-medium text-cloud-700 mb-1">
+            Destination <span className="text-cloud-400">(optional)</span>
           </label>
           <input
             id="destination"
@@ -107,13 +107,13 @@ export function CreateBlockModal({ isOpen, onClose, onSubmit, initialDates }: Cr
             onChange={e => setDestination(e.target.value)}
             placeholder="e.g. Beach house"
             maxLength={255}
-            className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 text-sm border border-cloud-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           />
         </div>
 
         <div>
-          <label htmlFor="notes" className="block text-sm font-medium text-stone-700 mb-1">
-            Notes <span className="text-stone-400">(optional)</span>
+          <label htmlFor="notes" className="block text-sm font-medium text-cloud-700 mb-1">
+            Notes <span className="text-cloud-400">(optional)</span>
           </label>
           <textarea
             id="notes"
@@ -121,7 +121,7 @@ export function CreateBlockModal({ isOpen, onClose, onSubmit, initialDates }: Cr
             onChange={e => setNotes(e.target.value)}
             rows={2}
             maxLength={5000}
-            className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            className="w-full px-3 py-2 text-sm border border-cloud-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
           />
         </div>
 
@@ -133,13 +133,13 @@ export function CreateBlockModal({ isOpen, onClose, onSubmit, initialDates }: Cr
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-stone-600 bg-white border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-cloud-600 bg-white border border-cloud-200 rounded-lg hover:bg-cloud-50 transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
           >
             Add Block
           </button>
