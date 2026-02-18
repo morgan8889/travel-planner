@@ -117,7 +117,10 @@ async def generate_itinerary_days(
     if (trip.end_date - trip.start_date).days > max_days:
         raise HTTPException(
             status_code=400,
-            detail=f"Trip date range exceeds maximum of {max_days} days for day generation",
+            detail=(
+                f"Trip date range exceeds maximum of {max_days} days"
+                " for day generation"
+            ),
         )
 
     # Get existing days for this trip
