@@ -2,6 +2,16 @@
 
 @theme {
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  --color-cloud-50: #F8F9FC;
+  --color-cloud-100: #F1F3F9;
+  --color-cloud-200: #E2E5EE;
+  --color-cloud-300: #C9CDD9;
+  --color-cloud-400: #A0A5B5;
+  --color-cloud-500: #7A7F91;
+  --color-cloud-600: #5A5F70;
+  --color-cloud-700: #3D4152;
+  --color-cloud-900: #1A1C27;
 }
 
 @keyframes fade-in {
@@ -48,7 +58,7 @@
 }
 
 *:focus-visible {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid #4F46E5;
   outline-offset: 2px;
 }
 
@@ -62,10 +72,10 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d6d3d1;
+  background: #C9CDD9;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a8a29e;
+  background: #A0A5B5;
 }
