@@ -35,7 +35,10 @@ async def create_annual_plan(
         .where(AnnualPlan.year == plan_data.year)
     )
     if result.scalar_one_or_none() is not None:
-        raise HTTPException(status_code=409, detail="Annual plan already exists for this year")
+        raise HTTPException(
+            status_code=409,
+            detail="Annual plan already exists for this year",
+        )
 
     plan = AnnualPlan(
         user_id=user_id,
@@ -105,7 +108,10 @@ async def create_calendar_block(
     if plan is None:
         raise HTTPException(status_code=404, detail="Annual plan not found")
     if plan.user_id != user_id:
-        raise HTTPException(status_code=403, detail="Not authorized to modify this plan")
+        raise HTTPException(
+            status_code=403,
+            detail="Not authorized to modify this plan",
+        )
 
     block = CalendarBlock(
         annual_plan_id=block_data.annual_plan_id,
@@ -142,7 +148,10 @@ async def update_calendar_block(
     )
     plan = plan_result.scalar_one_or_none()
     if plan is None or plan.user_id != user_id:
-        raise HTTPException(status_code=403, detail="Not authorized to modify this block")
+        raise HTTPException(
+            status_code=403,
+            detail="Not authorized to modify this block",
+        )
 
     for field, value in block_data.model_dump(exclude_unset=True).items():
         setattr(block, field, value)
@@ -172,7 +181,10 @@ async def delete_calendar_block(
     )
     plan = plan_result.scalar_one_or_none()
     if plan is None or plan.user_id != user_id:
-        raise HTTPException(status_code=403, detail="Not authorized to delete this block")
+        raise HTTPException(
+            status_code=403,
+            detail="Not authorized to delete this block",
+        )
 
     await db.delete(block)
     await db.commit()

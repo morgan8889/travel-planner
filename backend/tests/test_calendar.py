@@ -59,7 +59,9 @@ def test_calendar_block_create_valid():
 
 
 def test_calendar_block_create_end_before_start():
-    with pytest.raises(ValidationError, match="end_date must be on or after start_date"):
+    with pytest.raises(
+        ValidationError, match="end_date must be on or after start_date"
+    ):
         CalendarBlockCreate(
             annual_plan_id=PLAN_ID,
             type="pto",
