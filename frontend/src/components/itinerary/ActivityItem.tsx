@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { GripVertical, Pencil, Trash2 } from 'lucide-react'
+import { GripVertical, Pencil, Trash2, Plane, Utensils, MapPin, Hotel, type LucideIcon } from 'lucide-react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { Activity, ActivityCategory } from '../../lib/types'
@@ -12,11 +12,11 @@ interface ActivityItemProps {
   tripId: string
 }
 
-const CATEGORY_ICONS: Record<ActivityCategory, string> = {
-  transport: '✈️',
-  food: '🍽️',
-  activity: '🎯',
-  lodging: '🏨',
+const CATEGORY_ICONS: Record<ActivityCategory, LucideIcon> = {
+  transport: Plane,
+  food: Utensils,
+  activity: MapPin,
+  lodging: Hotel,
 }
 
 export function ActivityItem({ activity, tripId }: ActivityItemProps) {
@@ -53,6 +53,8 @@ export function ActivityItem({ activity, tripId }: ActivityItemProps) {
       ? `${activity.start_time}`
       : null
 
+  const CategoryIcon = CATEGORY_ICONS[activity.category]
+
   return (
     <>
       <div
@@ -67,8 +69,8 @@ export function ActivityItem({ activity, tripId }: ActivityItemProps) {
         >
           <GripVertical className="w-4 h-4" />
         </button>
-        <div className="text-2xl flex-shrink-0 mt-0.5">
-          {CATEGORY_ICONS[activity.category]}
+        <div className="flex-shrink-0 mt-0.5 text-gray-400">
+          <CategoryIcon className="w-5 h-5" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">

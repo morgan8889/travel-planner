@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Modal } from '../ui/Modal'
 import { useUpdateActivity } from '../../hooks/useItinerary'
 import type { Activity, ActivityCategory } from '../../lib/types'
+import { CategorySelector } from './CategorySelector'
 
 interface EditActivityModalProps {
   isOpen: boolean
@@ -64,22 +65,12 @@ export function EditActivityModal({ isOpen, onClose, activity, tripId }: EditAct
         </div>
 
         <div>
-          <label htmlFor="edit-category" className="block text-sm font-medium text-gray-700 mb-1">
-            Category *
-          </label>
-          <select
-            id="edit-category"
-            required
+          <span className="block text-sm font-medium text-gray-700 mb-1">Category *</span>
+          <CategorySelector
             value={formData.category}
-            onChange={(e) => setFormData({ ...formData, category: e.target.value as ActivityCategory })}
+            onChange={(cat) => setFormData({ ...formData, category: cat })}
             disabled={updateActivity.isPending}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
-          >
-            <option value="activity">🎯 Activity</option>
-            <option value="transport">✈️ Transport</option>
-            <option value="food">🍽️ Food</option>
-            <option value="lodging">🏨 Lodging</option>
-          </select>
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
