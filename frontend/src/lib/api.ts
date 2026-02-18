@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { supabase } from './supabase'
-import type { ItineraryDay, Activity, CreateItineraryDay, CreateActivity, UpdateActivity, Checklist, ChecklistItem, CreateChecklist, CreateChecklistItem, CalendarYearResponse, AnnualPlan, CalendarBlock, CreateAnnualPlan, CreateCalendarBlock, UpdateCalendarBlock } from './types'
+import type { ItineraryDay, Activity, CreateItineraryDay, CreateActivity, UpdateActivity, Checklist, ChecklistItem, CreateChecklist, CreateChecklistItem, CalendarYearResponse, AnnualPlan, CalendarBlock, CreateAnnualPlan, CreateCalendarBlock, UpdateCalendarBlock, GeocodeSuggestion } from './types'
 
 export const api = axios.create({
   baseURL: '/api', // Vite proxy strips this, hits localhost:8000
@@ -88,6 +88,11 @@ export const checklistApi = {
 
   toggleItem: (itemId: string) =>
     api.post<ChecklistItem>(`/checklist/items/${itemId}/toggle`, {}),
+}
+
+export const geocodeApi = {
+  search: (q: string, limit = 5) =>
+    api.get<GeocodeSuggestion[]>('/geocode/search', { params: { q, limit } }),
 }
 
 export const calendarApi = {

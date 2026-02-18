@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { CircleCheck, Sun, Laptop, Compass, type LucideIcon } from 'lucide-react'
-import type { TripCreate, TripStatus, TripType, TripUpdate } from '../../lib/types'
+import type { TripCreate, TripStatus, TripType, TripUpdate, GeocodeSuggestion } from '../../lib/types'
 import { useTrips } from '../../hooks/useTrips'
 import { LoadingSpinner } from '../ui/LoadingSpinner'
+import { LocationAutocomplete } from '../form/LocationAutocomplete'
 
 interface TripFormProps {
   defaultValues?: Partial<TripCreate>
@@ -50,6 +51,8 @@ export function TripForm({
 }: TripFormProps) {
   const [type, setType] = useState<TripType>(defaultValues?.type ?? 'vacation')
   const [destination, setDestination] = useState(defaultValues?.destination ?? '')
+  const [destinationLat, setDestinationLat] = useState<number | null>(defaultValues?.destination_latitude ?? null)
+  const [destinationLng, setDestinationLng] = useState<number | null>(defaultValues?.destination_longitude ?? null)
   const [startDate, setStartDate] = useState(defaultValues?.start_date ?? '')
   const [endDate, setEndDate] = useState(defaultValues?.end_date ?? '')
   const [status, setStatus] = useState<TripStatus>(defaultValues?.status ?? 'dreaming')
@@ -92,6 +95,8 @@ export function TripForm({
       end_date: endDate,
       status,
       notes: notes.trim() || null,
+      destination_latitude: destinationLat,
+      destination_longitude: destinationLng,
       parent_trip_id: showParentTrip ? parentTripId : null,
     })
   }
@@ -137,18 +142,24 @@ export function TripForm({
         <label htmlFor="destination" className="block text-sm font-medium text-cloud-700 mb-1.5">
           Destination
         </label>
-        <input
+        <LocationAutocomplete
           id="destination"
-          type="text"
           value={destination}
-          onChange={(e) => {
-            setDestination(e.target.value)
+          onChange={(val) => {
+            setDestination(val)
+            // Clear coords when user types freely (not from selection)
+            setDestinationLat(null)
+            setDestinationLng(null)
+            if (errors.destination) setErrors((prev) => ({ ...prev, destination: '' }))
+          }}
+          onSelect={(s: GeocodeSuggestion) => {
+            setDestinationLat(s.latitude)
+            setDestinationLng(s.longitude)
             if (errors.destination) setErrors((prev) => ({ ...prev, destination: '' }))
           }}
           placeholder="Where are you going?"
-          className={`w-full px-4 py-2.5 border rounded-lg transition-colors focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-            errors.destination ? 'border-red-300 bg-red-50' : 'border-cloud-300'
-          }`}
+          disabled={isLoading}
+          className={errors.destination ? 'border-red-300 bg-red-50' : ''}
         />
         {errors.destination && (
           <p className="mt-1 text-sm text-red-600">{errors.destination}</p>

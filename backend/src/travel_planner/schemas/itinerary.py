@@ -27,6 +27,8 @@ class ActivityCreate(BaseModel):
     start_time: time | None = None
     end_time: time | None = None
     location: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
     notes: str | None = None
     confirmation_number: str | None = None
 
@@ -47,6 +49,8 @@ class ActivityUpdate(BaseModel):
     start_time: time | None = None
     end_time: time | None = None
     location: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
     notes: str | None = None
     confirmation_number: str | None = None
     sort_order: int | None = None
@@ -72,6 +76,8 @@ class ActivityResponse(BaseModel):
     start_time: time | None
     end_time: time | None
     location: str | None
+    latitude: float | None
+    longitude: float | None
     notes: str | None
     confirmation_number: str | None
     sort_order: int

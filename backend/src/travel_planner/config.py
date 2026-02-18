@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     supabase_key: str = ""
     supabase_jwt_secret: str = ""  # DEPRECATED: No longer used (kept for reference)
     anthropic_api_key: str = ""
+    mapbox_access_token: str = ""
     google_client_id: str = ""
     google_client_secret: str = ""
     cors_origins: list[str] = ["http://localhost:5173"]

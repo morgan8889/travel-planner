@@ -18,10 +18,13 @@
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-query": "^5.90.21",
     "@tanstack/react-router": "^1.160.0",
+    "@types/mapbox-gl": "^3.4.1",
     "axios": "^1.13.5",
     "lucide-react": "^0.564.0",
+    "mapbox-gl": "^3.18.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-map-gl": "^7.1.9",
     "tailwindcss": "^4.1.18"
   },
   "devDependencies": {

@@ -6,6 +6,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     Enum,
+    Float,
     ForeignKey,
     String,
     Text,
@@ -51,6 +52,8 @@ class Trip(Base):
         Enum(TripStatus), default=TripStatus.dreaming
     )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    destination_latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    destination_longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
     parent_trip_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("trips.id", ondelete="SET NULL"), nullable=True
     )

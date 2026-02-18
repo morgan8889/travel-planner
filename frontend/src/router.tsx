@@ -1,5 +1,6 @@
-import { createRouter, createRoute, createRootRoute, redirect } from '@tanstack/react-router'
+import { createRouter, createRoute, createRootRoute } from '@tanstack/react-router'
 import { RootLayout } from './components/layout/RootLayout'
+import { DashboardPage } from './pages/DashboardPage'
 import { TripsPage } from './pages/TripsPage'
 import { NewTripPage } from './pages/NewTripPage'
 import { TripDetailPage } from './pages/TripDetailPage'
@@ -12,9 +13,7 @@ const rootRoute = createRootRoute({
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
-  beforeLoad: () => {
-    throw redirect({ to: '/calendar' })
-  },
+  component: DashboardPage,
 })
 
 const tripsRoute = createRoute({
