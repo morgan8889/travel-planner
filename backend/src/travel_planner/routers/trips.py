@@ -2,10 +2,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-
-from sqlalchemy.dialects.postgresql import insert
 
 from travel_planner.auth import CurrentUser, CurrentUserId
 from travel_planner.db import get_db

@@ -29,7 +29,7 @@ export function ChecklistCard({ checklist, tripId }: ChecklistCardProps) {
       // Reset form and close on success
       setNewItemText('')
       setShowAddForm(false)
-    } catch (error) {
+    } catch {
       // Error is captured by mutation state and displayed
       // Keep form open to show error message
     }
@@ -44,7 +44,7 @@ export function ChecklistCard({ checklist, tripId }: ChecklistCardProps) {
     setPendingToggleId(itemId)
     try {
       await toggleMutation.mutateAsync(itemId)
-    } catch (error) {
+    } catch {
       // Error is captured by mutation state and displayed
     } finally {
       setPendingToggleId(null)

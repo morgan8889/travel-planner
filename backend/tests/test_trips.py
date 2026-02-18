@@ -554,7 +554,7 @@ def test_remove_member_not_owner(
 def test_remove_member_not_found(
     client: TestClient, auth_headers: dict, override_get_db, mock_db_session
 ):
-    """Test DELETE /trips/{trip_id}/members/{member_id} returns 404 for nonexistent member."""
+    """Test DELETE /trips/{trip_id}/members/{member_id} returns 404."""
     owner_user = _make_user()
     owner_member = _make_member(user=owner_user, role=MemberRole.owner)
     trip = _make_trip(members=[owner_member])
@@ -642,7 +642,7 @@ def test_update_member_role_not_owner(
 def test_update_member_role_not_found(
     client: TestClient, auth_headers: dict, override_get_db, mock_db_session
 ):
-    """Test PATCH /trips/{trip_id}/members/{member_id} returns 404 for nonexistent member."""
+    """Test PATCH /trips/{trip_id}/members/{member_id} returns 404."""
     owner_user = _make_user()
     owner_member = _make_member(user=owner_user, role=MemberRole.owner)
     trip = _make_trip(members=[owner_member])
@@ -711,7 +711,9 @@ def test_get_trip_includes_children(
     child = _make_trip(trip_id=CHILD_TRIP_ID, members=[child_member])
     child.parent_trip_id = PARENT_TRIP_ID
 
-    parent = _make_trip(trip_id=PARENT_TRIP_ID, members=[owner_member], children=[child])
+    parent = _make_trip(
+        trip_id=PARENT_TRIP_ID, members=[owner_member], children=[child]
+    )
     parent.type = TripType.sabbatical
 
     result_mock = MagicMock()

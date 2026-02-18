@@ -4,7 +4,6 @@ from uuid import UUID
 import pytest
 from fastapi.testclient import TestClient
 
-from travel_planner.models.checklist import Checklist, ChecklistItem, ChecklistItemUser
 from tests.conftest import (
     OTHER_USER_EMAIL,
     OTHER_USER_ID,
@@ -15,6 +14,7 @@ from tests.conftest import (
     make_trip,
     make_user,
 )
+from travel_planner.models.checklist import Checklist, ChecklistItem, ChecklistItemUser
 
 # Local aliases matching the previous private naming convention
 _make_user = make_user
@@ -36,7 +36,11 @@ def other_user_headers() -> dict[str, str]:
 
 
 def test_create_checklist(
-    client: TestClient, auth_headers: dict, trip_id: str, override_get_db, mock_db_session
+    client: TestClient,
+    auth_headers: dict,
+    trip_id: str,
+    override_get_db,
+    mock_db_session,
 ):
     """Create checklist for trip"""
     # Setup: Trip exists and user is a member
@@ -61,9 +65,7 @@ def test_create_checklist(
     response = client.post(
         f"/checklist/trips/{trip_id}/checklists",
         headers=auth_headers,
-        json={
-            "title": "Packing List"
-        }
+        json={"title": "Packing List"},
     )
     assert response.status_code == 201
     data = response.json()
@@ -73,7 +75,11 @@ def test_create_checklist(
 
 
 def test_create_checklist_not_member(
-    client: TestClient, other_user_headers: dict, trip_id: str, override_get_db, mock_db_session
+    client: TestClient,
+    other_user_headers: dict,
+    trip_id: str,
+    override_get_db,
+    mock_db_session,
 ):
     """Non-member cannot create checklist"""
     # Setup: verify_trip_member query returns None (user not a member)
@@ -84,13 +90,17 @@ def test_create_checklist_not_member(
     response = client.post(
         f"/checklist/trips/{trip_id}/checklists",
         headers=other_user_headers,
-        json={"title": "Packing List"}
+        json={"title": "Packing List"},
     )
     assert response.status_code == 403
 
 
 def test_list_checklists_empty(
-    client: TestClient, auth_headers: dict, trip_id: str, override_get_db, mock_db_session
+    client: TestClient,
+    auth_headers: dict,
+    trip_id: str,
+    override_get_db,
+    mock_db_session,
 ):
     """List checklists for trip with no checklists returns empty list"""
     # Setup: Trip exists and user is a member
@@ -109,15 +119,18 @@ def test_list_checklists_empty(
     mock_db_session.execute = AsyncMock(side_effect=[result_mock1, result_mock2])
 
     response = client.get(
-        f"/checklist/trips/{trip_id}/checklists",
-        headers=auth_headers
+        f"/checklist/trips/{trip_id}/checklists", headers=auth_headers
     )
     assert response.status_code == 200
     assert response.json() == []
 
 
 def test_list_checklists_with_items(
-    client: TestClient, auth_headers: dict, trip_id: str, override_get_db, mock_db_session
+    client: TestClient,
+    auth_headers: dict,
+    trip_id: str,
+    override_get_db,
+    mock_db_session,
 ):
     """List checklists with items and user check status"""
     # Setup: Trip exists and user is a member
@@ -171,8 +184,7 @@ def test_list_checklists_with_items(
     mock_db_session.execute = AsyncMock(side_effect=[result_mock1, result_mock2])
 
     response = client.get(
-        f"/checklist/trips/{trip_id}/checklists",
-        headers=auth_headers
+        f"/checklist/trips/{trip_id}/checklists", headers=auth_headers
     )
     assert response.status_code == 200
     data = response.json()
@@ -194,7 +206,11 @@ def test_list_checklists_with_items(
 
 
 def test_add_item_to_checklist(
-    client: TestClient, auth_headers: dict, checklist_id: str, override_get_db, mock_db_session
+    client: TestClient,
+    auth_headers: dict,
+    checklist_id: str,
+    override_get_db,
+    mock_db_session,
 ):
     """Add item to checklist with auto-incremented sort_order"""
     # Setup: Checklist exists and user has access
@@ -220,7 +236,9 @@ def test_add_item_to_checklist(
     result_mock3 = MagicMock()
     result_mock3.scalar.return_value = 2  # Max sort_order is 2
 
-    mock_db_session.execute = AsyncMock(side_effect=[result_mock1, result_mock2, result_mock3])
+    mock_db_session.execute = AsyncMock(
+        side_effect=[result_mock1, result_mock2, result_mock3]
+    )
     mock_db_session.add = MagicMock()
     mock_db_session.commit = AsyncMock()
 
@@ -233,9 +251,7 @@ def test_add_item_to_checklist(
     response = client.post(
         f"/checklist/checklists/{checklist_id}/items",
         headers=auth_headers,
-        json={
-            "text": "Toothbrush"
-        }
+        json={"text": "Toothbrush"},
     )
     assert response.status_code == 201
     data = response.json()
@@ -245,7 +261,11 @@ def test_add_item_to_checklist(
 
 
 def test_add_item_not_member(
-    client: TestClient, other_user_headers: dict, checklist_id: str, override_get_db, mock_db_session
+    client: TestClient,
+    other_user_headers: dict,
+    checklist_id: str,
+    override_get_db,
+    mock_db_session,
 ):
     """Non-member cannot add item to checklist"""
     # Setup: Checklist exists but user is not a member
@@ -267,13 +287,17 @@ def test_add_item_not_member(
     response = client.post(
         f"/checklist/checklists/{checklist_id}/items",
         headers=other_user_headers,
-        json={"text": "Toothbrush"}
+        json={"text": "Toothbrush"},
     )
     assert response.status_code == 403
 
 
 def test_toggle_item_check_on(
-    client: TestClient, auth_headers: dict, item_id: str, override_get_db, mock_db_session
+    client: TestClient,
+    auth_headers: dict,
+    item_id: str,
+    override_get_db,
+    mock_db_session,
 ):
     """Toggle item from unchecked to checked"""
     # Setup: Item exists and user has access
@@ -305,7 +329,9 @@ def test_toggle_item_check_on(
     result_mock3 = MagicMock()
     result_mock3.scalar_one_or_none.return_value = None
 
-    mock_db_session.execute = AsyncMock(side_effect=[result_mock1, result_mock2, result_mock3])
+    mock_db_session.execute = AsyncMock(
+        side_effect=[result_mock1, result_mock2, result_mock3]
+    )
     mock_db_session.add = MagicMock()
     mock_db_session.commit = AsyncMock()
 
@@ -316,10 +342,7 @@ def test_toggle_item_check_on(
 
     mock_db_session.refresh = AsyncMock(side_effect=mock_refresh)
 
-    response = client.post(
-        f"/checklist/items/{item_id}/toggle",
-        headers=auth_headers
-    )
+    response = client.post(f"/checklist/items/{item_id}/toggle", headers=auth_headers)
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == str(it_id)
@@ -328,7 +351,11 @@ def test_toggle_item_check_on(
 
 
 def test_toggle_item_check_off(
-    client: TestClient, auth_headers: dict, item_id: str, override_get_db, mock_db_session
+    client: TestClient,
+    auth_headers: dict,
+    item_id: str,
+    override_get_db,
+    mock_db_session,
 ):
     """Toggle item from checked to unchecked"""
     # Setup: Item exists and user has access
@@ -366,7 +393,9 @@ def test_toggle_item_check_off(
     result_mock3 = MagicMock()
     result_mock3.scalar_one_or_none.return_value = user_check
 
-    mock_db_session.execute = AsyncMock(side_effect=[result_mock1, result_mock2, result_mock3])
+    mock_db_session.execute = AsyncMock(
+        side_effect=[result_mock1, result_mock2, result_mock3]
+    )
     mock_db_session.commit = AsyncMock()
 
     # Mock refresh to flip the checked status
@@ -375,10 +404,7 @@ def test_toggle_item_check_off(
 
     mock_db_session.refresh = AsyncMock(side_effect=mock_refresh)
 
-    response = client.post(
-        f"/checklist/items/{item_id}/toggle",
-        headers=auth_headers
-    )
+    response = client.post(f"/checklist/items/{item_id}/toggle", headers=auth_headers)
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == str(it_id)
@@ -387,7 +413,11 @@ def test_toggle_item_check_off(
 
 
 def test_toggle_item_not_member(
-    client: TestClient, other_user_headers: dict, item_id: str, override_get_db, mock_db_session
+    client: TestClient,
+    other_user_headers: dict,
+    item_id: str,
+    override_get_db,
+    mock_db_session,
 ):
     """Non-member cannot toggle item"""
     # Setup: Item exists but user is not a member
@@ -412,7 +442,6 @@ def test_toggle_item_not_member(
     mock_db_session.execute = AsyncMock(side_effect=[result_mock1, result_mock2])
 
     response = client.post(
-        f"/checklist/items/{item_id}/toggle",
-        headers=other_user_headers
+        f"/checklist/items/{item_id}/toggle", headers=other_user_headers
     )
     assert response.status_code == 403

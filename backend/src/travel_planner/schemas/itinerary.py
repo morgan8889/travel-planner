@@ -32,9 +32,12 @@ class ActivityCreate(BaseModel):
 
     @model_validator(mode="after")
     def end_time_after_start_time(self) -> "ActivityCreate":
-        if self.start_time is not None and self.end_time is not None:
-            if self.end_time <= self.start_time:
-                raise ValueError("end_time must be after start_time")
+        if (
+            self.start_time is not None
+            and self.end_time is not None
+            and self.end_time <= self.start_time
+        ):
+            raise ValueError("end_time must be after start_time")
         return self
 
 
@@ -50,9 +53,12 @@ class ActivityUpdate(BaseModel):
 
     @model_validator(mode="after")
     def end_time_after_start_time(self) -> "ActivityUpdate":
-        if self.start_time is not None and self.end_time is not None:
-            if self.end_time <= self.start_time:
-                raise ValueError("end_time must be after start_time")
+        if (
+            self.start_time is not None
+            and self.end_time is not None
+            and self.end_time <= self.start_time
+        ):
+            raise ValueError("end_time must be after start_time")
         return self
 
 
