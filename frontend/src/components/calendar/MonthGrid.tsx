@@ -88,7 +88,7 @@ function getEventsForDay(
   return events
 }
 
-export function MonthGrid({ year, month, blocks, trips, onDeleteBlock, onDateSelect }: MonthGridProps) {
+export function MonthGrid({ year, month, blocks, trips, onDateSelect }: MonthGridProps) {
   const daysInMonth = getDaysInMonth(year, month)
   const firstDay = getFirstDayOfWeek(year, month)
   const today = new Date()

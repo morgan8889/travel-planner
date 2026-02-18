@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
-import { useCalendarYear, useCreatePlan, useCreateBlock, useUpdateBlock, useDeleteBlock } from '../hooks/useCalendar'
+import { useCalendarYear, useCreatePlan, useCreateBlock, useDeleteBlock } from '../hooks/useCalendar'
 import { AnnualCalendar } from '../components/calendar/AnnualCalendar'
 import { CreateBlockModal } from '../components/calendar/CreateBlockModal'
 import type { CreateCalendarBlock } from '../lib/types'
@@ -30,7 +30,6 @@ export function CalendarPage() {
   const { data: calendarData, isLoading, error } = useCalendarYear(year)
   const createPlan = useCreatePlan(year)
   const createBlock = useCreateBlock(year)
-  const updateBlock = useUpdateBlock(year)
   const deleteBlock = useDeleteBlock(year)
 
   const handleEnsurePlan = async () => {

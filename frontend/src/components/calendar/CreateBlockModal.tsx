@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Modal } from '../ui/Modal'
 import type { BlockType, CreateCalendarBlock } from '../../lib/types'
 
@@ -11,29 +11,21 @@ interface CreateBlockModalProps {
 
 export function CreateBlockModal({ isOpen, onClose, onSubmit, initialDates }: CreateBlockModalProps) {
   const [type, setType] = useState<BlockType>('pto')
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
+  const [startDate, setStartDate] = useState(initialDates?.start ?? '')
+  const [endDate, setEndDate] = useState(initialDates?.end ?? '')
   const [destination, setDestination] = useState('')
   const [notes, setNotes] = useState('')
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    if (initialDates) {
-      setStartDate(initialDates.start)
-      setEndDate(initialDates.end)
-    }
-  }, [initialDates])
-
-  useEffect(() => {
-    if (!isOpen) {
-      setType('pto')
-      setStartDate('')
-      setEndDate('')
-      setDestination('')
-      setNotes('')
-      setError('')
-    }
-  }, [isOpen])
+  const handleClose = () => {
+    setType('pto')
+    setStartDate('')
+    setEndDate('')
+    setDestination('')
+    setNotes('')
+    setError('')
+    onClose()
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -58,7 +50,7 @@ export function CreateBlockModal({ isOpen, onClose, onSubmit, initialDates }: Cr
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Add Calendar Block">
+    <Modal isOpen={isOpen} onClose={handleClose} title="Add Calendar Block">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-stone-700 mb-1">Type</label>
@@ -150,7 +142,7 @@ export function CreateBlockModal({ isOpen, onClose, onSubmit, initialDates }: Cr
         <div className="flex justify-end gap-2 pt-2">
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="px-4 py-2 text-sm font-medium text-stone-600 bg-white border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors"
           >
             Cancel
