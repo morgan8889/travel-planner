@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Modal } from '../ui/Modal'
 import type { BlockType, CreateCalendarBlock } from '../../lib/types'
 
@@ -16,6 +16,13 @@ export function CreateBlockModal({ isOpen, onClose, onSubmit, initialDates }: Cr
   const [destination, setDestination] = useState('')
   const [notes, setNotes] = useState('')
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (initialDates) {
+      setStartDate(initialDates.start)
+      setEndDate(initialDates.end)
+    }
+  }, [initialDates])
 
   const handleClose = () => {
     setType('pto')
