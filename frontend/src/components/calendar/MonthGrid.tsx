@@ -95,12 +95,12 @@ export function MonthGrid({ year, month, blocks, trips, onDateSelect }: MonthGri
   const todayStr = formatDate(today.getFullYear(), today.getMonth(), today.getDate())
 
   return (
-    <div className="bg-white rounded-xl border border-stone-200 p-3">
-      <h3 className="text-sm font-semibold text-stone-700 mb-2">{MONTH_NAMES[month]}</h3>
+    <div className="bg-white rounded-xl border border-cloud-200 p-3">
+      <h3 className="text-sm font-semibold text-cloud-700 mb-2">{MONTH_NAMES[month]}</h3>
 
       <div className="grid grid-cols-7 gap-px">
         {DAY_LABELS.map(d => (
-          <div key={d} className="text-[10px] font-medium text-stone-400 text-center pb-1">
+          <div key={d} className="text-[10px] font-medium text-cloud-400 text-center pb-1">
             {d}
           </div>
         ))}
@@ -126,8 +126,8 @@ export function MonthGrid({ year, month, blocks, trips, onDateSelect }: MonthGri
               }}
               className={`
                 relative h-7 text-xs flex items-center justify-center rounded transition-colors
-                ${isToday ? 'font-bold text-blue-600 ring-1 ring-blue-300' : 'text-stone-600'}
-                ${hasEvent ? '' : 'hover:bg-stone-100'}
+                ${isToday ? 'font-bold text-indigo-600 ring-1 ring-indigo-300' : 'text-cloud-600'}
+                ${hasEvent ? '' : 'hover:bg-cloud-100'}
               `}
               title={events.map(e => `${e.type}: ${e.label}`).join(', ') || undefined}
             >

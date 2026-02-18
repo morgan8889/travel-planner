@@ -58,24 +58,24 @@ export function AnnualCalendar({ year, blocks, trips, onDeleteBlock, onDateSelec
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {blocks.length > 0 && (
-          <div className="bg-white rounded-xl border border-stone-200 p-5">
-            <h3 className="text-sm font-semibold text-stone-700 mb-3">PTO & Holidays</h3>
+          <div className="bg-white rounded-xl border border-cloud-200 p-5">
+            <h3 className="text-sm font-semibold text-cloud-700 mb-3">PTO & Holidays</h3>
             <div className="space-y-2">
               {blocks.map(block => (
                 <div key={block.id} className="flex items-center justify-between group">
                   <div className="flex items-center gap-2 min-w-0">
                     <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${getEventColor(block.type as EventType)}`} />
-                    <span className="text-sm text-stone-700 truncate">
+                    <span className="text-sm text-cloud-700 truncate">
                       {block.destination || getEventLabel(block.type)}
                     </span>
-                    <span className="text-xs text-stone-400 shrink-0">
+                    <span className="text-xs text-cloud-400 shrink-0">
                       {formatDateShort(block.start_date)} — {formatDateShort(block.end_date)}
                     </span>
                   </div>
                   {onDeleteBlock && (
                     <button
                       onClick={() => onDeleteBlock(block.id)}
-                      className="p-1 text-stone-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                      className="p-1 text-cloud-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
                       aria-label="Delete block"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -88,14 +88,14 @@ export function AnnualCalendar({ year, blocks, trips, onDeleteBlock, onDateSelec
         )}
 
         {trips.length > 0 && (
-          <div className="bg-white rounded-xl border border-stone-200 p-5">
-            <h3 className="text-sm font-semibold text-stone-700 mb-3">Trips</h3>
+          <div className="bg-white rounded-xl border border-cloud-200 p-5">
+            <h3 className="text-sm font-semibold text-cloud-700 mb-3">Trips</h3>
             <div className="space-y-2">
               {trips.map(trip => (
                 <div key={trip.id} className="flex items-center gap-2">
                   <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${getEventColor(trip.type as EventType)}`} />
-                  <span className="text-sm text-stone-700 truncate">{trip.destination}</span>
-                  <span className="text-xs text-stone-400 shrink-0">
+                  <span className="text-sm text-cloud-700 truncate">{trip.destination}</span>
+                  <span className="text-xs text-cloud-400 shrink-0">
                     {formatDateShort(trip.start_date)} — {formatDateShort(trip.end_date)}
                   </span>
                 </div>
@@ -104,8 +104,8 @@ export function AnnualCalendar({ year, blocks, trips, onDeleteBlock, onDateSelec
           </div>
         )}
 
-        <div className="bg-white rounded-xl border border-stone-200 p-5">
-          <h3 className="text-sm font-semibold text-stone-700 mb-3">Legend</h3>
+        <div className="bg-white rounded-xl border border-cloud-200 p-5">
+          <h3 className="text-sm font-semibold text-cloud-700 mb-3">Legend</h3>
           <div className="flex flex-wrap gap-3">
             {[
               { type: 'vacation', label: 'Vacation' },
@@ -116,7 +116,7 @@ export function AnnualCalendar({ year, blocks, trips, onDeleteBlock, onDateSelec
             ].map(({ type, label }) => (
               <div key={type} className="flex items-center gap-1.5">
                 <div className={`w-2.5 h-2.5 rounded-full ${getEventColor(type as EventType)}`} />
-                <span className="text-xs text-stone-500">{label}</span>
+                <span className="text-xs text-cloud-500">{label}</span>
               </div>
             ))}
           </div>
