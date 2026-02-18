@@ -22,6 +22,8 @@ const mockTrip: Trip = {
   notes: 'Pack sunscreen',
   parent_trip_id: null,
   created_at: '2026-01-01T00:00:00Z',
+  destination_latitude: null,
+  destination_longitude: null,
   members: [
     {
       id: 'member-1',
@@ -58,6 +60,8 @@ const mockSabbaticalTrip: Trip = {
       parent_trip_id: 'trip-sabbatical',
       created_at: '2026-01-01T00:00:00Z',
       member_count: 1,
+      destination_latitude: null,
+      destination_longitude: null,
     },
   ],
 }

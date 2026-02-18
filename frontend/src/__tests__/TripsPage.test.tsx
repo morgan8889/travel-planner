@@ -23,6 +23,8 @@ const mockTrips: TripSummary[] = [
     parent_trip_id: null,
     created_at: '2026-01-01T00:00:00Z',
     member_count: 2,
+    destination_latitude: null,
+    destination_longitude: null,
   },
   {
     id: 'trip-2',
@@ -35,6 +37,8 @@ const mockTrips: TripSummary[] = [
     parent_trip_id: null,
     created_at: '2026-01-02T00:00:00Z',
     member_count: 1,
+    destination_latitude: null,
+    destination_longitude: null,
   },
 ]
 
