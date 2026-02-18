@@ -17,7 +17,7 @@ const transitionConfig: Record<string, { label: string; nextStatus: TripStatus; 
   planning: {
     label: 'Mark as Booked',
     nextStatus: 'booked',
-    classes: 'bg-blue-500 hover:bg-blue-600 text-white',
+    classes: 'bg-indigo-500 hover:bg-indigo-600 text-white',
   },
   booked: {
     label: 'Start Trip',
@@ -27,7 +27,7 @@ const transitionConfig: Record<string, { label: string; nextStatus: TripStatus; 
   active: {
     label: 'Complete Trip',
     nextStatus: 'completed',
-    classes: 'bg-stone-500 hover:bg-stone-600 text-white',
+    classes: 'bg-cloud-500 hover:bg-cloud-600 text-white',
   },
   completed: null,
 }

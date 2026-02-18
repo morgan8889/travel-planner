@@ -7,28 +7,28 @@ interface TripStatusBadgeProps {
 const statusConfig: Record<TripStatus, { label: string; classes: string; dotColor: string }> = {
   dreaming: {
     label: 'Dreaming',
-    classes: 'bg-purple-50 text-purple-700 ring-1 ring-purple-200',
-    dotColor: 'bg-purple-500',
+    classes: 'bg-[#F0EDFF] text-[#6B5CB5] ring-1 ring-[#6B5CB5]/20',
+    dotColor: 'bg-[#6B5CB5]',
   },
   planning: {
     label: 'Planning',
-    classes: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
-    dotColor: 'bg-amber-500',
+    classes: 'bg-[#FFF7ED] text-[#B8862D] ring-1 ring-[#B8862D]/20',
+    dotColor: 'bg-[#B8862D]',
   },
   booked: {
     label: 'Booked',
-    classes: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200',
-    dotColor: 'bg-blue-500',
+    classes: 'bg-[#EEF2FF] text-[#4A6DB5] ring-1 ring-[#4A6DB5]/20',
+    dotColor: 'bg-[#4A6DB5]',
   },
   active: {
     label: 'Active',
-    classes: 'bg-green-50 text-green-700 ring-1 ring-green-200',
-    dotColor: 'bg-green-500',
+    classes: 'bg-[#F0FDF4] text-[#3D8A5E] ring-1 ring-[#3D8A5E]/20',
+    dotColor: 'bg-[#3D8A5E]',
   },
   completed: {
     label: 'Completed',
-    classes: 'bg-gray-50 text-gray-600 ring-1 ring-gray-200',
-    dotColor: 'bg-gray-400',
+    classes: 'bg-[#F3F4F6] text-[#7A7F91] ring-1 ring-[#7A7F91]/20',
+    dotColor: 'bg-[#7A7F91]',
   },
 }
 
