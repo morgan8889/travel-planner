@@ -3,6 +3,7 @@ import { Modal } from '../ui/Modal'
 import { useCreateActivity } from '../../hooks/useItinerary'
 import type { ActivityCategory } from '../../lib/types'
 import { CategorySelector } from './CategorySelector'
+import { LocationAutocomplete } from '../form/LocationAutocomplete'
 
 interface AddActivityModalProps {
   isOpen: boolean
@@ -19,6 +20,8 @@ export function AddActivityModal({ isOpen, onClose, dayId, tripId }: AddActivity
     start_time: '',
     end_time: '',
     location: '',
+    latitude: null as number | null,
+    longitude: null as number | null,
     notes: '',
     confirmation_number: '',
   })
@@ -30,6 +33,8 @@ export function AddActivityModal({ isOpen, onClose, dayId, tripId }: AddActivity
       start_time: '',
       end_time: '',
       location: '',
+      latitude: null,
+      longitude: null,
       notes: '',
       confirmation_number: '',
     })
@@ -50,6 +55,8 @@ export function AddActivityModal({ isOpen, onClose, dayId, tripId }: AddActivity
         start_time: formData.start_time || null,
         end_time: formData.end_time || null,
         location: formData.location || null,
+        latitude: formData.latitude,
+        longitude: formData.longitude,
         notes: formData.notes || null,
         confirmation_number: formData.confirmation_number || null,
       })
@@ -123,13 +130,13 @@ export function AddActivityModal({ isOpen, onClose, dayId, tripId }: AddActivity
           <label htmlFor="location" className="block text-sm font-medium text-cloud-700 mb-1">
             Location
           </label>
-          <input
-            type="text"
+          <LocationAutocomplete
             id="location"
             value={formData.location}
-            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+            onChange={(val) => setFormData({ ...formData, location: val, latitude: null, longitude: null })}
+            onSelect={(s) => setFormData({ ...formData, location: s.place_name, latitude: s.latitude, longitude: s.longitude })}
+            placeholder="Search for a location…"
             disabled={createActivity.isPending}
-            className="w-full px-3 py-2 border border-cloud-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50"
           />
         </div>
 

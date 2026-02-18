@@ -1,5 +1,8 @@
-import { useState } from 'react'
+import { useState, Suspense, lazy } from 'react'
 import { TriangleAlert, ArrowLeft, ChevronRight, SquarePen, Calendar, Trash2, MapPinOff, Plus } from 'lucide-react'
+
+const MapView = lazy(() => import('../components/map/MapView').then((m) => ({ default: m.MapView })))
+const TripMarker = lazy(() => import('../components/map/TripMarker').then((m) => ({ default: m.TripMarker })))
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { useTrip, useUpdateTrip, useDeleteTrip } from '../hooks/useTrips'
 import { useAddMember, useRemoveMember, useUpdateMemberRole } from '../hooks/useMembers'
@@ -259,6 +262,8 @@ export function TripDetailPage() {
                   end_date: trip.end_date,
                   status: trip.status,
                   notes: trip.notes,
+                  destination_latitude: trip.destination_latitude,
+                  destination_longitude: trip.destination_longitude,
                   parent_trip_id: trip.parent_trip_id,
                 }}
                 onSubmit={handleUpdate}
@@ -498,6 +503,33 @@ export function TripDetailPage() {
 
         {/* Sidebar */}
         <div className="space-y-6">
+          {/* Destination Map */}
+          {trip.destination_latitude !== null && trip.destination_longitude !== null && (
+            <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-cloud-200 overflow-hidden">
+              <div className="h-48">
+                <Suspense fallback={<div className="h-full bg-cloud-100 animate-pulse" />}>
+                  <MapView
+                    center={[trip.destination_longitude, trip.destination_latitude]}
+                    zoom={10}
+                    interactive={false}
+                    className="h-full"
+                  >
+                    <TripMarker
+                      tripId={trip.id}
+                      longitude={trip.destination_longitude}
+                      latitude={trip.destination_latitude}
+                      destination={trip.destination}
+                      status={trip.status}
+                    />
+                  </MapView>
+                </Suspense>
+              </div>
+              <div className="px-4 py-2.5 border-t border-cloud-100">
+                <p className="text-sm font-medium text-cloud-700">{trip.destination}</p>
+              </div>
+            </div>
+          )}
+
           <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-cloud-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-cloud-900">

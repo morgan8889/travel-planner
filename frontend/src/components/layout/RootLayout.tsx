@@ -17,11 +17,12 @@ export function RootLayout() {
           </Link>
           <nav className="flex items-center gap-1">
             <Link
-              to="/calendar"
+              to="/"
               className="px-3 py-1.5 text-sm font-medium text-cloud-500 rounded-lg hover:bg-cloud-100 hover:text-cloud-900 transition-colors"
               activeProps={{ className: 'bg-indigo-50 text-indigo-700' }}
+              activeOptions={{ exact: true }}
             >
-              Calendar
+              Dashboard
             </Link>
             <Link
               to="/trips"
@@ -29,6 +30,13 @@ export function RootLayout() {
               activeProps={{ className: 'bg-indigo-50 text-indigo-700' }}
             >
               Trips
+            </Link>
+            <Link
+              to="/calendar"
+              className="px-3 py-1.5 text-sm font-medium text-cloud-500 rounded-lg hover:bg-cloud-100 hover:text-cloud-900 transition-colors"
+              activeProps={{ className: 'bg-indigo-50 text-indigo-700' }}
+            >
+              Calendar
             </Link>
           </nav>
           <div className="flex items-center gap-4">
