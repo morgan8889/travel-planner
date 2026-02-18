@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { Plus, Calendar, ArrowRight } from 'lucide-react'
 import { useTrips } from '../hooks/useTrips'
 import { useAuth } from '../contexts/AuthContext'
@@ -44,6 +44,7 @@ function UpcomingTripCard({ trip }: { trip: { id: string; destination: string; s
 export function DashboardPage() {
   const { user } = useAuth()
   const { data: trips, isLoading } = useTrips()
+  const navigate = useNavigate()
 
   const displayName = getDisplayName(user?.email)
 
@@ -56,17 +57,17 @@ export function DashboardPage() {
     (t) => t.destination_latitude !== null && t.destination_longitude !== null
   ) ?? []
 
-  // Compute bounds for fitBounds from all trip pins
+  // Compute bounds for fitBounds from all trip pins (clamped to valid lat/lng ranges)
   const fitBounds: [[number, number], [number, number]] | undefined =
     tripsWithCoords.length >= 2
       ? [
           [
-            Math.min(...tripsWithCoords.map((t) => t.destination_longitude!)) - 5,
-            Math.min(...tripsWithCoords.map((t) => t.destination_latitude!)) - 5,
+            Math.max(-180, Math.min(...tripsWithCoords.map((t) => t.destination_longitude!)) - 5),
+            Math.max(-90, Math.min(...tripsWithCoords.map((t) => t.destination_latitude!)) - 5),
           ],
           [
-            Math.max(...tripsWithCoords.map((t) => t.destination_longitude!)) + 5,
-            Math.max(...tripsWithCoords.map((t) => t.destination_latitude!)) + 5,
+            Math.min(180, Math.max(...tripsWithCoords.map((t) => t.destination_longitude!)) + 5),
+            Math.min(90, Math.max(...tripsWithCoords.map((t) => t.destination_latitude!)) + 5),
           ],
         ]
       : undefined
@@ -105,6 +106,7 @@ export function DashboardPage() {
                   latitude={trip.destination_latitude!}
                   destination={trip.destination}
                   status={trip.status}
+                  onClick={(id) => navigate({ to: '/trips/$tripId', params: { tripId: id } })}
                 />
               ))}
             </MapView>

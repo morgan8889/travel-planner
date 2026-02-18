@@ -9,6 +9,7 @@ import {
   createMemoryHistory,
 } from '@tanstack/react-router'
 import { TripForm } from '../components/trips/TripForm'
+import { geocodeApi } from '../lib/api'
 
 vi.mock('../lib/api', () => ({
   api: {
@@ -16,6 +17,9 @@ vi.mock('../lib/api', () => ({
     post: vi.fn(),
     patch: vi.fn(),
     delete: vi.fn(),
+  },
+  geocodeApi: {
+    search: vi.fn().mockResolvedValue({ data: [] }),
   },
 }))
 
@@ -157,5 +161,66 @@ describe('TripForm', () => {
     expect(screen.getByLabelText('Status')).toHaveValue('booked')
     expect(screen.getByLabelText(/Notes/)).toHaveValue('Work from a cafe')
     expect(screen.getByText('Save Changes')).toBeInTheDocument()
+  })
+
+  it('submits with null coordinates when destination is typed freeform', async () => {
+    const onSubmit = vi.fn()
+    const user = userEvent.setup()
+    renderWithProviders(<TripForm {...defaultProps} onSubmit={onSubmit} />)
+
+    const destination = await screen.findByLabelText('Destination')
+    await user.type(destination, 'Anywhere')
+    await user.type(screen.getByLabelText('Start Date'), '2026-08-01')
+    await user.type(screen.getByLabelText('End Date'), '2026-08-07')
+    await user.click(screen.getByText('Create Trip'))
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          destination: 'Anywhere',
+          destination_latitude: null,
+          destination_longitude: null,
+        })
+      )
+    })
+  })
+
+  it('submits with coordinates when geocode suggestion is selected', async () => {
+    vi.mocked(geocodeApi.search).mockResolvedValue({
+      data: [
+        {
+          place_name: 'Tokyo, Japan',
+          latitude: 35.6762,
+          longitude: 139.6503,
+          place_type: 'place',
+          context: 'Japan',
+        },
+      ],
+    } as Awaited<ReturnType<typeof geocodeApi.search>>)
+
+    const onSubmit = vi.fn()
+    const user = userEvent.setup()
+    renderWithProviders(<TripForm {...defaultProps} onSubmit={onSubmit} />)
+
+    const destination = await screen.findByLabelText('Destination')
+    await user.type(destination, 'Tokyo')
+
+    // Wait for debounce and suggestion to appear
+    const suggestion = await screen.findByText('Tokyo', {}, { timeout: 1000 })
+    await user.click(suggestion)
+
+    await user.type(screen.getByLabelText('Start Date'), '2026-09-01')
+    await user.type(screen.getByLabelText('End Date'), '2026-09-10')
+    await user.click(screen.getByText('Create Trip'))
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          destination: 'Tokyo, Japan',
+          destination_latitude: 35.6762,
+          destination_longitude: 139.6503,
+        })
+      )
+    })
   })
 })

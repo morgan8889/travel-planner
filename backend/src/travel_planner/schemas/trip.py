@@ -13,8 +13,8 @@ class TripCreate(BaseModel):
     end_date: date
     status: TripStatus = TripStatus.dreaming
     notes: str | None = None
-    destination_latitude: float | None = None
-    destination_longitude: float | None = None
+    destination_latitude: float | None = Field(default=None, ge=-90, le=90)
+    destination_longitude: float | None = Field(default=None, ge=-180, le=180)
     parent_trip_id: uuid.UUID | None = None
 
     @model_validator(mode="after")
@@ -31,8 +31,8 @@ class TripUpdate(BaseModel):
     end_date: date | None = None
     status: TripStatus | None = None
     notes: str | None = None
-    destination_latitude: float | None = None
-    destination_longitude: float | None = None
+    destination_latitude: float | None = Field(default=None, ge=-90, le=90)
+    destination_longitude: float | None = Field(default=None, ge=-180, le=180)
     parent_trip_id: uuid.UUID | None = None
 
     @model_validator(mode="after")

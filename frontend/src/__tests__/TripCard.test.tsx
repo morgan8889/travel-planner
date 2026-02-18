@@ -48,6 +48,8 @@ const mockTrip: TripSummary = {
   parent_trip_id: null,
   created_at: '2026-01-01T00:00:00Z',
   member_count: 3,
+  destination_latitude: null,
+  destination_longitude: null,
 }
 
 describe('TripCard', () => {
