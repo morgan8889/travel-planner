@@ -107,6 +107,7 @@ export function CalendarPage() {
       />
 
       <CreateBlockModal
+        key={String(showCreateBlock)}
         isOpen={showCreateBlock}
         onClose={() => {
           setShowCreateBlock(false)
