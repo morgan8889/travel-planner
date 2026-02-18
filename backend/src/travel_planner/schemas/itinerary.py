@@ -1,7 +1,7 @@
 from datetime import date, time
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from travel_planner.models.itinerary import ActivityCategory
 
@@ -77,5 +77,12 @@ class ActivityResponse(BaseModel):
     sort_order: int
 
 
-class ReorderActivities(BaseModel):
+class ActivityReorderUpdate(BaseModel):
     activity_ids: list[UUID] = Field(..., min_length=1)
+
+    @field_validator("activity_ids")
+    @classmethod
+    def activity_ids_must_be_unique(cls, v: list[UUID]) -> list[UUID]:
+        if len(v) != len(set(v)):
+            raise ValueError("activity_ids must not contain duplicates")
+        return v

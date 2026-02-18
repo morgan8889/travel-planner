@@ -11,11 +11,11 @@ from travel_planner.deps import verify_trip_member
 from travel_planner.models.itinerary import Activity, ItineraryDay
 from travel_planner.schemas.itinerary import (
     ActivityCreate,
+    ActivityReorderUpdate,
     ActivityResponse,
     ActivityUpdate,
     ItineraryDayCreate,
     ItineraryDayResponse,
-    ReorderActivities,
 )
 
 router = APIRouter(prefix="/itinerary", tags=["itinerary"])
@@ -111,6 +111,13 @@ async def generate_itinerary_days(
         raise HTTPException(
             status_code=400,
             detail="Trip must have start and end dates",
+        )
+
+    max_days = 365
+    if (trip.end_date - trip.start_date).days > max_days:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Trip date range exceeds maximum of {max_days} days for day generation",
         )
 
     # Get existing days for this trip
@@ -213,7 +220,7 @@ async def list_activities(
 @router.patch("/days/{day_id}/reorder", response_model=list[ActivityResponse])
 async def reorder_activities(
     day_id: UUID,
-    reorder_data: ReorderActivities,
+    reorder_data: ActivityReorderUpdate,
     user_id: CurrentUserId,
     db: AsyncSession = Depends(get_db),
 ):
@@ -231,6 +238,12 @@ async def reorder_activities(
                 status_code=400,
                 detail=f"Activity {activity_id} not found in this day",
             )
+
+    if set(reorder_data.activity_ids) != set(activities.keys()):
+        raise HTTPException(
+            status_code=400,
+            detail="All activities in the day must be included in the reorder request",
+        )
 
     for new_order, activity_id in enumerate(reorder_data.activity_ids):
         activities[activity_id].sort_order = new_order
