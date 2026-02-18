@@ -65,6 +65,15 @@ export const itineraryApi = {
 
   deleteActivity: (activityId: string) =>
     api.delete(`/itinerary/activities/${activityId}`),
+
+  reorderActivities: (dayId: string, activityIds: string[]) =>
+    api.patch<Activity[]>(`/itinerary/days/${dayId}/reorder`, { activity_ids: activityIds }),
+
+  deleteDay: (dayId: string) =>
+    api.delete(`/itinerary/days/${dayId}`),
+
+  generateDays: (tripId: string) =>
+    api.post<ItineraryDay[]>(`/itinerary/trips/${tripId}/days/generate`),
 }
 
 export const checklistApi = {

@@ -1,8 +1,11 @@
 import { useState } from 'react'
-import { Trash2 } from 'lucide-react'
+import { GripVertical, Pencil, Trash2 } from 'lucide-react'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import type { Activity, ActivityCategory } from '../../lib/types'
 import { useDeleteActivity } from '../../hooks/useItinerary'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
+import { EditActivityModal } from './EditActivityModal'
 
 interface ActivityItemProps {
   activity: Activity
@@ -19,6 +22,22 @@ const CATEGORY_ICONS: Record<ActivityCategory, string> = {
 export function ActivityItem({ activity, tripId }: ActivityItemProps) {
   const deleteActivity = useDeleteActivity(tripId)
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+  const [isEditOpen, setIsEditOpen] = useState(false)
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: activity.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
 
   const handleDelete = () => {
     deleteActivity.mutate({
@@ -36,21 +55,41 @@ export function ActivityItem({ activity, tripId }: ActivityItemProps) {
 
   return (
     <>
-      <div className="flex items-start gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
+      <div
+        ref={setNodeRef}
+        style={style}
+        className="flex items-start gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-shadow"
+      >
+        <button
+          className="flex-shrink-0 mt-1 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 touch-none"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="w-4 h-4" />
+        </button>
         <div className="text-2xl flex-shrink-0 mt-0.5">
           {CATEGORY_ICONS[activity.category]}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <h4 className="font-medium text-gray-900 break-words">{activity.title}</h4>
-            <button
-              onClick={() => setIsConfirmOpen(true)}
-              disabled={deleteActivity.isPending}
-              className="flex-shrink-0 p-1 text-gray-400 hover:text-red-600 rounded transition-colors disabled:opacity-50"
-              aria-label="Delete activity"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setIsEditOpen(true)}
+                className="flex-shrink-0 p-1 text-gray-400 hover:text-blue-600 rounded transition-colors"
+                aria-label="Edit activity"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setIsConfirmOpen(true)}
+                disabled={deleteActivity.isPending}
+                className="flex-shrink-0 p-1 text-gray-400 hover:text-red-600 rounded transition-colors disabled:opacity-50"
+                aria-label="Delete activity"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
           {timeRange && (
             <p className="text-sm text-gray-600 mt-1">{timeRange}</p>
@@ -86,6 +125,14 @@ export function ActivityItem({ activity, tripId }: ActivityItemProps) {
         message={`Are you sure you want to delete "${activity.title}"?`}
         confirmLabel="Delete"
         isLoading={deleteActivity.isPending}
+      />
+
+      <EditActivityModal
+        key={activity.id}
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        activity={activity}
+        tripId={tripId}
       />
     </>
   )

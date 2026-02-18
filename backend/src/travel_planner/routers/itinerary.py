@@ -1,3 +1,4 @@
+from datetime import timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Response
@@ -10,6 +11,7 @@ from travel_planner.deps import verify_trip_member
 from travel_planner.models.itinerary import Activity, ItineraryDay
 from travel_planner.schemas.itinerary import (
     ActivityCreate,
+    ActivityReorderUpdate,
     ActivityResponse,
     ActivityUpdate,
     ItineraryDayCreate,
@@ -90,6 +92,78 @@ async def create_itinerary_day(
 
 
 @router.post(
+    "/trips/{trip_id}/days/generate",
+    response_model=list[ItineraryDayResponse],
+    status_code=201,
+)
+async def generate_itinerary_days(
+    trip_id: UUID,
+    user_id: CurrentUserId,
+    db: AsyncSession = Depends(get_db),
+):
+    """Generate itinerary days for all dates in the trip range.
+
+    Skips dates that already have an itinerary day.
+    """
+    trip = await verify_trip_member(trip_id, db, user_id)
+
+    if not trip.start_date or not trip.end_date:
+        raise HTTPException(
+            status_code=400,
+            detail="Trip must have start and end dates",
+        )
+
+    max_days = 365
+    if (trip.end_date - trip.start_date).days > max_days:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Trip date range exceeds maximum of {max_days} days for day generation"
+            ),
+        )
+
+    # Get existing days for this trip
+    result = await db.execute(
+        select(ItineraryDay.date).where(ItineraryDay.trip_id == trip_id)
+    )
+    existing_dates = {row for row in result.scalars().all()}
+
+    # Create days for each date in range that doesn't exist
+    current = trip.start_date
+    new_days = []
+    while current <= trip.end_date:
+        if current not in existing_dates:
+            day = ItineraryDay(trip_id=trip_id, date=current)
+            db.add(day)
+            new_days.append(day)
+        current += timedelta(days=1)
+
+    if new_days:
+        await db.commit()
+        for day in new_days:
+            await db.refresh(day)
+
+    # Return all days (new + existing) ordered by date
+    result = await db.execute(
+        select(ItineraryDay, func.count(Activity.id).label("activity_count"))
+        .outerjoin(Activity)
+        .where(ItineraryDay.trip_id == trip_id)
+        .group_by(ItineraryDay.id)
+        .order_by(ItineraryDay.date)
+    )
+    return [
+        ItineraryDayResponse(
+            id=day.id,
+            trip_id=day.trip_id,
+            date=day.date,
+            notes=day.notes,
+            activity_count=count or 0,
+        )
+        for day, count in result
+    ]
+
+
+@router.post(
     "/days/{day_id}/activities", response_model=ActivityResponse, status_code=201
 )
 async def create_activity(
@@ -143,6 +217,56 @@ async def list_activities(
     activities = result.scalars().all()
 
     return [ActivityResponse.model_validate(activity) for activity in activities]
+
+
+@router.patch("/days/{day_id}/reorder", response_model=list[ActivityResponse])
+async def reorder_activities(
+    day_id: UUID,
+    reorder_data: ActivityReorderUpdate,
+    user_id: CurrentUserId,
+    db: AsyncSession = Depends(get_db),
+):
+    """Reorder activities within an itinerary day."""
+    await verify_day_access(day_id, db, user_id)
+
+    result = await db.execute(
+        select(Activity).where(Activity.itinerary_day_id == day_id)
+    )
+    activities = {a.id: a for a in result.scalars().all()}
+
+    for activity_id in reorder_data.activity_ids:
+        if activity_id not in activities:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Activity {activity_id} not found in this day",
+            )
+
+    if set(reorder_data.activity_ids) != set(activities.keys()):
+        raise HTTPException(
+            status_code=400,
+            detail="All activities in the day must be included in the reorder request",
+        )
+
+    for new_order, activity_id in enumerate(reorder_data.activity_ids):
+        activities[activity_id].sort_order = new_order
+
+    await db.commit()
+
+    ordered = sorted(activities.values(), key=lambda a: a.sort_order)
+    return [ActivityResponse.model_validate(a) for a in ordered]
+
+
+@router.delete("/days/{day_id}", status_code=204)
+async def delete_itinerary_day(
+    day_id: UUID,
+    user_id: CurrentUserId,
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete an itinerary day and all its activities."""
+    day = await verify_day_access(day_id, db, user_id)
+    await db.delete(day)
+    await db.commit()
+    return Response(status_code=204)
 
 
 @router.patch("/activities/{activity_id}", response_model=ActivityResponse)
