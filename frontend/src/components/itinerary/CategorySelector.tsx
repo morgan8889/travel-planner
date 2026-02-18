@@ -22,7 +22,7 @@ interface CategorySelectorProps {
 
 export function CategorySelector({ value, onChange, disabled }: CategorySelectorProps) {
   return (
-    <div className="grid grid-cols-4 gap-2">
+    <div role="group" aria-label="Category" className="grid grid-cols-4 gap-2">
       {CATEGORIES.map(({ value: cat, label, icon: Icon }) => (
         <button
           key={cat}

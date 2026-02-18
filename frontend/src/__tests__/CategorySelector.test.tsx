@@ -11,6 +11,11 @@ describe('CategorySelector', () => {
     expect(screen.getByRole('button', { name: /lodging/i })).toBeInTheDocument()
   })
 
+  it('has a group role with label', () => {
+    render(<CategorySelector value="activity" onChange={vi.fn()} />)
+    expect(screen.getByRole('group', { name: /category/i })).toBeInTheDocument()
+  })
+
   it('highlights the currently selected category', () => {
     render(<CategorySelector value="food" onChange={vi.fn()} />)
     const foodBtn = screen.getByRole('button', { name: /food/i })
