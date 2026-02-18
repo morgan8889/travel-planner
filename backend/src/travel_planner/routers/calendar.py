@@ -136,9 +136,7 @@ async def update_calendar_block(
     user_id: CurrentUserId = None,
 ):
     """Update fields on a calendar block."""
-    result = await db.execute(
-        select(CalendarBlock).where(CalendarBlock.id == block_id)
-    )
+    result = await db.execute(select(CalendarBlock).where(CalendarBlock.id == block_id))
     block = result.scalar_one_or_none()
     if block is None:
         raise HTTPException(status_code=404, detail="Calendar block not found")
@@ -169,9 +167,7 @@ async def delete_calendar_block(
     user_id: CurrentUserId = None,
 ):
     """Delete a calendar block."""
-    result = await db.execute(
-        select(CalendarBlock).where(CalendarBlock.id == block_id)
-    )
+    result = await db.execute(select(CalendarBlock).where(CalendarBlock.id == block_id))
     block = result.scalar_one_or_none()
     if block is None:
         raise HTTPException(status_code=404, detail="Calendar block not found")
