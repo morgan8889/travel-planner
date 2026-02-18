@@ -22,12 +22,12 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title}>
-      <p className="text-stone-600 mb-6">{message}</p>
+      <p className="text-cloud-600 mb-6">{message}</p>
       <div className="flex justify-end gap-3">
         <button
           onClick={onClose}
           disabled={isLoading}
-          className="px-4 py-2 text-sm font-medium text-stone-700 bg-white border border-stone-300 rounded-lg hover:bg-stone-50 transition-colors disabled:opacity-50"
+          className="px-4 py-2 text-sm font-medium text-cloud-700 bg-white border border-cloud-300 rounded-lg hover:bg-cloud-50 transition-colors disabled:opacity-50"
         >
           Cancel
         </button>

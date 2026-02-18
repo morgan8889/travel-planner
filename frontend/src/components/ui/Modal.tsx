@@ -37,13 +37,13 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
         if (e.target === overlayRef.current) onClose()
       }}
     >
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-md animate-fade-in" />
-      <div className="relative bg-white rounded-2xl shadow-2xl ring-1 ring-stone-200/50 w-full max-w-md animate-slide-up">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100">
-          <h2 className="text-lg font-semibold text-stone-900">{title}</h2>
+      <div className="fixed inset-0 bg-cloud-900/40 backdrop-blur-md animate-fade-in" />
+      <div className="relative bg-white rounded-2xl shadow-2xl ring-1 ring-cloud-200/50 w-full max-w-md animate-slide-up">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-cloud-100">
+          <h2 className="text-lg font-semibold text-cloud-900">{title}</h2>
           <button
             onClick={onClose}
-            className="p-1 text-stone-400 hover:text-stone-600 rounded-lg hover:bg-stone-100 transition-colors"
+            className="p-1 text-cloud-400 hover:text-cloud-600 rounded-lg hover:bg-cloud-100 transition-colors"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
