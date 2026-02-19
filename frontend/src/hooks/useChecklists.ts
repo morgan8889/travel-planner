@@ -57,3 +57,27 @@ export function useToggleChecklistItem(tripId: string) {
     },
   })
 }
+
+export function useDeleteChecklist(tripId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (checklistId: string) => {
+      await checklistApi.delete(tripId, checklistId)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: checklistKeys.lists(tripId) })
+    },
+  })
+}
+
+export function useDeleteChecklistItem(tripId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (itemId: string) => {
+      await checklistApi.deleteItem(itemId)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: checklistKeys.lists(tripId) })
+    },
+  })
+}
