@@ -6,6 +6,7 @@ interface DayCellProps {
   isToday: boolean
   isCurrentMonth: boolean
   isSelected: boolean
+  isSelectedForCreate?: boolean
   holidayLabel?: string
   customDayLabel?: string
   compact?: boolean  // true for quarter/year views
@@ -21,6 +22,7 @@ export const DayCell = memo(function DayCell({
   isToday,
   isCurrentMonth,
   isSelected,
+  isSelectedForCreate = false,
   holidayLabel,
   customDayLabel,
   compact = false,
@@ -37,6 +39,7 @@ export const DayCell = memo(function DayCell({
         className={`w-full ${showLabel ? 'min-h-[2.5rem]' : 'aspect-square'} flex flex-col items-center justify-center text-xs rounded-sm cursor-pointer
           ${isCurrentMonth ? 'text-cloud-700' : 'text-cloud-300'}
           ${isToday ? 'ring-2 ring-indigo-500 ring-inset font-bold' : ''}
+          ${!isToday && isSelectedForCreate ? 'ring-2 ring-indigo-500 bg-indigo-50' : ''}
           ${isSelected ? 'bg-indigo-100' : ''}
           ${holidayLabel ? 'font-semibold text-red-600' : ''}
           ${customDayLabel ? 'font-semibold text-amber-600' : ''}
@@ -59,6 +62,7 @@ export const DayCell = memo(function DayCell({
       className={`min-h-[5rem] p-1.5 border-b border-r border-cloud-100 cursor-pointer select-none transition-colors
         ${isCurrentMonth ? 'bg-white' : 'bg-cloud-50/50'}
         ${isSelected ? 'bg-indigo-50' : ''}
+        ${isSelectedForCreate ? 'ring-2 ring-indigo-500 ring-inset bg-indigo-50' : ''}
         hover:bg-cloud-50
       `}
       onMouseDown={(e) => {

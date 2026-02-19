@@ -10,6 +10,7 @@ interface MonthViewProps {
   trips: TripSummary[]
   holidays: HolidayEntry[]
   customDays: CustomDay[]
+  selectedDate?: string | null
   selection: DragSelection | null
   onDragStart: (date: string) => void
   onDragMove: (date: string) => void
@@ -61,6 +62,7 @@ export function MonthView({
   trips,
   holidays,
   customDays,
+  selectedDate,
   selection,
   onDragStart,
   onDragMove,
@@ -130,6 +132,7 @@ export function MonthView({
                 isToday={day.date === today}
                 isCurrentMonth={day.isCurrentMonth}
                 isSelected={isInSelection(day.date)}
+                isSelectedForCreate={day.date === selectedDate}
                 holidayLabel={holidayMap.get(day.date)}
                 customDayLabel={customDayMap.get(day.date)}
                 onMouseDown={onDragStart}

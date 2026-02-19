@@ -9,6 +9,7 @@ interface QuarterViewProps {
   trips: TripSummary[]
   holidays: HolidayEntry[]
   customDays: CustomDay[]
+  selectedDate?: string | null
   onMonthClick: (month: number) => void      // month header click (drill-down)
   onDayClick: (date: string) => void          // empty day click (quick-add)
   onTripClick: (trip: TripSummary) => void    // trip bar click (detail sidebar)
@@ -45,6 +46,7 @@ export function QuarterView({
   trips,
   holidays,
   customDays,
+  selectedDate,
   onMonthClick,
   onDayClick,
   onTripClick,
@@ -115,6 +117,7 @@ export function QuarterView({
                           isToday={day.date === today}
                           isCurrentMonth
                           isSelected={false}
+                          isSelectedForCreate={day.date === selectedDate}
                           holidayLabel={holidayMap.get(day.date)}
                           customDayLabel={customDaySet.has(day.date) ? 'custom' : undefined}
                           compact

@@ -169,6 +169,7 @@ export function PlanningCenterPage() {
   const allHolidays = holidayData?.holidays ?? []
   const allCustomDays = holidayData?.custom_days ?? []
   const enabledCountries = holidayData?.enabled_countries ?? []
+  const selectedDate = sidebarContent?.type === 'trip-create' ? sidebarContent.startDate : null
 
   return (
     <div
@@ -208,6 +209,7 @@ export function PlanningCenterPage() {
             trips={allTrips}
             holidays={allHolidays}
             customDays={allCustomDays}
+            selectedDate={selectedDate}
             selection={selection}
             onDragStart={onDragStart}
             onDragMove={onDragMove}
@@ -221,6 +223,7 @@ export function PlanningCenterPage() {
             trips={allTrips}
             holidays={allHolidays}
             customDays={allCustomDays}
+            selectedDate={selectedDate}
             onMonthClick={handleMonthClick}
             onDayClick={handleDayClick}
             onTripClick={handleTripClick}
@@ -232,6 +235,7 @@ export function PlanningCenterPage() {
             trips={allTrips}
             holidays={allHolidays}
             customDays={allCustomDays}
+            selectedDate={selectedDate}
             onMonthClick={handleMonthClick}
             onDayClick={handleDayClick}
             onTripClick={handleTripClick}
