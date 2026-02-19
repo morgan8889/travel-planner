@@ -15,6 +15,7 @@ interface MonthViewProps {
   onDragStart: (date: string) => void
   onDragMove: (date: string) => void
   onTripClick: (trip: TripSummary) => void
+  onHolidayClick?: (date: string) => void
 }
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -67,6 +68,7 @@ export function MonthView({
   onDragStart,
   onDragMove,
   onTripClick,
+  onHolidayClick,
 }: MonthViewProps) {
   const today = new Date().toISOString().split('T')[0]
   const days = useMemo(() => getMonthGrid(year, month), [year, month])
@@ -148,6 +150,7 @@ export function MonthView({
                   customDayLabel={customDayMap.get(day.date)}
                   onMouseDown={onDragStart}
                   onMouseEnter={onDragMove}
+                  onHolidayClick={onHolidayClick}
                 />
               ))}
             </div>

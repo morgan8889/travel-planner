@@ -13,6 +13,7 @@ interface QuarterViewProps {
   onMonthClick: (month: number) => void      // month header click (drill-down)
   onDayClick: (date: string) => void          // empty day click (quick-add)
   onTripClick: (trip: TripSummary) => void    // trip bar click (detail sidebar)
+  onHolidayClick?: (date: string) => void
 }
 
 const MONTH_NAMES = [
@@ -50,6 +51,7 @@ export function QuarterView({
   onMonthClick,
   onDayClick,
   onTripClick,
+  onHolidayClick,
 }: QuarterViewProps) {
   const months = [quarter * 3, quarter * 3 + 1, quarter * 3 + 2]
   const today = new Date().toISOString().split('T')[0]
@@ -123,6 +125,7 @@ export function QuarterView({
                           compact
                           showLabel
                           onClick={() => onDayClick(day.date)}
+                          onHolidayClick={onHolidayClick}
                         />
                       )
                     })}

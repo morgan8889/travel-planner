@@ -171,6 +171,13 @@ export function PlanningCenterPage() {
   const enabledCountries = holidayData?.enabled_countries ?? []
   const selectedDate = sidebarContent?.type === 'trip-create' ? sidebarContent.startDate : null
 
+  const handleHolidayClick = (date: string) => {
+    const holiday = allHolidays.find((h) => h.date === date)
+    if (holiday) {
+      setSidebarContent({ type: 'holiday', name: holiday.name, date: holiday.date, countryCode: holiday.country_code })
+    }
+  }
+
   return (
     <div
       className="space-y-4"
@@ -222,6 +229,7 @@ export function PlanningCenterPage() {
             onDragStart={onDragStart}
             onDragMove={onDragMove}
             onTripClick={handleTripClick}
+            onHolidayClick={handleHolidayClick}
           />
         )}
         {zoomLevel === 'quarter' && (
@@ -235,6 +243,7 @@ export function PlanningCenterPage() {
             onMonthClick={handleMonthClick}
             onDayClick={handleDayClick}
             onTripClick={handleTripClick}
+            onHolidayClick={handleHolidayClick}
           />
         )}
         {zoomLevel === 'year' && (
@@ -247,6 +256,7 @@ export function PlanningCenterPage() {
             onMonthClick={handleMonthClick}
             onDayClick={handleDayClick}
             onTripClick={handleTripClick}
+            onHolidayClick={handleHolidayClick}
           />
         )}
       </div>

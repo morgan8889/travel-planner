@@ -12,6 +12,7 @@ interface YearViewProps {
   onMonthClick: (month: number) => void      // month header click (drill-down)
   onDayClick: (date: string) => void          // empty day click (quick-add)
   onTripClick: (trip: TripSummary) => void    // trip bar click (detail sidebar)
+  onHolidayClick?: (date: string) => void
 }
 
 const MONTH_NAMES = [
@@ -48,6 +49,7 @@ export function YearView({
   onMonthClick,
   onDayClick,
   onTripClick,
+  onHolidayClick,
 }: YearViewProps) {
   const today = new Date().toISOString().split('T')[0]
 
@@ -114,6 +116,7 @@ export function YearView({
                           customDayLabel={customDaySet.has(day.date) ? 'custom' : undefined}
                           compact
                           onClick={() => onDayClick(day.date)}
+                          onHolidayClick={onHolidayClick}
                         />
                       )
                     })}
