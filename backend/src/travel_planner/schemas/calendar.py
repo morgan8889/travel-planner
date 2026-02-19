@@ -1,69 +1,53 @@
 import uuid
 from datetime import date, datetime
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
-
-from travel_planner.models.calendar import BlockType
+from pydantic import BaseModel, ConfigDict, Field
 
 
-class AnnualPlanCreate(BaseModel):
-    year: int = Field(..., ge=2000, le=2100)
-    notes: str | None = Field(default=None, max_length=5000)
+class HolidayEntry(BaseModel):
+    """A single holiday from a country calendar (computed, not stored)."""
+
+    date: date
+    name: str
+    country_code: str
 
 
-class AnnualPlanResponse(BaseModel):
+class CustomDayCreate(BaseModel):
+    name: str = Field(..., max_length=255)
+    date: date
+    recurring: bool = False
+
+
+class CustomDayResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
     user_id: uuid.UUID
-    year: int
-    notes: str | None
+    name: str
+    date: date
+    recurring: bool
     created_at: datetime
 
 
-class CalendarBlockCreate(BaseModel):
-    annual_plan_id: uuid.UUID
-    type: BlockType
-    start_date: date
-    end_date: date
-    destination: str | None = Field(default=None, max_length=255)
-    notes: str | None = Field(default=None, max_length=5000)
-
-    @model_validator(mode="after")
-    def validate_dates(self) -> "CalendarBlockCreate":
-        if self.end_date < self.start_date:
-            raise ValueError("end_date must be on or after start_date")
-        return self
+class EnableCountryRequest(BaseModel):
+    country_code: str = Field(..., min_length=2, max_length=10)
+    year: int = Field(..., ge=2000, le=2100)
 
 
-class CalendarBlockUpdate(BaseModel):
-    type: BlockType | None = None
-    start_date: date | None = None
-    end_date: date | None = None
-    destination: str | None = Field(default=None, max_length=255)
-    notes: str | None = Field(default=None, max_length=5000)
-
-    @model_validator(mode="after")
-    def validate_dates(self) -> "CalendarBlockUpdate":
-        if (
-            self.start_date is not None
-            and self.end_date is not None
-            and self.end_date < self.start_date
-        ):
-            raise ValueError("end_date must be on or after start_date")
-        return self
-
-
-class CalendarBlockResponse(BaseModel):
+class HolidayCalendarResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    annual_plan_id: uuid.UUID
-    type: BlockType
-    start_date: date
-    end_date: date
-    destination: str | None
-    notes: str | None
+    country_code: str
+    year: int
+
+
+class HolidaysResponse(BaseModel):
+    """Combined holidays + custom days for a year."""
+
+    holidays: list[HolidayEntry]
+    custom_days: list[CustomDayResponse]
+    enabled_countries: list[HolidayCalendarResponse]
 
 
 class TripSummaryForCalendar(BaseModel):
@@ -75,9 +59,3 @@ class TripSummaryForCalendar(BaseModel):
     start_date: date
     end_date: date
     status: str
-
-
-class CalendarYearResponse(BaseModel):
-    plan: AnnualPlanResponse | None
-    blocks: list[CalendarBlockResponse]
-    trips: list[TripSummaryForCalendar]

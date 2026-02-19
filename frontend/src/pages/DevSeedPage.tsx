@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
-import axios from 'axios'
 import { api, itineraryApi, checklistApi, calendarApi } from '../lib/api'
-import type { TripCreate, TripSummary, CreateActivity, BlockType } from '../lib/types'
+import type { TripCreate, TripSummary, CreateActivity } from '../lib/types'
 
 // ─── Trip Definitions ────────────────────────────────────────────────
 
@@ -164,41 +163,12 @@ const CHECKLISTS: Record<number, ChecklistDef[]> = {
   ],
 }
 
-// ─── Calendar Definitions ────────────────────────────────────────────
+// ─── Custom Day Definitions ──────────────────────────────────────────
 
-interface CalendarBlockDef {
-  type: BlockType
-  start_date: string
-  end_date: string
-  destination?: string
-  notes?: string
-}
-
-const CALENDAR_BLOCKS: CalendarBlockDef[] = [
-  // US Federal Holidays
-  { type: 'holiday', start_date: '2026-01-01', end_date: '2026-01-01', notes: "New Year's Day" },
-  { type: 'holiday', start_date: '2026-01-19', end_date: '2026-01-19', notes: 'Martin Luther King Jr. Day' },
-  { type: 'holiday', start_date: '2026-02-16', end_date: '2026-02-16', notes: "Presidents' Day" },
-  { type: 'holiday', start_date: '2026-05-25', end_date: '2026-05-25', notes: 'Memorial Day' },
-  { type: 'holiday', start_date: '2026-06-19', end_date: '2026-06-19', notes: 'Juneteenth' },
-  { type: 'holiday', start_date: '2026-07-03', end_date: '2026-07-03', notes: 'Independence Day (observed)' },
-  { type: 'holiday', start_date: '2026-09-07', end_date: '2026-09-07', notes: 'Labor Day' },
-  { type: 'holiday', start_date: '2026-10-12', end_date: '2026-10-12', notes: 'Columbus Day' },
-  { type: 'holiday', start_date: '2026-11-26', end_date: '2026-11-27', notes: 'Thanksgiving (Thu-Fri)' },
-  { type: 'holiday', start_date: '2026-12-25', end_date: '2026-12-25', notes: 'Christmas Day' },
-  // PTO Blocks
-  { type: 'pto', start_date: '2026-01-05', end_date: '2026-01-09', notes: 'Post-holiday recovery' },
-  { type: 'pto', start_date: '2026-02-16', end_date: '2026-02-20', notes: 'Winter ski break', destination: 'Park City, UT' },
-  { type: 'pto', start_date: '2026-03-30', end_date: '2026-04-03', notes: 'Spring break' },
-  { type: 'pto', start_date: '2026-04-10', end_date: '2026-04-18', notes: 'Tokyo trip', destination: 'Tokyo, Japan' },
-  { type: 'pto', start_date: '2026-05-02', end_date: '2026-05-10', notes: 'Lisbon trip (weekend buffer)', destination: 'Lisbon, Portugal' },
-  { type: 'pto', start_date: '2026-06-19', end_date: '2026-06-27', notes: 'Iceland trip', destination: 'Reykjavik, Iceland' },
-  { type: 'pto', start_date: '2026-07-02', end_date: '2026-07-06', notes: 'Summer long weekend' },
-  { type: 'pto', start_date: '2026-08-10', end_date: '2026-08-14', notes: 'Beach week', destination: 'Outer Banks, NC' },
-  { type: 'pto', start_date: '2026-09-01', end_date: '2026-09-05', notes: 'SE Asia start', destination: 'Bangkok, Thailand' },
-  { type: 'pto', start_date: '2026-10-13', end_date: '2026-10-17', notes: 'Fall break' },
-  { type: 'pto', start_date: '2026-11-23', end_date: '2026-11-27', notes: 'Thanksgiving week' },
-  { type: 'pto', start_date: '2026-12-22', end_date: '2026-12-31', notes: 'Holiday break' },
+const CUSTOM_DAYS = [
+  { name: "Mom's Birthday", date: '2026-05-15', recurring: true },
+  { name: 'Company Retreat', date: '2026-09-20', recurring: false },
+  { name: 'Wedding Anniversary', date: '2026-08-01', recurring: true },
 ]
 
 // ─── Helper: add days to a date string ───────────────────────────────
@@ -331,40 +301,17 @@ export function DevSeedPage() {
   const seedCalendar = useCallback(async () => {
     log('--- Seeding Calendar ---')
 
-    let planId: string
-    try {
-      const planRes = await calendarApi.createPlan({ year: 2026, notes: 'Heavy travel year - seed data' })
-      planId = planRes.data.id
-      log('  Created 2026 annual plan')
-    } catch (err) {
-      // 409 = plan already exists, reuse it
-      if (axios.isAxiosError(err) && err.response?.status === 409) {
-        const existing = await calendarApi.getYear(2026)
-        if (!existing.data.plan) throw new Error('2026 plan not found after 409')
-        planId = existing.data.plan.id
-        // Clear existing blocks before re-seeding
-        for (const block of existing.data.blocks) {
-          await calendarApi.deleteBlock(block.id)
-        }
-        log(`  Reusing existing 2026 plan (cleared ${existing.data.blocks.length} old blocks)`)
-      } else {
-        throw err
-      }
+    // Enable US holidays for 2026
+    await calendarApi.enableCountry({ country_code: 'US', year: 2026 })
+    log('  Enabled US holidays for 2026')
+
+    // Add custom days
+    for (const day of CUSTOM_DAYS) {
+      await calendarApi.createCustomDay(day)
+      log(`  Custom day: ${day.name} (${day.date})`)
     }
 
-    for (const block of CALENDAR_BLOCKS) {
-      await calendarApi.createBlock({
-        annual_plan_id: planId,
-        type: block.type,
-        start_date: block.start_date,
-        end_date: block.end_date,
-        destination: block.destination ?? null,
-        notes: block.notes ?? null,
-      })
-    }
-
-    log(`  Created ${CALENDAR_BLOCKS.length} calendar blocks (${CALENDAR_BLOCKS.filter((b) => b.type === 'holiday').length} holidays, ${CALENDAR_BLOCKS.filter((b) => b.type === 'pto').length} PTO)`)
-    log('Done: calendar seeded')
+    log(`Done: calendar seeded (US holidays + ${CUSTOM_DAYS.length} custom days)`)
   }, [log])
 
   // ─── Clear All Data ──────────────────────────────────────────────
@@ -391,17 +338,21 @@ export function DevSeedPage() {
       }
       log(`  Removed ${trips.length} trips (with itineraries + checklists)`)
 
-      // Delete calendar blocks for 2026
+      // Clear calendar: disable US holidays and delete custom days
       try {
-        const calRes = await calendarApi.getYear(2026)
-        if (calRes.data.blocks.length > 0) {
-          for (const block of calRes.data.blocks) {
-            await calendarApi.deleteBlock(block.id)
-          }
-          log(`  Removed ${calRes.data.blocks.length} calendar blocks`)
+        const calRes = await calendarApi.getHolidays(2026)
+        for (const entry of calRes.data.enabled_countries) {
+          await calendarApi.disableCountry(entry.country_code, 2026)
+          log(`  Disabled ${entry.country_code} holidays for 2026`)
+        }
+        for (const day of calRes.data.custom_days) {
+          await calendarApi.deleteCustomDay(day.id)
+        }
+        if (calRes.data.custom_days.length > 0) {
+          log(`  Removed ${calRes.data.custom_days.length} custom days`)
         }
       } catch {
-        log('  No 2026 calendar plan found')
+        log('  No calendar data found to clear')
       }
 
       tripIdsRef.current.clear()
@@ -450,7 +401,7 @@ export function DevSeedPage() {
     <div className="max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold text-cloud-900 mb-1">Test Data Generator</h1>
       <p className="text-sm text-cloud-500 mb-6">
-        Creates real data in the database using your current session. Trips, itineraries, checklists, and calendar blocks.
+        Creates real data in the database using your current session. Trips, itineraries, checklists, and calendar data.
       </p>
 
       <div className="flex flex-wrap gap-2 mb-6">

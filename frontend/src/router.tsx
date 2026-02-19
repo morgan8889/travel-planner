@@ -4,7 +4,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import { TripsPage } from './pages/TripsPage'
 import { NewTripPage } from './pages/NewTripPage'
 import { TripDetailPage } from './pages/TripDetailPage'
-import { CalendarPage } from './pages/CalendarPage'
+import { PlanningCenterPage } from './pages/PlanningCenterPage'
 
 const rootRoute = createRootRoute({
   component: RootLayout,
@@ -37,7 +37,7 @@ export const tripDetailRoute = createRoute({
 const calendarRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/calendar',
-  component: CalendarPage,
+  component: PlanningCenterPage,
 })
 
 const devChildren = import.meta.env.DEV

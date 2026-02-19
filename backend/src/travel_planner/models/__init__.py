@@ -1,4 +1,4 @@
-from travel_planner.models.calendar import AnnualPlan, CalendarBlock
+from travel_planner.models.calendar import CustomDay, HolidayCalendar
 from travel_planner.models.chat import ChatMessage, ChatThread
 from travel_planner.models.checklist import Checklist, ChecklistItem, ChecklistItemUser
 from travel_planner.models.gmail import GmailConnection, ImportRecord
@@ -11,8 +11,8 @@ __all__ = [
     "UserProfile",
     "Trip",
     "TripMember",
-    "AnnualPlan",
-    "CalendarBlock",
+    "HolidayCalendar",
+    "CustomDay",
     "ItineraryDay",
     "Activity",
     "Checklist",
