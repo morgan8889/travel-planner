@@ -1,0 +1,79 @@
+import { memo } from 'react'
+
+interface DayCellProps {
+  date: string  // YYYY-MM-DD
+  dayNumber: number
+  isToday: boolean
+  isCurrentMonth: boolean
+  isSelected: boolean
+  holidayLabel?: string
+  customDayLabel?: string
+  compact?: boolean  // true for quarter/year views
+  onMouseDown?: (date: string) => void
+  onMouseEnter?: (date: string) => void
+  onClick?: (date: string) => void
+}
+
+export const DayCell = memo(function DayCell({
+  date,
+  dayNumber,
+  isToday,
+  isCurrentMonth,
+  isSelected,
+  holidayLabel,
+  customDayLabel,
+  compact = false,
+  onMouseDown,
+  onMouseEnter,
+  onClick,
+}: DayCellProps) {
+  const label = holidayLabel || customDayLabel
+
+  if (compact) {
+    return (
+      <div
+        className={`w-full aspect-square flex items-center justify-center text-xs rounded-sm cursor-pointer
+          ${isCurrentMonth ? 'text-cloud-700' : 'text-cloud-300'}
+          ${isToday ? 'ring-2 ring-indigo-500 ring-inset font-bold' : ''}
+          ${isSelected ? 'bg-indigo-100' : ''}
+          ${holidayLabel ? 'font-semibold text-red-600' : ''}
+          ${customDayLabel ? 'font-semibold text-amber-600' : ''}
+        `}
+        onClick={() => onClick?.(date)}
+        title={label}
+      >
+        {dayNumber}
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className={`min-h-[5rem] p-1.5 border-b border-r border-cloud-100 cursor-pointer select-none transition-colors
+        ${isCurrentMonth ? 'bg-white' : 'bg-cloud-50/50'}
+        ${isSelected ? 'bg-indigo-50' : ''}
+        hover:bg-cloud-50
+      `}
+      onMouseDown={(e) => {
+        e.preventDefault()
+        onMouseDown?.(date)
+      }}
+      onMouseEnter={() => onMouseEnter?.(date)}
+    >
+      <span
+        className={`inline-flex items-center justify-center w-7 h-7 text-sm rounded-full
+          ${isToday ? 'bg-indigo-600 text-white font-bold' : ''}
+          ${!isToday && isCurrentMonth ? 'text-cloud-800' : ''}
+          ${!isToday && !isCurrentMonth ? 'text-cloud-400' : ''}
+        `}
+      >
+        {dayNumber}
+      </span>
+      {label && (
+        <p className={`text-[10px] leading-tight mt-0.5 truncate ${holidayLabel ? 'text-red-500' : 'text-amber-500'}`}>
+          {label}
+        </p>
+      )}
+    </div>
+  )
+})
