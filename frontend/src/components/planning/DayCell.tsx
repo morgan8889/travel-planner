@@ -9,6 +9,7 @@ interface DayCellProps {
   holidayLabel?: string
   customDayLabel?: string
   compact?: boolean  // true for quarter/year views
+  showLabel?: boolean  // show label text in compact mode (quarter view)
   onMouseDown?: (date: string) => void
   onMouseEnter?: (date: string) => void
   onClick?: (date: string) => void
@@ -23,6 +24,7 @@ export const DayCell = memo(function DayCell({
   holidayLabel,
   customDayLabel,
   compact = false,
+  showLabel = false,
   onMouseDown,
   onMouseEnter,
   onClick,
@@ -32,7 +34,7 @@ export const DayCell = memo(function DayCell({
   if (compact) {
     return (
       <div
-        className={`w-full aspect-square flex items-center justify-center text-xs rounded-sm cursor-pointer
+        className={`w-full ${showLabel ? 'min-h-[2.5rem]' : 'aspect-square'} flex flex-col items-center justify-center text-xs rounded-sm cursor-pointer
           ${isCurrentMonth ? 'text-cloud-700' : 'text-cloud-300'}
           ${isToday ? 'ring-2 ring-indigo-500 ring-inset font-bold' : ''}
           ${isSelected ? 'bg-indigo-100' : ''}
@@ -43,6 +45,11 @@ export const DayCell = memo(function DayCell({
         title={label}
       >
         {dayNumber}
+        {showLabel && label && (
+          <span className={`text-[6px] leading-tight truncate max-w-full ${holidayLabel ? 'text-red-500' : 'text-amber-500'}`}>
+            {label}
+          </span>
+        )}
       </div>
     )
   }

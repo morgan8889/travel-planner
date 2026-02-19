@@ -118,6 +118,7 @@ export function QuarterView({
                           holidayLabel={holidayMap.get(day.date)}
                           customDayLabel={customDaySet.has(day.date) ? 'custom' : undefined}
                           compact
+                          showLabel
                           onClick={() => onDayClick(day.date)}
                         />
                       )
