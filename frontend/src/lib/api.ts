@@ -93,6 +93,12 @@ export const checklistApi = {
 
   toggleItem: (itemId: string) =>
     api.post<ChecklistItem>(`/checklist/items/${itemId}/toggle`, {}),
+
+  delete: (tripId: string, checklistId: string) =>
+    api.delete(`/checklist/trips/${tripId}/checklists/${checklistId}`),
+
+  deleteItem: (itemId: string) =>
+    api.delete(`/checklist/items/${itemId}`),
 }
 
 export const geocodeApi = {

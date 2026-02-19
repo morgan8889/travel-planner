@@ -15,9 +15,9 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import type { ItineraryDay } from '../../lib/types'
-import { useActivities, useReorderActivities, useDeleteDay } from '../../hooks/useItinerary'
+import { useActivities, useReorderActivities, useDeleteDay, useCreateActivity } from '../../hooks/useItinerary'
 import { ActivityItem } from './ActivityItem'
-import { AddActivityModal } from './AddActivityModal'
+import { ActivityForm } from './ActivityForm'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 
 interface ItineraryDayCardProps {
@@ -28,8 +28,9 @@ interface ItineraryDayCardProps {
 export function ItineraryDayCard({ day, tripId }: ItineraryDayCardProps) {
   const { data: activities, isLoading, isError, error } = useActivities(day.id)
   const reorderActivities = useReorderActivities(day.id)
+  const createActivity = useCreateActivity(day.id, tripId)
   const deleteDay = useDeleteDay(tripId)
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isAddingActivity, setIsAddingActivity] = useState(false)
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
 
   const sensors = useSensors(
@@ -68,22 +69,13 @@ export function ItineraryDayCard({ day, tripId }: ItineraryDayCardProps) {
             <p className="text-sm text-cloud-600 mt-1">{day.notes}</p>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Activity
-          </button>
-          <button
-            onClick={() => setIsDeleteConfirmOpen(true)}
-            className="p-1.5 text-cloud-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-            aria-label="Delete day"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
+        <button
+          onClick={() => setIsDeleteConfirmOpen(true)}
+          className="p-1.5 text-cloud-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+          aria-label="Delete day"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
       </div>
 
       {isLoading ? (
@@ -120,12 +112,29 @@ export function ItineraryDayCard({ day, tripId }: ItineraryDayCardProps) {
         </div>
       )}
 
-      <AddActivityModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        dayId={day.id}
-        tripId={tripId}
-      />
+      {isAddingActivity ? (
+        <div className="mt-2">
+          <ActivityForm
+            dayId={day.id}
+            tripId={tripId}
+            onSave={async (data) => {
+              await createActivity.mutateAsync(data)
+              setIsAddingActivity(false)
+            }}
+            onCancel={() => setIsAddingActivity(false)}
+            isPending={createActivity.isPending}
+            error={createActivity.isError ? (createActivity.error as Error) : null}
+          />
+        </div>
+      ) : (
+        <button
+          onClick={() => setIsAddingActivity(true)}
+          className="mt-2 flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors w-full justify-center"
+        >
+          <Plus className="w-4 h-4" />
+          Add Activity
+        </button>
+      )}
 
       <ConfirmDialog
         isOpen={isDeleteConfirmOpen}

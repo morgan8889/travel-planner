@@ -153,12 +153,15 @@ describe('TripDetailPage', () => {
     expect(typeBadge).toHaveTextContent('Vacation')
   })
 
-  it('renders members list in sidebar', async () => {
+  it('renders members list', async () => {
     mockGetTrip.mockResolvedValue({ data: mockTrip })
     renderWithRouter()
 
-    expect(await screen.findByText('Test User')).toBeInTheDocument()
-    expect(screen.getByText('Other User')).toBeInTheDocument()
+    // Members appear in both mobile and desktop sections; verify at least one is present
+    const testUserElements = await screen.findAllByText('Test User')
+    expect(testUserElements.length).toBeGreaterThanOrEqual(1)
+    const otherUserElements = screen.getAllByText('Other User')
+    expect(otherUserElements.length).toBeGreaterThanOrEqual(1)
   })
 
   it('shows edit button and toggles edit mode', async () => {
@@ -205,6 +208,18 @@ describe('TripDetailPage', () => {
 
     expect(await screen.findByText('Sub-trips')).toBeInTheDocument()
     expect(screen.getByText('Rome')).toBeInTheDocument()
+  })
+
+  it('renders two-panel layout with itinerary and checklists sections without tabs', async () => {
+    mockGetTrip.mockResolvedValue({ data: mockTrip })
+    renderWithRouter()
+
+    // Section headers visible directly (no tab click required)
+    expect(await screen.findByText('Itinerary')).toBeInTheDocument()
+    expect(screen.getByText('Checklists')).toBeInTheDocument()
+
+    // No tab navigation
+    expect(screen.queryByRole('button', { name: 'Overview' })).not.toBeInTheDocument()
   })
 
   it('renders error state on fetch failure', async () => {

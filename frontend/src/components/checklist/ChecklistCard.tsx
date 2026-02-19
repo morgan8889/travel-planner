@@ -1,7 +1,13 @@
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, Trash2, X } from 'lucide-react'
 import type { Checklist } from '../../lib/types'
-import { useAddChecklistItem, useToggleChecklistItem } from '../../hooks/useChecklists'
+import {
+  useAddChecklistItem,
+  useDeleteChecklist,
+  useDeleteChecklistItem,
+  useToggleChecklistItem,
+} from '../../hooks/useChecklists'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
 
 interface ChecklistCardProps {
   checklist: Checklist
@@ -12,9 +18,12 @@ export function ChecklistCard({ checklist, tripId }: ChecklistCardProps) {
   const [showAddForm, setShowAddForm] = useState(false)
   const [newItemText, setNewItemText] = useState('')
   const [pendingToggleId, setPendingToggleId] = useState<string | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const addItemMutation = useAddChecklistItem(tripId)
   const toggleMutation = useToggleChecklistItem(tripId)
+  const deleteChecklist = useDeleteChecklist(tripId)
+  const deleteChecklistItem = useDeleteChecklistItem(tripId)
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -62,14 +71,31 @@ export function ChecklistCard({ checklist, tripId }: ChecklistCardProps) {
           <p className="text-sm text-cloud-600 mt-0.5">
             {completedCount} of {totalCount} completed
           </p>
+          {totalCount > 0 && (
+            <div className="w-full bg-cloud-100 rounded-full h-1.5 mt-2">
+              <div
+                className="bg-indigo-500 h-1.5 rounded-full transition-all"
+                style={{ width: `${(completedCount / totalCount) * 100}%` }}
+              />
+            </div>
+          )}
         </div>
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-          aria-label="Add item"
-        >
-          <Plus className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+            aria-label="Add item"
+          >
+            <Plus className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="p-1.5 text-cloud-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            aria-label="Delete checklist"
+          >
+            <Trash2 className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {showAddForm && (
@@ -119,21 +145,27 @@ export function ChecklistCard({ checklist, tripId }: ChecklistCardProps) {
           </p>
         ) : (
           checklist.items.map((item) => (
-            <label
-              key={item.id}
-              className="flex items-center gap-3 p-2 rounded-lg hover:bg-cloud-50 cursor-pointer transition-colors"
-            >
-              <input
-                type="checkbox"
-                checked={item.checked}
-                onChange={() => handleToggle(item.id)}
-                disabled={pendingToggleId === item.id}
-                className="w-5 h-5 rounded border-cloud-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-              />
-              <span className={item.checked ? 'line-through text-cloud-500' : 'text-cloud-900'}>
-                {item.text}
-              </span>
-            </label>
+            <div key={item.id} className="flex items-center gap-2 group">
+              <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-cloud-50 cursor-pointer transition-colors flex-1">
+                <input
+                  type="checkbox"
+                  checked={item.checked}
+                  onChange={() => handleToggle(item.id)}
+                  disabled={pendingToggleId === item.id}
+                  className="w-5 h-5 rounded border-cloud-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                />
+                <span className={item.checked ? 'line-through text-cloud-500' : 'text-cloud-900'}>
+                  {item.text}
+                </span>
+              </label>
+              <button
+                onClick={() => deleteChecklistItem.mutate(item.id)}
+                className="opacity-0 group-hover:opacity-100 p-1 text-cloud-400 hover:text-red-600 rounded transition-all"
+                aria-label="Delete item"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           ))
         )}
       </div>
@@ -147,6 +179,19 @@ export function ChecklistCard({ checklist, tripId }: ChecklistCardProps) {
           </p>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={() => {
+          deleteChecklist.mutate(checklist.id)
+          setShowDeleteConfirm(false)
+        }}
+        title="Delete Checklist"
+        message={`Are you sure you want to delete "${checklist.title}" and all its items?`}
+        confirmLabel="Delete"
+        isLoading={deleteChecklist.isPending}
+      />
     </div>
   )
 }

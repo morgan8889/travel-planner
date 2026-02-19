@@ -445,3 +445,117 @@ def test_toggle_item_not_member(
         f"/checklist/items/{item_id}/toggle", headers=other_user_headers
     )
     assert response.status_code == 403
+
+
+def test_delete_checklist_item(
+    client: TestClient,
+    auth_headers: dict,
+    item_id: str,
+    override_get_db,
+    mock_db_session,
+):
+    """Deleting a checklist item returns 204."""
+    it_id = UUID(item_id)
+    owner_user = _make_user()
+    owner_member = _make_member(user=owner_user)
+    trip = _make_trip(members=[owner_member])
+
+    mock_checklist = MagicMock(spec=Checklist)
+    mock_checklist.trip_id = TRIP_ID
+
+    mock_item = MagicMock(spec=ChecklistItem)
+    mock_item.id = it_id
+    mock_item.checklist = mock_checklist
+
+    # First call: get item with checklist
+    result_mock1 = MagicMock()
+    result_mock1.scalar_one_or_none.return_value = mock_item
+
+    # Second call: verify_trip_member
+    result_mock2 = MagicMock()
+    result_mock2.scalar_one_or_none.return_value = trip
+
+    mock_db_session.execute = AsyncMock(side_effect=[result_mock1, result_mock2])
+    mock_db_session.delete = AsyncMock()
+    mock_db_session.commit = AsyncMock()
+
+    response = client.delete(
+        f"/checklist/items/{item_id}",
+        headers=auth_headers,
+    )
+    assert response.status_code == 204
+
+
+def test_delete_checklist(
+    client: TestClient,
+    auth_headers: dict,
+    trip_id: str,
+    override_get_db,
+    mock_db_session,
+):
+    """Deleting a checklist returns 204."""
+    from uuid import uuid4
+
+    checklist_id = uuid4()
+
+    # Setup: Trip exists and user is a member
+    owner_user = _make_user()
+    owner_member = _make_member(user=owner_user)
+    trip = _make_trip(members=[owner_member])
+
+    mock_checklist = MagicMock(spec=Checklist)
+    mock_checklist.id = checklist_id
+    mock_checklist.trip_id = TRIP_ID
+
+    # First call: verify_trip_member query
+    result_mock1 = MagicMock()
+    result_mock1.scalar_one_or_none.return_value = trip
+
+    # Second call: get checklist
+    result_mock2 = MagicMock()
+    result_mock2.scalar_one_or_none.return_value = mock_checklist
+
+    mock_db_session.execute = AsyncMock(side_effect=[result_mock1, result_mock2])
+    mock_db_session.delete = AsyncMock()
+    mock_db_session.commit = AsyncMock()
+
+    response = client.delete(
+        f"/checklist/trips/{trip_id}/checklists/{checklist_id}",
+        headers=auth_headers,
+    )
+    assert response.status_code == 204
+
+
+def test_delete_checklist_cross_trip_idor(
+    client: TestClient,
+    auth_headers: dict,
+    trip_id: str,
+    override_get_db,
+    mock_db_session,
+):
+    """Member of one trip cannot delete a checklist belonging to a different trip."""
+    from uuid import uuid4
+
+    foreign_checklist_id = uuid4()
+
+    # User is a valid member of their own trip
+    owner_user = _make_user()
+    owner_member = _make_member(user=owner_user)
+    trip = _make_trip(members=[owner_member])
+
+    # First call: verify_trip_member — user IS a member of trip_id
+    result_mock1 = MagicMock()
+    result_mock1.scalar_one_or_none.return_value = trip
+
+    # Second call: checklist scoped to trip_id returns None because the checklist
+    # belongs to a different trip
+    result_mock2 = MagicMock()
+    result_mock2.scalar_one_or_none.return_value = None
+
+    mock_db_session.execute = AsyncMock(side_effect=[result_mock1, result_mock2])
+
+    response = client.delete(
+        f"/checklist/trips/{trip_id}/checklists/{foreign_checklist_id}",
+        headers=auth_headers,
+    )
+    assert response.status_code == 404

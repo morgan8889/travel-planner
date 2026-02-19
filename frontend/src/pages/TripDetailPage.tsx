@@ -1,4 +1,4 @@
-import { useState, useMemo, Suspense, lazy } from 'react'
+import { useState, useRef, useEffect, useMemo, Suspense, lazy } from 'react'
 import { TriangleAlert, ArrowLeft, ChevronRight, SquarePen, Calendar, Trash2, MapPinOff, Plus } from 'lucide-react'
 
 const MapView = lazy(() => import('../components/map/MapView').then((m) => ({ default: m.MapView })))
@@ -8,7 +8,7 @@ import { MarkerPopup } from '../components/map/MarkerPopup'
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { useTrip, useUpdateTrip, useDeleteTrip } from '../hooks/useTrips'
 import { useAddMember, useRemoveMember, useUpdateMemberRole } from '../hooks/useMembers'
-import { useItineraryDays, useGenerateDays, useTripActivities } from '../hooks/useItinerary'
+import { useItineraryDays, useGenerateDays, useDeleteDay, useTripActivities } from '../hooks/useItinerary'
 import { useChecklists } from '../hooks/useChecklists'
 import { useAuth } from '../contexts/AuthContext'
 import { TripStatusBadge } from '../components/trips/TripStatusBadge'
@@ -61,8 +61,8 @@ function DetailSkeleton() {
   return (
     <div className="animate-pulse">
       <div className="h-4 bg-cloud-200 rounded w-24 mb-6" />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <div className="lg:col-span-3 space-y-6">
           <div className="h-10 bg-cloud-200 rounded-lg w-3/4" />
           <div className="flex gap-2">
             <div className="h-6 bg-cloud-200 rounded-full w-20" />
@@ -71,7 +71,7 @@ function DetailSkeleton() {
           <div className="h-5 bg-cloud-200 rounded w-1/2" />
           <div className="h-20 bg-cloud-200 rounded-lg" />
         </div>
-        <div className="space-y-4">
+        <div className="lg:col-span-2 space-y-4">
           <div className="h-6 bg-cloud-200 rounded w-24" />
           <div className="h-12 bg-cloud-200 rounded-lg" />
           <div className="h-12 bg-cloud-200 rounded-lg" />
@@ -97,6 +97,7 @@ export function TripDetailPage() {
   const { data: itineraryDays, isLoading: daysLoading, isError: daysError, error: daysErrorMsg } = useItineraryDays(tripId)
   const { data: checklists, isLoading: checklistsLoading, isError: checklistsError, error: checklistsErrorMsg } = useChecklists(tripId)
   const generateDays = useGenerateDays(tripId)
+  const deleteDay = useDeleteDay(tripId)
 
   // Activity locations for map
   const { data: geoActivities } = useTripActivities(tripId, true)
@@ -106,9 +107,48 @@ export function TripDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showAddMember, setShowAddMember] = useState(false)
   const [addMemberError, setAddMemberError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'overview' | 'itinerary' | 'checklists'>('overview')
   const [showAddChecklistModal, setShowAddChecklistModal] = useState(false)
   const [showAddDayModal, setShowAddDayModal] = useState(false)
+  // Track which orphaned day IDs the user has already confirmed/dismissed
+  const [confirmedOrphanIds, setConfirmedOrphanIds] = useState<string[]>([])
+
+  // Auto-generate days on first visit when trip has dates but no days
+  const hasGeneratedRef = useRef(false)
+  useEffect(() => {
+    if (
+      itineraryDays &&
+      itineraryDays.length === 0 &&
+      trip?.start_date &&
+      trip?.end_date &&
+      !generateDays.isPending &&
+      !hasGeneratedRef.current
+    ) {
+      hasGeneratedRef.current = true
+      generateDays.mutate()
+    }
+  }, [itineraryDays, trip?.start_date, trip?.end_date, generateDays])
+
+  // Delete silently empty orphaned days when trip dates change (mutation only, no setState)
+  useEffect(() => {
+    if (!itineraryDays || !trip?.start_date || !trip?.end_date) return
+    const tripStart = trip.start_date
+    const tripEnd = trip.end_date
+    const emptyOrphans = itineraryDays.filter(
+      (d) => (d.date < tripStart || d.date > tripEnd) && (d.activity_count ?? 0) === 0,
+    )
+    emptyOrphans.forEach((d) => deleteDay.mutate(d.id))
+  }, [trip?.start_date, trip?.end_date]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Derived: orphaned days with activities that the user hasn't dismissed yet
+  const pendingOrphans = itineraryDays && trip?.start_date && trip?.end_date
+    ? itineraryDays.filter(
+        (d) =>
+          (d.date < trip.start_date || d.date > trip.end_date) &&
+          (d.activity_count ?? 0) > 0 &&
+          !confirmedOrphanIds.includes(d.id),
+      )
+    : []
+  const showOrphanConfirm = pendingOrphans.length > 0
 
   const isOwner = trip?.members.some(
     (m) => m.user_id === user?.id && m.role === 'owner'
@@ -179,6 +219,64 @@ export function TripDetailPage() {
     updateMemberRole.mutate({ memberId, role })
   }
 
+  // Map section (shared between mobile banner and desktop sidebar)
+  const mapSection = trip?.destination_latitude != null && trip?.destination_longitude != null ? (
+    <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-cloud-200 overflow-hidden">
+      <div className="h-48 lg:h-72">
+        <Suspense fallback={<div className="h-full bg-cloud-100 animate-pulse" />}>
+          <MapView
+            center={[trip.destination_longitude, trip.destination_latitude]}
+            zoom={10}
+            interactive={true}
+            fitBounds={mapBounds}
+            className="h-full"
+          >
+            <TripMarker
+              tripId={trip.id}
+              longitude={trip.destination_longitude}
+              latitude={trip.destination_latitude}
+              destination={trip.destination}
+              status={trip.status}
+            />
+            {geoActivities?.map((a) =>
+              a.latitude != null && a.longitude != null ? (
+                <ActivityMarker
+                  key={a.id}
+                  activityId={a.id}
+                  longitude={a.longitude}
+                  latitude={a.latitude}
+                  title={a.title}
+                  location={a.location}
+                  category={a.category}
+                  onClick={setSelectedActivity}
+                />
+              ) : null,
+            )}
+            {selectedActivityData &&
+              selectedActivityData.latitude != null &&
+              selectedActivityData.longitude != null && (
+                <MarkerPopup
+                  longitude={selectedActivityData.longitude}
+                  latitude={selectedActivityData.latitude}
+                  title={selectedActivityData.title}
+                  subtitle={selectedActivityData.location ?? undefined}
+                  onClose={() => setSelectedActivity(null)}
+                />
+              )}
+          </MapView>
+        </Suspense>
+      </div>
+      <div className="px-4 py-2.5 border-t border-cloud-100 flex items-center justify-between">
+        <p className="text-sm font-medium text-cloud-700">{trip.destination}</p>
+        {geoActivities && geoActivities.length > 0 && (
+          <p className="text-xs text-cloud-500">
+            {geoActivities.length} {geoActivities.length === 1 ? 'location' : 'locations'}
+          </p>
+        )}
+      </div>
+    </div>
+  ) : null
+
   // Loading state
   if (isLoading) {
     return <DetailSkeleton />
@@ -242,47 +340,16 @@ export function TripDetailPage() {
         <span className="text-cloud-900 font-medium truncate">{trip.destination}</span>
       </nav>
 
-      {/* Tab Navigation */}
-      <div className="mb-6">
-        <div className="border-b border-cloud-200">
-          <nav className="-mb-px flex gap-6">
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'overview'
-                  ? 'border-indigo-600 text-indigo-600'
-                  : 'border-transparent text-cloud-500 hover:text-cloud-700 hover:border-cloud-300'
-              }`}
-            >
-              Overview
-            </button>
-            <button
-              onClick={() => setActiveTab('itinerary')}
-              className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'itinerary'
-                  ? 'border-indigo-600 text-indigo-600'
-                  : 'border-transparent text-cloud-500 hover:text-cloud-700 hover:border-cloud-300'
-              }`}
-            >
-              Itinerary {itineraryDays && itineraryDays.length > 0 && `(${itineraryDays.length} days)`}
-            </button>
-            <button
-              onClick={() => setActiveTab('checklists')}
-              className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'checklists'
-                  ? 'border-indigo-600 text-indigo-600'
-                  : 'border-transparent text-cloud-500 hover:text-cloud-700 hover:border-cloud-300'
-              }`}
-            >
-              Checklists {checklists && checklists.length > 0 && `(${checklists.length})`}
-            </button>
-          </nav>
-        </div>
+      {/* Mobile map banner (visible below lg breakpoint) */}
+      <div className="lg:hidden mb-4">
+        {mapSection}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
+      {/* Two-panel layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        {/* Left column: scrollable content */}
+        <div className="lg:col-span-3 space-y-4">
+          {/* Trip header / edit form */}
           {isEditing ? (
             <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-cloud-200 p-6">
               <h2 className="text-lg font-semibold text-cloud-900 mb-4">Edit Trip</h2>
@@ -304,329 +371,320 @@ export function TripDetailPage() {
                 submitLabel="Save Changes"
               />
             </div>
-          ) : activeTab === 'overview' ? (
-            <>
-              {/* Trip Header */}
-              <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-cloud-200 p-6">
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
-                  <h1 className="text-3xl font-bold text-cloud-900">
-                    {trip.destination}
-                  </h1>
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-cloud-600 bg-white border border-cloud-300 rounded-lg hover:bg-cloud-50 hover:text-cloud-900 transition-colors shrink-0"
-                  >
-                    <SquarePen className="w-4 h-4" />
-                    Edit
-                  </button>
-                </div>
-
-                {/* Badges */}
-                <div className="flex items-center gap-2 mb-4">
-                  <TripTypeBadge type={trip.type} />
-                  <TripStatusBadge status={trip.status} />
-                </div>
-
-                {/* Dates */}
-                <div className="flex items-center gap-3 text-cloud-600 mb-4">
-                  <Calendar className="w-5 h-5 text-cloud-400 shrink-0" />
-                  <span>{formatDateRange(trip.start_date, trip.end_date)}</span>
-                  <span className="text-sm text-cloud-400">
-                    ({getCountdownText(trip.start_date)})
-                  </span>
-                </div>
-
-                {/* Notes */}
-                {trip.notes && (
-                  <div className="mt-4 p-4 bg-cloud-50/80 border border-cloud-100 rounded-lg">
-                    <h3 className="text-sm font-medium text-cloud-700 mb-1">Notes</h3>
-                    <p className="text-sm text-cloud-600 whitespace-pre-wrap">{trip.notes}</p>
-                  </div>
-                )}
-
-                {/* Status Transition */}
-                <div className="mt-5 pt-5 border-t border-cloud-100">
-                  <StatusTransitionButton
-                    currentStatus={trip.status}
-                    onTransition={handleStatusTransition}
-                    isLoading={updateTrip.isPending}
-                  />
-                </div>
-              </div>
-
-              {/* Sub-trips for sabbaticals */}
-              {trip.type === 'sabbatical' && (
-                <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-cloud-200 p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold text-cloud-900">
-                      Sub-trips
-                      {trip.children.length > 0 && (
-                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-cloud-100 text-cloud-600">
-                          {trip.children.length}
-                        </span>
-                      )}
-                    </h2>
-                    <Link
-                      to="/trips/new"
-                      className="text-sm text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
-                    >
-                      + Add Sub-trip
-                    </Link>
-                  </div>
-
-                  {trip.children.length === 0 ? (
-                    <p className="text-sm text-cloud-500 py-4 text-center">
-                      No sub-trips yet. Add vacations or remote weeks within this sabbatical.
-                    </p>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {trip.children.map((child) => (
-                        <TripCard key={child.id} trip={child} />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Danger Zone */}
-              {isOwner && (
-                <div className="bg-white rounded-xl shadow-sm border border-red-200 p-6">
-                  <h2 className="text-lg font-semibold text-red-600 mb-2">Danger Zone</h2>
-                  <p className="text-sm text-cloud-600 mb-4">
-                    Once you delete a trip, there is no going back. Please be certain.
-                  </p>
-                  <button
-                    onClick={() => setShowDeleteConfirm(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete Trip
-                  </button>
-                </div>
-              )}
-            </>
-          ) : activeTab === 'itinerary' ? (
-            <>
-              {/* Itinerary Tab */}
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-cloud-900">
-                  Itinerary
-                  {itineraryDays && itineraryDays.length > 0 && (
-                    <span className="ml-2 text-lg text-cloud-500 font-normal">
-                      {itineraryDays.length} {itineraryDays.length === 1 ? 'day' : 'days'}
-                    </span>
-                  )}
-                </h2>
+          ) : (
+            <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-cloud-200 p-6">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
+                <h1 className="text-3xl font-bold text-cloud-900">
+                  {trip.destination}
+                </h1>
                 <button
-                  onClick={() => setShowAddDayModal(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
+                  onClick={() => setIsEditing(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-cloud-600 bg-white border border-cloud-300 rounded-lg hover:bg-cloud-50 hover:text-cloud-900 transition-colors shrink-0"
                 >
-                  <Plus className="w-4 h-4" />
-                  Add Day
+                  <SquarePen className="w-4 h-4" />
+                  Edit
                 </button>
               </div>
 
-              {daysLoading ? (
-                <div className="animate-pulse space-y-4">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="bg-cloud-50 border border-cloud-200 rounded-xl p-4">
-                      <div className="h-5 bg-cloud-200 rounded w-1/3 mb-3" />
-                      <div className="h-4 bg-cloud-200 rounded w-2/3" />
-                    </div>
-                  ))}
-                </div>
-              ) : daysError ? (
-                <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-cloud-200 p-6">
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-sm text-red-600">
-                      {daysErrorMsg instanceof Error ? daysErrorMsg.message : 'Failed to load itinerary'}
-                    </p>
-                  </div>
-                </div>
-              ) : itineraryDays && itineraryDays.length > 0 ? (
-                <div className="space-y-4">
-                  {itineraryDays.map((day) => (
-                    <ItineraryDayCard key={day.id} day={day} tripId={tripId} />
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-cloud-200 p-12 text-center">
-                  <p className="text-cloud-600 mb-4">No itinerary days yet.</p>
-                  <div className="flex items-center justify-center gap-3">
-                    <button
-                      onClick={() => generateDays.mutate()}
-                      disabled={generateDays.isPending}
-                      className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
-                    >
-                      {generateDays.isPending ? 'Generating...' : 'Generate Days from Trip Dates'}
-                    </button>
-                    <button
-                      onClick={() => setShowAddDayModal(true)}
-                      className="px-4 py-2 text-sm font-medium text-cloud-700 bg-white border border-cloud-300 rounded-lg hover:bg-cloud-50 transition-colors"
-                    >
-                      Add Day Manually
-                    </button>
-                  </div>
-                  {generateDays.isError && (
-                    <p className="text-sm text-red-600 mt-2">
-                      {generateDays.error instanceof Error ? generateDays.error.message : 'Failed to generate days'}
-                    </p>
-                  )}
-                </div>
-              )}
-            </>
-          ) : activeTab === 'checklists' ? (
-            <>
-              {/* Checklists Tab */}
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-cloud-900">
-                  Checklists
-                  {checklists && checklists.length > 0 && (
-                    <span className="ml-2 text-lg text-cloud-500 font-normal">
-                      {checklists.length}
-                    </span>
-                  )}
-                </h2>
-                <button
-                  onClick={() => setShowAddChecklistModal(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  New Checklist
-                </button>
+              {/* Badges */}
+              <div className="flex items-center gap-2 mb-4">
+                <TripTypeBadge type={trip.type} />
+                <TripStatusBadge status={trip.status} />
               </div>
 
-              {checklistsLoading ? (
-                <div className="animate-pulse grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[1, 2].map((i) => (
-                    <div key={i} className="bg-white rounded-xl border border-cloud-200 p-4">
-                      <div className="h-5 bg-cloud-200 rounded w-1/2 mb-4" />
-                      <div className="space-y-2">
-                        <div className="h-4 bg-cloud-200 rounded w-full" />
-                        <div className="h-4 bg-cloud-200 rounded w-3/4" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : checklistsError ? (
-                <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-cloud-200 p-6">
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-sm text-red-600">
-                      {checklistsErrorMsg instanceof Error ? checklistsErrorMsg.message : 'Failed to load checklists'}
-                    </p>
-                  </div>
-                </div>
-              ) : checklists && checklists.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {checklists.map((checklist) => (
-                    <ChecklistCard key={checklist.id} checklist={checklist} tripId={tripId} />
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-cloud-200 p-12 text-center">
-                  <p className="text-cloud-600 mb-4">
-                    No checklists yet. Click "New Checklist" to create one.
-                  </p>
+              {/* Dates */}
+              <div className="flex items-center gap-3 text-cloud-600 mb-4">
+                <Calendar className="w-5 h-5 text-cloud-400 shrink-0" />
+                <span>{formatDateRange(trip.start_date, trip.end_date)}</span>
+                <span className="text-sm text-cloud-400">
+                  ({getCountdownText(trip.start_date)})
+                </span>
+              </div>
+
+              {/* Notes */}
+              {trip.notes && (
+                <div className="mt-4 p-4 bg-cloud-50/80 border border-cloud-100 rounded-lg">
+                  <h3 className="text-sm font-medium text-cloud-700 mb-1">Notes</h3>
+                  <p className="text-sm text-cloud-600 whitespace-pre-wrap">{trip.notes}</p>
                 </div>
               )}
-            </>
-          ) : null}
-        </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Destination Map */}
-          {trip.destination_latitude !== null && trip.destination_longitude !== null && (
-            <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-cloud-200 overflow-hidden">
-              <div className="h-72">
-                <Suspense fallback={<div className="h-full bg-cloud-100 animate-pulse" />}>
-                  <MapView
-                    center={[trip.destination_longitude, trip.destination_latitude]}
-                    zoom={10}
-                    interactive={true}
-                    fitBounds={mapBounds}
-                    className="h-full"
-                  >
-                    <TripMarker
-                      tripId={trip.id}
-                      longitude={trip.destination_longitude}
-                      latitude={trip.destination_latitude}
-                      destination={trip.destination}
-                      status={trip.status}
-                    />
-                    {geoActivities?.map((a) =>
-                      a.latitude != null && a.longitude != null ? (
-                        <ActivityMarker
-                          key={a.id}
-                          activityId={a.id}
-                          longitude={a.longitude}
-                          latitude={a.latitude}
-                          title={a.title}
-                          location={a.location}
-                          category={a.category}
-                          onClick={setSelectedActivity}
-                        />
-                      ) : null,
-                    )}
-                    {selectedActivityData &&
-                      selectedActivityData.latitude != null &&
-                      selectedActivityData.longitude != null && (
-                        <MarkerPopup
-                          longitude={selectedActivityData.longitude}
-                          latitude={selectedActivityData.latitude}
-                          title={selectedActivityData.title}
-                          subtitle={selectedActivityData.location ?? undefined}
-                          onClose={() => setSelectedActivity(null)}
-                        />
-                      )}
-                  </MapView>
-                </Suspense>
-              </div>
-              <div className="px-4 py-2.5 border-t border-cloud-100 flex items-center justify-between">
-                <p className="text-sm font-medium text-cloud-700">{trip.destination}</p>
-                {geoActivities && geoActivities.length > 0 && (
-                  <p className="text-xs text-cloud-500">
-                    {geoActivities.length} {geoActivities.length === 1 ? 'location' : 'locations'}
-                  </p>
-                )}
+              {/* Status Transition */}
+              <div className="mt-5 pt-5 border-t border-cloud-100">
+                <StatusTransitionButton
+                  currentStatus={trip.status}
+                  onTransition={handleStatusTransition}
+                  isLoading={updateTrip.isPending}
+                />
               </div>
             </div>
           )}
 
-          <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-cloud-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-cloud-900">
-                Members
-                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-cloud-100 text-cloud-600">
-                  {trip.members.length}
-                </span>
-              </h2>
-              {isOwner && (
-                <button
-                  onClick={() => {
-                    setAddMemberError(null)
-                    setShowAddMember(true)
-                  }}
+          {/* Sub-trips for sabbaticals */}
+          {trip.type === 'sabbatical' && (
+            <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-cloud-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-cloud-900">
+                  Sub-trips
+                  {trip.children.length > 0 && (
+                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-cloud-100 text-cloud-600">
+                      {trip.children.length}
+                    </span>
+                  )}
+                </h2>
+                <Link
+                  to="/trips/new"
                   className="text-sm text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
                 >
-                  + Add
-                </button>
+                  + Add Sub-trip
+                </Link>
+              </div>
+
+              {trip.children.length === 0 ? (
+                <p className="text-sm text-cloud-500 py-4 text-center">
+                  No sub-trips yet. Add vacations or remote weeks within this sabbatical.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {trip.children.map((child) => (
+                    <TripCard key={child.id} trip={child} />
+                  ))}
+                </div>
               )}
             </div>
+          )}
 
-            <TripMembersList
-              members={trip.members}
-              isOwner={isOwner}
-              onRemove={handleRemoveMember}
-              onUpdateRole={handleUpdateRole}
-            />
+          {/* Itinerary section */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-semibold text-cloud-900">
+                Itinerary
+                {itineraryDays && itineraryDays.length > 0 && (
+                  <span className="ml-2 text-sm text-cloud-500 font-normal">
+                    {itineraryDays.length} {itineraryDays.length === 1 ? 'day' : 'days'}
+                  </span>
+                )}
+              </h2>
+              <button
+                onClick={() => setShowAddDayModal(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-cloud-600 bg-white border border-cloud-300 rounded-lg hover:bg-cloud-50 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Add Day
+              </button>
+            </div>
 
-            {(removeMember.isPending || updateMemberRole.isPending) && (
-              <div className="flex items-center justify-center py-2">
+            {daysLoading ? (
+              <div className="animate-pulse space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-cloud-50 border border-cloud-200 rounded-xl p-4">
+                    <div className="h-5 bg-cloud-200 rounded w-1/3 mb-3" />
+                    <div className="h-4 bg-cloud-200 rounded w-2/3" />
+                  </div>
+                ))}
+              </div>
+            ) : daysError ? (
+              <div className="bg-white rounded-xl border border-cloud-200 p-4">
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-600">
+                    {daysErrorMsg instanceof Error ? daysErrorMsg.message : 'Failed to load itinerary'}
+                  </p>
+                </div>
+              </div>
+            ) : generateDays.isPending ? (
+              <div className="bg-cloud-50 border border-cloud-200 rounded-xl p-8 text-center">
                 <LoadingSpinner size="sm" />
+                <p className="text-sm text-cloud-500 mt-2">Generating itinerary days...</p>
+              </div>
+            ) : itineraryDays && itineraryDays.length > 0 ? (
+              <div className="space-y-4">
+                {itineraryDays.map((day) => (
+                  <ItineraryDayCard key={day.id} day={day} tripId={tripId} />
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl border border-cloud-200 p-8 text-center">
+                <p className="text-cloud-600 mb-4">No itinerary days yet.</p>
+                <div className="flex items-center justify-center gap-3">
+                  <button
+                    onClick={() => {
+                      hasGeneratedRef.current = false
+                      generateDays.mutate()
+                    }}
+                    disabled={generateDays.isPending}
+                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                  >
+                    {generateDays.isPending ? 'Generating...' : 'Generate Days from Trip Dates'}
+                  </button>
+                  <button
+                    onClick={() => setShowAddDayModal(true)}
+                    className="px-4 py-2 text-sm font-medium text-cloud-700 bg-white border border-cloud-300 rounded-lg hover:bg-cloud-50 transition-colors"
+                  >
+                    Add Day Manually
+                  </button>
+                </div>
+                {generateDays.isError && (
+                  <p className="text-sm text-red-600 mt-2">
+                    {generateDays.error instanceof Error ? generateDays.error.message : 'Failed to generate days'}
+                  </p>
+                )}
               </div>
             )}
           </div>
+
+          {/* Checklists section */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-semibold text-cloud-900">
+                Checklists
+                {checklists && checklists.length > 0 && (
+                  <span className="ml-2 text-sm text-cloud-500 font-normal">
+                    {checklists.length}
+                  </span>
+                )}
+              </h2>
+              <button
+                onClick={() => setShowAddChecklistModal(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-cloud-600 bg-white border border-cloud-300 rounded-lg hover:bg-cloud-50 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                New Checklist
+              </button>
+            </div>
+
+            {checklistsLoading ? (
+              <div className="animate-pulse space-y-4">
+                {[1, 2].map((i) => (
+                  <div key={i} className="bg-white rounded-xl border border-cloud-200 p-4">
+                    <div className="h-5 bg-cloud-200 rounded w-1/2 mb-4" />
+                    <div className="space-y-2">
+                      <div className="h-4 bg-cloud-200 rounded w-full" />
+                      <div className="h-4 bg-cloud-200 rounded w-3/4" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : checklistsError ? (
+              <div className="bg-white rounded-xl border border-cloud-200 p-4">
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-600">
+                    {checklistsErrorMsg instanceof Error ? checklistsErrorMsg.message : 'Failed to load checklists'}
+                  </p>
+                </div>
+              </div>
+            ) : checklists && checklists.length > 0 ? (
+              <div className="space-y-4">
+                {checklists.map((checklist) => (
+                  <ChecklistCard key={checklist.id} checklist={checklist} tripId={tripId} />
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl border border-cloud-200 p-8 text-center">
+                <p className="text-cloud-600">
+                  No checklists yet. Click "New Checklist" to create one.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Danger Zone */}
+          {isOwner && (
+            <div className="bg-white rounded-xl shadow-sm border border-red-200 p-6">
+              <h2 className="text-lg font-semibold text-red-600 mb-2">Danger Zone</h2>
+              <p className="text-sm text-cloud-600 mb-4">
+                Once you delete a trip, there is no going back. Please be certain.
+              </p>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete Trip
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Right column: sticky sidebar (desktop only) */}
+        <div className="hidden lg:block lg:col-span-2">
+          <div className="lg:sticky lg:top-4 space-y-4">
+            {/* Map */}
+            {mapSection}
+
+            {/* Members */}
+            <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-cloud-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-cloud-900">
+                  Members
+                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-cloud-100 text-cloud-600">
+                    {trip.members.length}
+                  </span>
+                </h2>
+                {isOwner && (
+                  <button
+                    onClick={() => {
+                      setAddMemberError(null)
+                      setShowAddMember(true)
+                    }}
+                    className="text-sm text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
+                  >
+                    + Add
+                  </button>
+                )}
+              </div>
+
+              <TripMembersList
+                members={trip.members}
+                isOwner={isOwner}
+                onRemove={handleRemoveMember}
+                onUpdateRole={handleUpdateRole}
+              />
+
+              {(removeMember.isPending || updateMemberRole.isPending) && (
+                <div className="flex items-center justify-center py-2">
+                  <LoadingSpinner size="sm" />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile members section (below content) */}
+      <div className="lg:hidden mt-4">
+        <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-cloud-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-cloud-900">
+              Members
+              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-cloud-100 text-cloud-600">
+                {trip.members.length}
+              </span>
+            </h2>
+            {isOwner && (
+              <button
+                onClick={() => {
+                  setAddMemberError(null)
+                  setShowAddMember(true)
+                }}
+                className="text-sm text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
+              >
+                + Add
+              </button>
+            )}
+          </div>
+
+          <TripMembersList
+            members={trip.members}
+            isOwner={isOwner}
+            onRemove={handleRemoveMember}
+            onUpdateRole={handleUpdateRole}
+          />
+
+          {(removeMember.isPending || updateMemberRole.isPending) && (
+            <div className="flex items-center justify-center py-2">
+              <LoadingSpinner size="sm" />
+            </div>
+          )}
         </div>
       </div>
 
@@ -662,6 +720,27 @@ export function TripDetailPage() {
         isOpen={showAddDayModal}
         onClose={() => setShowAddDayModal(false)}
         tripId={tripId}
+      />
+
+      <ConfirmDialog
+        isOpen={showOrphanConfirm}
+        onClose={() =>
+          setConfirmedOrphanIds((prev) => [
+            ...prev,
+            ...pendingOrphans.map((d) => d.id).filter((id) => !prev.includes(id)),
+          ])
+        }
+        onConfirm={() => {
+          pendingOrphans.forEach((d) => deleteDay.mutate(d.id))
+          setConfirmedOrphanIds((prev) => [
+            ...prev,
+            ...pendingOrphans.map((d) => d.id).filter((id) => !prev.includes(id)),
+          ])
+        }}
+        title="Remove days outside trip dates?"
+        message={`${pendingOrphans.length} ${pendingOrphans.length === 1 ? 'day has' : 'days have'} activities but fall outside your trip dates. Remove ${pendingOrphans.length === 1 ? 'it' : 'them'}?`}
+        confirmLabel="Remove"
+        isLoading={deleteDay.isPending}
       />
     </div>
   )
