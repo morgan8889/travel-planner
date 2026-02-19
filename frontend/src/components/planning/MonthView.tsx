@@ -121,55 +121,72 @@ export function MonthView({
       </div>
 
       {/* Weeks */}
-      {weeks.map((week, weekIdx) => (
-        <div key={weekIdx} className="relative">
-          <div className="grid grid-cols-7">
-            {week.map((day) => (
-              <DayCell
-                key={day.date}
-                date={day.date}
-                dayNumber={day.dayNumber}
-                isToday={day.date === today}
-                isCurrentMonth={day.isCurrentMonth}
-                isSelected={isInSelection(day.date)}
-                isSelectedForCreate={day.date === selectedDate}
-                holidayLabel={holidayMap.get(day.date)}
-                customDayLabel={customDayMap.get(day.date)}
-                onMouseDown={onDragStart}
-                onMouseEnter={onDragMove}
-              />
-            ))}
+      {weeks.map((week, weekIdx) => {
+        const weekStart = week[0].date
+        const weekEnd = week[6].date
+        const weekTrips = tripsInMonth.filter(
+          (t) => t.start_date <= weekEnd && t.end_date >= weekStart
+        )
+
+        return (
+          <div
+            key={weekIdx}
+            className="relative"
+            style={{ paddingBottom: `${Math.min(weekTrips.length, 3) * 1.5}rem` }}
+          >
+            <div className="grid grid-cols-7">
+              {week.map((day) => (
+                <DayCell
+                  key={day.date}
+                  date={day.date}
+                  dayNumber={day.dayNumber}
+                  isToday={day.date === today}
+                  isCurrentMonth={day.isCurrentMonth}
+                  isSelected={isInSelection(day.date)}
+                  isSelectedForCreate={day.date === selectedDate}
+                  holidayLabel={holidayMap.get(day.date)}
+                  customDayLabel={customDayMap.get(day.date)}
+                  onMouseDown={onDragStart}
+                  onMouseEnter={onDragMove}
+                />
+              ))}
+            </div>
+
+            {/* Trip spans for this week (capped at 3) */}
+            {weekTrips.slice(0, 3).map((trip, tripIdx) => {
+              const startCol = Math.max(0, week.findIndex((d) => d.date >= trip.start_date))
+              const endCol = (() => {
+                const idx = week.findIndex((d) => d.date > trip.end_date)
+                return idx === -1 ? 7 : idx
+              })()
+              const colSpan = endCol - startCol
+
+              if (colSpan <= 0) return null
+
+              return (
+                <TripSpan
+                  key={trip.id}
+                  destination={trip.destination}
+                  status={trip.status}
+                  startCol={startCol}
+                  colSpan={colSpan}
+                  stackIndex={tripIdx}
+                  onClick={() => onTripClick(trip)}
+                />
+              )
+            })}
+
+            {weekTrips.length > 3 && (
+              <span
+                className="absolute right-1 text-[10px] text-cloud-500"
+                style={{ bottom: '2px' }}
+              >
+                +{weekTrips.length - 3} more
+              </span>
+            )}
           </div>
-
-          {/* Trip spans for this week */}
-          {tripsInMonth.map((trip, tripIdx) => {
-            const weekStart = week[0].date
-            const weekEnd = week[6].date
-            if (trip.start_date > weekEnd || trip.end_date < weekStart) return null
-
-            const startCol = Math.max(0, week.findIndex((d) => d.date >= trip.start_date))
-            const endCol = (() => {
-              const idx = week.findIndex((d) => d.date > trip.end_date)
-              return idx === -1 ? 7 : idx
-            })()
-            const colSpan = endCol - startCol
-
-            if (colSpan <= 0) return null
-
-            return (
-              <TripSpan
-                key={trip.id}
-                destination={trip.destination}
-                status={trip.status}
-                startCol={startCol}
-                colSpan={colSpan}
-                stackIndex={tripIdx}
-                onClick={() => onTripClick(trip)}
-              />
-            )
-          })}
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
