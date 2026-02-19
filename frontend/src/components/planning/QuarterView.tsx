@@ -95,7 +95,7 @@ export function QuarterView({
                 (t) => t.start_date <= weekEnd && t.end_date >= weekStart
               )
               return (
-                <div key={_weekIdx} className="relative pb-3">
+                <div key={_weekIdx} className="relative pb-5">
                   <div className="grid grid-cols-7 gap-px">
                     {week.map((day, i) => {
                       if (!day.isCurrentMonth) {
@@ -117,8 +117,8 @@ export function QuarterView({
                       )
                     })}
                   </div>
-                  {/* Compact trip bars — max 2 visible per week */}
-                  {weekTrips.slice(0, 2).map((trip, tripIdx) => {
+                  {/* Compact trip bars — max 3 visible per week */}
+                  {weekTrips.slice(0, 3).map((trip, tripIdx) => {
                     const startCol = Math.max(
                       0,
                       week.findIndex((d) => d.isCurrentMonth && d.date >= trip.start_date)
@@ -144,9 +144,9 @@ export function QuarterView({
                       />
                     )
                   })}
-                  {weekTrips.length > 2 && (
+                  {weekTrips.length > 3 && (
                     <span className="absolute right-0 bottom-0 text-[8px] text-cloud-500">
-                      +{weekTrips.length - 2}
+                      +{weekTrips.length - 3}
                     </span>
                   )}
                 </div>
