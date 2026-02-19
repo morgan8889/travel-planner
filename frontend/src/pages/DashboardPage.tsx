@@ -5,11 +5,9 @@ import { useTrips } from '../hooks/useTrips'
 import { useAuth } from '../contexts/AuthContext'
 import { TripStatusBadge } from '../components/trips/TripStatusBadge'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
+import { TripMarker } from '../components/map/TripMarker'
 
 const MapView = lazy(() => import('../components/map/MapView').then((m) => ({ default: m.MapView })))
-const TripMarker = lazy(() =>
-  import('../components/map/TripMarker').then((m) => ({ default: m.TripMarker }))
-)
 
 function getDisplayName(email: string | undefined): string {
   if (!email) return 'there'
