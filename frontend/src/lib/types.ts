@@ -140,59 +140,40 @@ export interface CreateChecklistItem {
   text: string
 }
 
-export type BlockType = 'pto' | 'holiday'
+export interface HolidayEntry {
+  date: string
+  name: string
+  country_code: string
+}
 
-export interface AnnualPlan {
+export interface CustomDay {
   id: string
   user_id: string
-  year: number
-  notes: string | null
+  name: string
+  date: string
+  recurring: boolean
   created_at: string
 }
 
-export interface CalendarBlock {
+export interface CreateCustomDay {
+  name: string
+  date: string
+  recurring?: boolean
+}
+
+export interface HolidayCalendarEntry {
   id: string
-  annual_plan_id: string
-  type: BlockType
-  start_date: string
-  end_date: string
-  destination: string | null
-  notes: string | null
-}
-
-export interface TripSummaryForCalendar {
-  id: string
-  type: string
-  destination: string
-  start_date: string
-  end_date: string
-  status: string
-}
-
-export interface CalendarYearResponse {
-  plan: AnnualPlan | null
-  blocks: CalendarBlock[]
-  trips: TripSummaryForCalendar[]
-}
-
-export interface CreateAnnualPlan {
+  country_code: string
   year: number
-  notes?: string | null
 }
 
-export interface CreateCalendarBlock {
-  annual_plan_id: string
-  type: BlockType
-  start_date: string
-  end_date: string
-  destination?: string | null
-  notes?: string | null
+export interface HolidaysResponse {
+  holidays: HolidayEntry[]
+  custom_days: CustomDay[]
+  enabled_countries: HolidayCalendarEntry[]
 }
 
-export interface UpdateCalendarBlock {
-  type?: BlockType
-  start_date?: string
-  end_date?: string
-  destination?: string | null
-  notes?: string | null
+export interface SupportedCountry {
+  code: string
+  name: string
 }

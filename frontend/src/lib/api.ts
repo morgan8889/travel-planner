@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { supabase } from './supabase'
-import type { ItineraryDay, Activity, CreateItineraryDay, CreateActivity, UpdateActivity, Checklist, ChecklistItem, CreateChecklist, CreateChecklistItem, CalendarYearResponse, AnnualPlan, CalendarBlock, CreateAnnualPlan, CreateCalendarBlock, UpdateCalendarBlock, GeocodeSuggestion } from './types'
+import type { ItineraryDay, Activity, CreateItineraryDay, CreateActivity, UpdateActivity, Checklist, ChecklistItem, CreateChecklist, CreateChecklistItem, HolidaysResponse, SupportedCountry, HolidayCalendarEntry, CustomDay, CreateCustomDay, GeocodeSuggestion } from './types'
 
 export const api = axios.create({
   baseURL: '/api', // Vite proxy strips this, hits localhost:8000
@@ -101,18 +101,21 @@ export const geocodeApi = {
 }
 
 export const calendarApi = {
-  getYear: (year: number) =>
-    api.get<CalendarYearResponse>(`/calendar/plans/${year}`),
+  getHolidays: (year: number) =>
+    api.get<HolidaysResponse>(`/calendar/holidays`, { params: { year } }),
 
-  createPlan: (data: CreateAnnualPlan) =>
-    api.post<AnnualPlan>('/calendar/plans', data),
+  getSupportedCountries: () =>
+    api.get<SupportedCountry[]>('/calendar/supported-countries'),
 
-  createBlock: (data: CreateCalendarBlock) =>
-    api.post<CalendarBlock>('/calendar/blocks', data),
+  enableCountry: (data: { country_code: string; year: number }) =>
+    api.post<HolidayCalendarEntry>('/calendar/holidays/country', data),
 
-  updateBlock: (blockId: string, data: UpdateCalendarBlock) =>
-    api.patch<CalendarBlock>(`/calendar/blocks/${blockId}`, data),
+  disableCountry: (countryCode: string, year: number) =>
+    api.delete(`/calendar/holidays/country/${countryCode}`, { params: { year } }),
 
-  deleteBlock: (blockId: string) =>
-    api.delete(`/calendar/blocks/${blockId}`),
+  createCustomDay: (data: CreateCustomDay) =>
+    api.post<CustomDay>('/calendar/custom-days', data),
+
+  deleteCustomDay: (id: string) =>
+    api.delete(`/calendar/custom-days/${id}`),
 }
