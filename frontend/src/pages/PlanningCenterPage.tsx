@@ -197,6 +197,8 @@ export function PlanningCenterPage() {
             holidays={allHolidays}
             customDays={allCustomDays}
             onMonthClick={handleMonthClick}
+            onDayClick={() => {}}
+            onTripClick={() => {}}
           />
         )}
         {zoomLevel === 'year' && (
@@ -206,6 +208,8 @@ export function PlanningCenterPage() {
             holidays={allHolidays}
             customDays={allCustomDays}
             onMonthClick={handleMonthClick}
+            onDayClick={() => {}}
+            onTripClick={() => {}}
           />
         )}
       </div>
