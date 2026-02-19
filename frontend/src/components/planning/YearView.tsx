@@ -131,6 +131,8 @@ export function YearView({
                         key={trip.id}
                         destination={trip.destination}
                         status={trip.status}
+                        colorBy="type"
+                        tripType={trip.type}
                         startCol={startCol}
                         colSpan={colSpan}
                         stackIndex={tripIdx}

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { TripStatus } from '../../lib/types'
+import type { TripStatus, TripType } from '../../lib/types'
 
 const TRIP_COLORS: Record<string, string> = {
   dreaming: 'bg-purple-200 text-purple-800 hover:bg-purple-300',
@@ -7,6 +7,12 @@ const TRIP_COLORS: Record<string, string> = {
   booked: 'bg-green-200 text-green-800 hover:bg-green-300',
   active: 'bg-orange-200 text-orange-800 hover:bg-orange-300',
   completed: 'bg-cloud-200 text-cloud-600 hover:bg-cloud-300',
+}
+
+const TYPE_COLORS: Record<string, string> = {
+  vacation: 'bg-blue-200 text-blue-800 hover:bg-blue-300',
+  remote_week: 'bg-teal-200 text-teal-800 hover:bg-teal-300',
+  sabbatical: 'bg-amber-200 text-amber-800 hover:bg-amber-300',
 }
 
 interface TripSpanProps {
@@ -24,6 +30,8 @@ interface TripSpanProps {
   /** Full date range for tooltip display */
   startDate?: string
   endDate?: string
+  colorBy?: 'status' | 'type'
+  tripType?: TripType
 }
 
 export function TripSpan({
@@ -36,9 +44,13 @@ export function TripSpan({
   size = 'full',
   startDate,
   endDate,
+  colorBy,
+  tripType,
 }: TripSpanProps) {
   const [hovered, setHovered] = useState(false)
-  const colorClasses = TRIP_COLORS[status] || TRIP_COLORS.planning
+  const colorClasses = colorBy === 'type' && tripType
+    ? (TYPE_COLORS[tripType] || TRIP_COLORS.planning)
+    : (TRIP_COLORS[status] || TRIP_COLORS.planning)
 
   if (size === 'small' || size === 'medium') {
     const heightClass = size === 'small' ? 'h-1.5' : 'h-3'
@@ -66,7 +78,7 @@ export function TripSpan({
           <div className="absolute bottom-full left-0 mb-1 px-2 py-1.5 bg-cloud-900 text-white text-[10px] rounded-lg shadow-lg whitespace-nowrap z-50 pointer-events-none">
             <div className="font-semibold">{destination}</div>
             <div className="opacity-80">{startDate} to {endDate}</div>
-            <div className="opacity-60 capitalize">{status}</div>
+            <div className="opacity-60 capitalize">{status}{tripType ? ` · ${tripType.replace('_', ' ')}` : ''}</div>
           </div>
         )}
       </button>
