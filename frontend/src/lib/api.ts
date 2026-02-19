@@ -74,6 +74,11 @@ export const itineraryApi = {
 
   generateDays: (tripId: string) =>
     api.post<ItineraryDay[]>(`/itinerary/trips/${tripId}/days/generate`),
+
+  listTripActivities: (tripId: string, hasLocation = false) =>
+    api.get<Activity[]>(`/itinerary/trips/${tripId}/activities`, {
+      params: hasLocation ? { has_location: true } : undefined,
+    }),
 }
 
 export const checklistApi = {

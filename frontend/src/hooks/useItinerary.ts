@@ -8,6 +8,17 @@ export const itineraryKeys = {
   activities: (dayId: string) => [...itineraryKeys.all, 'activities', dayId] as const,
 }
 
+export function useTripActivities(tripId: string, hasLocation = false) {
+  return useQuery({
+    queryKey: [...itineraryKeys.all, 'trip-activities', tripId, { hasLocation }],
+    queryFn: async () => {
+      const { data } = await itineraryApi.listTripActivities(tripId, hasLocation)
+      return data
+    },
+    enabled: !!tripId,
+  })
+}
+
 export function useItineraryDays(tripId: string) {
   return useQuery({
     queryKey: itineraryKeys.days(tripId),
