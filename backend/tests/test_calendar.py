@@ -206,7 +206,8 @@ def test_get_holidays(client, auth_headers, override_get_db, mock_db_session):
 def test_get_holidays_recurring_year_adjustment(
     client, auth_headers, override_get_db, mock_db_session
 ):
-    """Recurring custom days stored in a past year are returned with the requested year."""
+    """Recurring custom days stored in a past year are returned
+    with the requested year."""
     from datetime import UTC, datetime
 
     # Recurring day originally stored with year 2024
