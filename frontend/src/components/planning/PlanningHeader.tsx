@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { useSupportedCountries, useEnableCountry, useDisableCountry } from '../../hooks/useHolidays'
+import { CountrySelect } from './CountrySelect'
 import type { HolidayCalendarEntry } from '../../lib/types'
 
 export type ZoomLevel = 'month' | 'quarter' | 'year'
@@ -91,23 +92,13 @@ export function PlanningHeader({
 
       <div className="flex items-center gap-2">
         {/* Country holiday toggles */}
-        <div className="flex items-center gap-1">
-          <span className="text-sm text-cloud-500 mr-1">Holidays:</span>
-          {supportedCountries?.slice(0, 5).map((c) => (
-            <button
-              key={c.code}
-              onClick={() => handleCountryToggle(c.code)}
-              className={`px-2 py-1 text-xs font-medium rounded-md transition-colors
-                ${enabledCodes.includes(c.code)
-                  ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                  : 'bg-cloud-100 text-cloud-500 hover:bg-cloud-200'
-                }
-              `}
-            >
-              {c.code}
-            </button>
-          ))}
-        </div>
+        {supportedCountries && (
+          <CountrySelect
+            supportedCountries={supportedCountries}
+            enabledCodes={enabledCodes}
+            onToggle={handleCountryToggle}
+          />
+        )}
 
         {/* Add custom day */}
         <button
