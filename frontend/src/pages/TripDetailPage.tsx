@@ -2,9 +2,9 @@ import { useState, useMemo, Suspense, lazy } from 'react'
 import { TriangleAlert, ArrowLeft, ChevronRight, SquarePen, Calendar, Trash2, MapPinOff, Plus } from 'lucide-react'
 
 const MapView = lazy(() => import('../components/map/MapView').then((m) => ({ default: m.MapView })))
-const TripMarker = lazy(() => import('../components/map/TripMarker').then((m) => ({ default: m.TripMarker })))
-const ActivityMarker = lazy(() => import('../components/map/ActivityMarker').then((m) => ({ default: m.ActivityMarker })))
-const MarkerPopup = lazy(() => import('../components/map/MarkerPopup').then((m) => ({ default: m.MarkerPopup })))
+import { TripMarker } from '../components/map/TripMarker'
+import { ActivityMarker } from '../components/map/ActivityMarker'
+import { MarkerPopup } from '../components/map/MarkerPopup'
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { useTrip, useUpdateTrip, useDeleteTrip } from '../hooks/useTrips'
 import { useAddMember, useRemoveMember, useUpdateMemberRole } from '../hooks/useMembers'

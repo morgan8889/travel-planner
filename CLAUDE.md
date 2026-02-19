@@ -21,11 +21,13 @@ Monorepo with two main directories:
 - `backend/src/travel_planner/routers/itinerary.py` — Itinerary day + activity CRUD
 - `backend/src/travel_planner/routers/checklist.py` — Checklist + item CRUD
 - `backend/src/travel_planner/routers/calendar.py` — Annual plan + calendar blocks
+- `backend/src/travel_planner/routers/geocode.py` — Mapbox geocoding proxy
+- `backend/src/travel_planner/schemas/` — Pydantic schemas (one per router)
 - `backend/tests/conftest.py` — Test fixtures: RSA key pairs, `auth_headers`, `mock_db_session`
 
 ### Frontend
 - `frontend/src/router.tsx` — TanStack Router route definitions
-- `frontend/src/lib/api.ts` — Axios instance with JWT interceptors
+- `frontend/src/lib/api.ts` — Axios instance with JWT interceptors + `itineraryApi`, `checklistApi`, `calendarApi`, `geocodeApi` namespaces
 - `frontend/src/lib/types.ts` — Shared TypeScript interfaces
 - `frontend/src/contexts/AuthContext.tsx` — Auth state management, session loading gate
 - `frontend/src/lib/supabase.ts` — Supabase client initialization
@@ -34,6 +36,11 @@ Monorepo with two main directories:
 - `frontend/src/hooks/useItinerary.ts` — Itinerary queries + mutations
 - `frontend/src/hooks/useChecklists.ts` — Checklist queries + mutations
 - `frontend/src/hooks/useCalendar.ts` — Calendar queries + mutations
+- `frontend/src/components/map/MapView.tsx` — Mapbox GL map wrapper with error boundary
+- `frontend/src/components/map/TripMarker.tsx` — Trip destination pin
+- `frontend/src/components/map/ActivityMarker.tsx` — Activity location pin (category-colored)
+- `frontend/src/components/map/MarkerPopup.tsx` — Popup for clicked markers
+- `frontend/src/pages/DevSeedPage.tsx` — Dev tool: seed comprehensive test data at `/dev/seed`
 
 ## Environment
 
@@ -45,6 +52,7 @@ Required in `backend/.env`:
 Required in `frontend/.env.local`:
 - `VITE_SUPABASE_URL` — Same Supabase project URL
 - `VITE_SUPABASE_ANON_KEY` — Same anon key
+- `VITE_MAPBOX_TOKEN` — Mapbox GL access token (map renders a placeholder if missing)
 
 ## Dev Commands
 
@@ -104,6 +112,13 @@ See `.claude/rules/e2e-validation.md` for the full browser verification protocol
 - Tests in `__tests__/` directory, named `<feature>.test.tsx`
 - **Icons**: Use `lucide-react` only. Do not use Heroicons or any other icon library.
 - **No emoji in code**: Do not add emoji characters in UI components, labels, or source code.
+- **Lazy loading**: Only use `React.lazy()` for heavy leaf components (e.g. `MapView` which pulls in `mapbox-gl`). Never lazy-load children that render inside a lazy parent's Suspense boundary — the suspend will unmount the parent, causing state loss and race conditions. Marker components must be direct imports.
+- **API namespaces**: Use the typed API helpers (`itineraryApi`, `checklistApi`, `calendarApi`, `geocodeApi`) from `lib/api.ts` rather than raw `api.get/post` calls.
+
+### Backend Validation Gotchas
+- **Activity times**: `end_time` must be strictly after `start_time` (no overnight spans like `22:00-02:00`). For overnight activities, omit `end_time`.
+- **Calendar plans**: One plan per user per year. Creating a duplicate returns 409. Handle by fetching the existing plan and reusing its ID.
+- **Cascade deletes**: Deleting a trip cascades to its itinerary days, activities, and checklists. Delete child trips before parent trips.
 
 ## Pre-Commit Checklist
 
@@ -132,6 +147,16 @@ Request interceptor attaches the JWT from the current session. Response intercep
 ### Backend Auth — `backend/src/travel_planner/auth.py`
 
 JWKS-based JWT verification. Accepts both RS256 and ES256 algorithms. Anonymous Supabase users have an empty email field.
+
+### Mapbox Maps — `frontend/src/components/map/MapView.tsx`
+
+`MapView` is lazy-loaded (it imports the heavy `mapbox-gl` bundle). It wraps a `react-map-gl` `Map` with an error boundary and a `mapReady` gate — children only render after the map's `onLoad` fires. Marker components (`TripMarker`, `ActivityMarker`, `MarkerPopup`) must be direct imports, not lazy — lazy-loading them inside MapView's Suspense boundary unmounts the map on suspend, causing crashes.
+
+Dashboard shows all trips with coordinates on a world map. Trip detail shows the destination pin plus activity location pins with category-colored icons.
+
+### Dev Seed Page — `frontend/src/pages/DevSeedPage.tsx`
+
+Available at `/dev/seed`. Seeds comprehensive test data (8 trips, 17 activities, 6 checklists, 22 calendar blocks) using the current user's session. "Seed Everything" runs in sequence (trips first, then dependent data). "Clear All Data" deletes all trips (cascades to itineraries/checklists) and calendar blocks.
 
 ### Supabase Project Ref
 

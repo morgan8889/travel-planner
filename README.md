@@ -27,6 +27,7 @@ travel-planner/
 - **Routing**: TanStack Router
 - **State**: TanStack Query
 - **Styling**: Tailwind CSS
+- **Maps**: Mapbox GL via react-map-gl
 - **Authentication**: Supabase Auth
 
 ## Getting Started
@@ -93,9 +94,10 @@ This project uses **Supabase Auth with RS256 JWT tokens**. The implementation:
 
 ### Required Credentials
 
-You only need:
+You need:
 - `SUPABASE_URL` - Your Supabase project URL
 - `SUPABASE_KEY` - Your Supabase anon/public key
+- `VITE_MAPBOX_TOKEN` - Mapbox GL access token (frontend only; map shows a placeholder if missing)
 
 ## Development
 
@@ -175,6 +177,13 @@ The backend automatically generates interactive API documentation:
 - ✅ 12-month year grid calendar view
 - ✅ PTO/holiday/trip block management
 - ✅ Create blocks from calendar UI
+
+### Phase 4.5: Maps & Geocoding
+- ✅ Mapbox GL world map on dashboard with trip pins
+- ✅ Trip detail map with destination + activity markers
+- ✅ Geocoding autocomplete for trip destinations
+- ✅ Activity locations with category-colored markers
+- ✅ Dev seed page for generating comprehensive test data
 
 ### Phase 5: AI Features
 - 🔲 AI itinerary generation + chat assistant + checklist generation

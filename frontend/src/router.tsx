@@ -40,7 +40,27 @@ const calendarRoute = createRoute({
   component: CalendarPage,
 })
 
-const routeTree = rootRoute.addChildren([indexRoute, tripsRoute, newTripRoute, tripDetailRoute, calendarRoute])
+const devChildren = import.meta.env.DEV
+  ? await (async () => {
+      const { DevSeedPage } = await import('./pages/DevSeedPage')
+      return [
+        createRoute({
+          getParentRoute: () => rootRoute,
+          path: '/dev/seed',
+          component: DevSeedPage,
+        }),
+      ]
+    })()
+  : []
+
+const routeTree = rootRoute.addChildren([
+  indexRoute,
+  tripsRoute,
+  newTripRoute,
+  tripDetailRoute,
+  calendarRoute,
+  ...devChildren,
+])
 
 export const router = createRouter({ routeTree })
 
