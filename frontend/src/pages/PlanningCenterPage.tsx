@@ -188,7 +188,15 @@ export function PlanningCenterPage() {
         onAddCustomDay={() => setSidebarContent({ type: 'custom-day-form' })}
       />
 
-      <TripSummaryBar trips={allTrips} onTripClick={handleTripClick} />
+      <TripSummaryBar
+        trips={allTrips}
+        onTripClick={handleTripClick}
+        zoomLevel={zoomLevel}
+        currentMonth={currentMonth}
+        currentYear={currentYear}
+        holidays={allHolidays}
+        customDays={allCustomDays}
+      />
 
       {allTrips.length === 0 && (
         <div className="flex items-center gap-3 px-4 py-3 bg-indigo-50 border border-indigo-100 rounded-xl text-sm text-indigo-700">
