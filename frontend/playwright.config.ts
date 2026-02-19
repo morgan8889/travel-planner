@@ -1,12 +1,5 @@
 import { defineConfig, devices } from '@playwright/test'
 
-// Ensure Chromium can find extracted system libraries (installed without root)
-const userLibPath =
-  '/home/node/.local/lib/aarch64-linux-gnu:/home/node/.local/usr/lib/aarch64-linux-gnu'
-process.env.LD_LIBRARY_PATH = process.env.LD_LIBRARY_PATH
-  ? `${userLibPath}:${process.env.LD_LIBRARY_PATH}`
-  : userLibPath
-
 export default defineConfig({
   testDir: './e2e',
   timeout: 30_000,
@@ -30,8 +23,6 @@ export default defineConfig({
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
           ],
-          executablePath:
-            '/home/node/.cache/ms-playwright/chromium-1208/chrome-linux/chrome',
         },
       },
     },
@@ -41,5 +32,9 @@ export default defineConfig({
     url: 'http://localhost:5173',
     reuseExistingServer: true,
     timeout: 30_000,
+    env: {
+      VITE_SUPABASE_URL: 'https://placeholder.supabase.co',
+      VITE_SUPABASE_ANON_KEY: 'placeholder-anon-key',
+    },
   },
 })
