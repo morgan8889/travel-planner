@@ -10,6 +10,7 @@ import { SidebarTripDetail } from '../components/planning/SidebarTripDetail'
 import { SidebarTripCreate } from '../components/planning/SidebarTripCreate'
 import { SidebarHolidayDetail } from '../components/planning/SidebarHolidayDetail'
 import { SidebarCustomDayForm } from '../components/planning/SidebarCustomDayForm'
+import { TripSummaryBar } from '../components/planning/TripSummaryBar'
 import { useDragSelect } from '../components/planning/useDragSelect'
 import { useTrips, useDeleteTrip } from '../hooks/useTrips'
 import { useHolidays } from '../hooks/useHolidays'
@@ -167,6 +168,8 @@ export function PlanningCenterPage() {
         enabledCountries={enabledCountries}
         onAddCustomDay={() => setSidebarContent({ type: 'custom-day-form' })}
       />
+
+      <TripSummaryBar trips={allTrips} onTripClick={handleTripClick} />
 
       {allTrips.length === 0 && (
         <div className="flex items-center gap-3 px-4 py-3 bg-indigo-50 border border-indigo-100 rounded-xl text-sm text-indigo-700">
