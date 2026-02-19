@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -198,3 +198,45 @@ async def toggle_item_check(
             "checked": user_check.checked,
         }
     )
+
+
+@router.delete("/items/{item_id}", status_code=204)
+async def delete_checklist_item(
+    item_id: UUID,
+    user_id: CurrentUserId,
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete a single checklist item."""
+    result = await db.execute(
+        select(ChecklistItem)
+        .options(selectinload(ChecklistItem.checklist))
+        .where(ChecklistItem.id == item_id)
+    )
+    item = result.scalar_one_or_none()
+    if not item:
+        raise HTTPException(status_code=404, detail="Checklist item not found")
+
+    await verify_trip_member(item.checklist.trip_id, db, user_id)
+    await db.delete(item)
+    await db.commit()
+    return Response(status_code=204)
+
+
+@router.delete("/trips/{trip_id}/checklists/{checklist_id}", status_code=204)
+async def delete_checklist(
+    trip_id: UUID,
+    checklist_id: UUID,
+    user_id: CurrentUserId,
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete a checklist and all its items."""
+    await verify_trip_member(trip_id, db, user_id)
+
+    result = await db.execute(select(Checklist).where(Checklist.id == checklist_id))
+    checklist = result.scalar_one_or_none()
+    if not checklist:
+        raise HTTPException(status_code=404, detail="Checklist not found")
+
+    await db.delete(checklist)
+    await db.commit()
+    return Response(status_code=204)
