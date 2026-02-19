@@ -1,5 +1,5 @@
+import datetime as dt
 import uuid
-from datetime import date, datetime
 
 from sqlalchemy import (
     Boolean,
@@ -31,7 +31,7 @@ class HolidayCalendar(Base):
     )
     country_code: Mapped[str] = mapped_column(String(10))
     year: Mapped[int] = mapped_column(Integer)
-    created_at: Mapped[datetime] = mapped_column(
+    created_at: Mapped[dt.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
 
@@ -46,8 +46,8 @@ class CustomDay(Base):
         UUID(as_uuid=True), ForeignKey("user_profiles.id")
     )
     name: Mapped[str] = mapped_column(String(255))
-    date: Mapped[date] = mapped_column(Date)
+    date: Mapped[dt.date] = mapped_column(Date)
     recurring: Mapped[bool] = mapped_column(Boolean, default=False)
-    created_at: Mapped[datetime] = mapped_column(
+    created_at: Mapped[dt.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

@@ -20,17 +20,17 @@ from travel_planner.schemas.calendar import (
 router = APIRouter(prefix="/calendar", tags=["calendar"])
 
 # Map of supported country codes to holidays classes
-SUPPORTED_COUNTRIES = {
-    "US": holidays_lib.US,
-    "UK": holidays_lib.UK,
-    "CA": holidays_lib.CA,
-    "AU": holidays_lib.AU,
-    "DE": holidays_lib.DE,
-    "FR": holidays_lib.FR,
-    "JP": holidays_lib.JP,
-    "MX": holidays_lib.MX,
-    "BR": holidays_lib.BR,
-    "IN": holidays_lib.IN,
+SUPPORTED_COUNTRIES: dict[str, type] = {
+    "US": holidays_lib.US,  # type: ignore[attr-defined]
+    "UK": holidays_lib.UK,  # type: ignore[attr-defined]
+    "CA": holidays_lib.CA,  # type: ignore[attr-defined]
+    "AU": holidays_lib.AU,  # type: ignore[attr-defined]
+    "DE": holidays_lib.DE,  # type: ignore[attr-defined]
+    "FR": holidays_lib.FR,  # type: ignore[attr-defined]
+    "JP": holidays_lib.JP,  # type: ignore[attr-defined]
+    "MX": holidays_lib.MX,  # type: ignore[attr-defined]
+    "BR": holidays_lib.BR,  # type: ignore[attr-defined]
+    "IN": holidays_lib.IN,  # type: ignore[attr-defined]
 }
 
 
