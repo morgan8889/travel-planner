@@ -210,6 +210,18 @@ describe('TripDetailPage', () => {
     expect(screen.getByText('Rome')).toBeInTheDocument()
   })
 
+  it('renders two-panel layout with itinerary and checklists sections without tabs', async () => {
+    mockGetTrip.mockResolvedValue({ data: mockTrip })
+    renderWithRouter()
+
+    // Section headers visible directly (no tab click required)
+    expect(await screen.findByText('Itinerary')).toBeInTheDocument()
+    expect(screen.getByText('Checklists')).toBeInTheDocument()
+
+    // No tab navigation
+    expect(screen.queryByRole('button', { name: 'Overview' })).not.toBeInTheDocument()
+  })
+
   it('renders error state on fetch failure', async () => {
     mockGetTrip.mockRejectedValue(new Error('Network error'))
     renderWithRouter()
