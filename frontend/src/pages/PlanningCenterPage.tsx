@@ -60,6 +60,10 @@ export function PlanningCenterPage() {
     setSidebarContent({ type: 'trip-detail', trip })
   }, [])
 
+  const handleDayClick = useCallback((date: string) => {
+    setSidebarContent({ type: 'trip-create', startDate: date, endDate: date })
+  }, [])
+
   const handleDeleteTrip = useCallback(async (tripId: string) => {
     await deleteTrip.mutateAsync(tripId)
     closeSidebar()
@@ -197,8 +201,8 @@ export function PlanningCenterPage() {
             holidays={allHolidays}
             customDays={allCustomDays}
             onMonthClick={handleMonthClick}
-            onDayClick={() => {}}
-            onTripClick={() => {}}
+            onDayClick={handleDayClick}
+            onTripClick={handleTripClick}
           />
         )}
         {zoomLevel === 'year' && (
@@ -208,8 +212,8 @@ export function PlanningCenterPage() {
             holidays={allHolidays}
             customDays={allCustomDays}
             onMonthClick={handleMonthClick}
-            onDayClick={() => {}}
-            onTripClick={() => {}}
+            onDayClick={handleDayClick}
+            onTripClick={handleTripClick}
           />
         )}
       </div>
