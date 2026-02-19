@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef } from 'react'
+import { useMemo, useState } from 'react'
 import type { TripSummary, HolidayEntry, CustomDay } from '../../lib/types'
 
 const CHIP_COLORS: Record<string, string> = {
@@ -69,17 +69,9 @@ export function TripSummaryBar({
     }).length
   }, [customDays, periodStart, periodEnd, currentYear])
 
-  const [expanded, setExpanded] = useState(false)
-
-  // Reset expanded state when the period changes (avoids useEffect + setState)
-  const prevPeriodRef = useRef(`${periodStart}-${periodEnd}`)
-  const currentPeriodKey = `${periodStart}-${periodEnd}`
-  if (prevPeriodRef.current !== currentPeriodKey) {
-    prevPeriodRef.current = currentPeriodKey
-    if (expanded) {
-      setExpanded(false)
-    }
-  }
+  const periodKey = `${periodStart}-${periodEnd}`
+  const [expandedPeriod, setExpandedPeriod] = useState<string | null>(null)
+  const expanded = expandedPeriod === periodKey
 
   if (filteredTrips.length === 0 && holidayCount === 0 && eventCount === 0) return null
 
@@ -110,7 +102,7 @@ export function TripSummaryBar({
         {overflow > 0 && (
           <button
             type="button"
-            onClick={() => setExpanded(true)}
+            onClick={() => setExpandedPeriod(periodKey)}
             className="text-xs text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer transition-colors"
           >
             +{overflow} more
@@ -119,7 +111,7 @@ export function TripSummaryBar({
         {expanded && filteredTrips.length > 8 && (
           <button
             type="button"
-            onClick={() => setExpanded(false)}
+            onClick={() => setExpandedPeriod(null)}
             className="text-xs text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer transition-colors"
           >
             Show less
