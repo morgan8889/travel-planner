@@ -34,6 +34,11 @@ def upgrade() -> None:
             server_default=sa.func.now(),
         ),
     )
+    op.create_unique_constraint(
+        "uq_holiday_calendar",
+        "holiday_calendars",
+        ["user_id", "country_code", "year"],
+    )
     op.create_table(
         "custom_days",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
@@ -56,6 +61,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_table("custom_days")
+    op.drop_constraint("uq_holiday_calendar", "holiday_calendars", type_="unique")
     op.drop_table("holiday_calendars")
 
     # Recreate old tables

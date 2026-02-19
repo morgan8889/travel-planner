@@ -44,7 +44,12 @@ function renderWithRouter() {
     path: '/calendar',
     component: PlanningCenterPage,
   })
-  const routeTree = rootRoute.addChildren([calRoute])
+  const newTripRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/trips/new',
+    component: () => null,
+  })
+  const routeTree = rootRoute.addChildren([calRoute, newTripRoute])
   const router = createRouter({
     routeTree,
     history: createMemoryHistory({ initialEntries: ['/calendar'] }),

@@ -199,4 +199,37 @@ def test_get_holidays(client, auth_headers, override_get_db, mock_db_session):
     assert any(h["name"] == "New Year's Day" for h in data["holidays"])
     assert len(data["custom_days"]) == 1
     assert data["custom_days"][0]["name"] == "Birthday"
+    assert data["custom_days"][0]["date"] == "2026-05-15"
     assert len(data["enabled_countries"]) == 1
+
+
+def test_get_holidays_recurring_year_adjustment(
+    client, auth_headers, override_get_db, mock_db_session
+):
+    """Recurring custom days stored in a past year are returned with the requested year."""
+    from datetime import UTC, datetime
+
+    # Recurring day originally stored with year 2024
+    cd = MagicMock(spec=CustomDay)
+    cd.id = CUSTOM_DAY_ID
+    cd.user_id = TEST_USER_ID
+    cd.name = "Mom's Birthday"
+    cd.date = date(2024, 3, 15)
+    cd.recurring = True
+    cd.created_at = datetime(2024, 1, 1, tzinfo=UTC)
+
+    result_mock1 = MagicMock()
+    result_mock1.scalars.return_value.all.return_value = []  # no enabled countries
+
+    result_mock2 = MagicMock()
+    result_mock2.scalars.return_value.all.return_value = [cd]
+
+    mock_db_session.execute = AsyncMock(side_effect=[result_mock1, result_mock2])
+
+    response = client.get("/calendar/holidays?year=2026", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["custom_days"]) == 1
+    # Date should be adjusted to the requested year, not the stored year
+    assert data["custom_days"][0]["date"] == "2026-03-15"
+    assert data["custom_days"][0]["recurring"] is True

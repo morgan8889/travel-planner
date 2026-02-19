@@ -76,7 +76,17 @@ async def get_holidays(
             custom_days.append(cd)
 
     enabled_responses = [HolidayCalendarResponse.model_validate(e) for e in enabled]
-    custom_responses = [CustomDayResponse.model_validate(cd) for cd in custom_days]
+    custom_responses = [
+        CustomDayResponse(
+            id=cd.id,
+            user_id=cd.user_id,
+            name=cd.name,
+            date=cd.date.replace(year=year) if cd.recurring else cd.date,
+            recurring=cd.recurring,
+            created_at=cd.created_at,
+        )
+        for cd in custom_days
+    ]
 
     return HolidaysResponse(
         holidays=all_holidays,

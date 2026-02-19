@@ -1,4 +1,6 @@
 import { useState, useCallback } from 'react'
+import { TriangleAlert, CalendarPlus } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
 import { PlanningHeader, type ZoomLevel } from '../components/planning/PlanningHeader'
 import { MonthView } from '../components/planning/MonthView'
 import { QuarterView } from '../components/planning/QuarterView'
@@ -33,8 +35,8 @@ export function PlanningCenterPage() {
   const [sidebarContent, setSidebarContent] = useState<SidebarContent | null>(null)
 
   const { selection, isDragging, onDragStart, onDragMove, onDragEnd, clearSelection } = useDragSelect()
-  const { data: trips, isLoading: tripsLoading } = useTrips()
-  const { data: holidayData, isLoading: holidaysLoading } = useHolidays(currentYear)
+  const { data: trips, isLoading: tripsLoading, isError: tripsError, refetch: refetchTrips } = useTrips()
+  const { data: holidayData, isLoading: holidaysLoading, isError: holidaysError, refetch: refetchHolidays } = useHolidays(currentYear)
   const deleteTrip = useDeleteTrip()
 
   const currentQuarter = Math.floor(currentMonth / 3)
@@ -123,6 +125,23 @@ export function PlanningCenterPage() {
     )
   }
 
+  if (tripsError || holidaysError) {
+    return (
+      <div className="text-center py-20">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-red-50 to-red-100/80 ring-1 ring-red-200/50 mb-4">
+          <TriangleAlert className="w-8 h-8 text-red-500" />
+        </div>
+        <p className="text-cloud-600 mb-4">Something went wrong loading your planning data.</p>
+        <button
+          onClick={() => { void refetchTrips(); void refetchHolidays() }}
+          className="px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    )
+  }
+
   const allTrips = trips ?? []
   const allHolidays = holidayData?.holidays ?? []
   const allCustomDays = holidayData?.custom_days ?? []
@@ -144,6 +163,17 @@ export function PlanningCenterPage() {
         enabledCountries={enabledCountries}
         onAddCustomDay={() => setSidebarContent({ type: 'custom-day-form' })}
       />
+
+      {allTrips.length === 0 && (
+        <div className="flex items-center gap-3 px-4 py-3 bg-indigo-50 border border-indigo-100 rounded-xl text-sm text-indigo-700">
+          <CalendarPlus className="w-4 h-4 shrink-0" />
+          <span>No trips planned yet. Drag on the calendar to create one, or </span>
+          <Link to="/trips/new" className="font-medium underline underline-offset-2 hover:text-indigo-900">
+            add a trip
+          </Link>
+          <span>.</span>
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl border border-cloud-200 shadow-sm overflow-hidden">
         {zoomLevel === 'month' && (
