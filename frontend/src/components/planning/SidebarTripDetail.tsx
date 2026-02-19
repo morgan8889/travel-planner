@@ -1,6 +1,8 @@
 import { Link } from '@tanstack/react-router'
 import { ArrowRight, Trash2 } from 'lucide-react'
 import { TripStatusBadge } from '../trips/TripStatusBadge'
+import { MapView } from '../map/MapView'
+import { TripMarker } from '../map/TripMarker'
 import type { TripSummary } from '../../lib/types'
 
 interface SidebarTripDetailProps {
@@ -20,9 +22,33 @@ export function SidebarTripDetail({ trip, onDelete }: SidebarTripDetailProps) {
         <p className="text-sm text-cloud-500 mt-1">
           {trip.start_date} to {trip.end_date} ({days} days)
         </p>
+        {trip.member_count > 1 && (
+          <p className="text-sm text-cloud-500">
+            {trip.member_count} members
+          </p>
+        )}
       </div>
 
       <TripStatusBadge status={trip.status} />
+
+      {trip.destination_latitude != null && trip.destination_longitude != null && (
+        <div className="rounded-xl overflow-hidden border border-cloud-200" style={{ height: '200px' }}>
+          <MapView
+            center={[trip.destination_longitude, trip.destination_latitude]}
+            zoom={8}
+            interactive={false}
+            className="h-full w-full"
+          >
+            <TripMarker
+              tripId={trip.id}
+              longitude={trip.destination_longitude}
+              latitude={trip.destination_latitude}
+              destination={trip.destination}
+              status={trip.status}
+            />
+          </MapView>
+        </div>
+      )}
 
       <div className="space-y-2 pt-2">
         <Link
