@@ -1,12 +1,14 @@
-import { useState, Suspense, lazy } from 'react'
+import { useState, useMemo, Suspense, lazy } from 'react'
 import { TriangleAlert, ArrowLeft, ChevronRight, SquarePen, Calendar, Trash2, MapPinOff, Plus } from 'lucide-react'
 
 const MapView = lazy(() => import('../components/map/MapView').then((m) => ({ default: m.MapView })))
 const TripMarker = lazy(() => import('../components/map/TripMarker').then((m) => ({ default: m.TripMarker })))
+const ActivityMarker = lazy(() => import('../components/map/ActivityMarker').then((m) => ({ default: m.ActivityMarker })))
+const MarkerPopup = lazy(() => import('../components/map/MarkerPopup').then((m) => ({ default: m.MarkerPopup })))
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { useTrip, useUpdateTrip, useDeleteTrip } from '../hooks/useTrips'
 import { useAddMember, useRemoveMember, useUpdateMemberRole } from '../hooks/useMembers'
-import { useItineraryDays, useGenerateDays } from '../hooks/useItinerary'
+import { useItineraryDays, useGenerateDays, useTripActivities } from '../hooks/useItinerary'
 import { useChecklists } from '../hooks/useChecklists'
 import { useAuth } from '../contexts/AuthContext'
 import { TripStatusBadge } from '../components/trips/TripStatusBadge'
@@ -96,6 +98,10 @@ export function TripDetailPage() {
   const { data: checklists, isLoading: checklistsLoading, isError: checklistsError, error: checklistsErrorMsg } = useChecklists(tripId)
   const generateDays = useGenerateDays(tripId)
 
+  // Activity locations for map
+  const { data: geoActivities } = useTripActivities(tripId, true)
+  const [selectedActivity, setSelectedActivity] = useState<string | null>(null)
+
   const [isEditing, setIsEditing] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showAddMember, setShowAddMember] = useState(false)
@@ -107,6 +113,32 @@ export function TripDetailPage() {
   const isOwner = trip?.members.some(
     (m) => m.user_id === user?.id && m.role === 'owner'
   ) ?? false
+
+  // Compute map bounds from trip destination + geolocated activities
+  const destLat = trip?.destination_latitude ?? null
+  const destLng = trip?.destination_longitude ?? null
+  const mapBounds = useMemo(() => {
+    const points: [number, number][] = []
+    if (destLat != null && destLng != null) {
+      points.push([destLng, destLat])
+    }
+    if (geoActivities) {
+      for (const a of geoActivities) {
+        if (a.latitude != null && a.longitude != null) {
+          points.push([a.longitude, a.latitude])
+        }
+      }
+    }
+    if (points.length < 2) return undefined
+    const lngs = points.map((p) => p[0])
+    const lats = points.map((p) => p[1])
+    return [
+      [Math.min(...lngs), Math.min(...lats)],
+      [Math.max(...lngs), Math.max(...lats)],
+    ] as [[number, number], [number, number]]
+  }, [destLat, destLng, geoActivities])
+
+  const selectedActivityData = geoActivities?.find((a) => a.id === selectedActivity)
 
   function handleStatusTransition(newStatus: TripStatus) {
     updateTrip.mutate({ status: newStatus })
@@ -506,12 +538,13 @@ export function TripDetailPage() {
           {/* Destination Map */}
           {trip.destination_latitude !== null && trip.destination_longitude !== null && (
             <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-cloud-200 overflow-hidden">
-              <div className="h-48">
+              <div className="h-72">
                 <Suspense fallback={<div className="h-full bg-cloud-100 animate-pulse" />}>
                   <MapView
                     center={[trip.destination_longitude, trip.destination_latitude]}
                     zoom={10}
-                    interactive={false}
+                    interactive={true}
+                    fitBounds={mapBounds}
                     className="h-full"
                   >
                     <TripMarker
@@ -521,11 +554,41 @@ export function TripDetailPage() {
                       destination={trip.destination}
                       status={trip.status}
                     />
+                    {geoActivities?.map((a) =>
+                      a.latitude != null && a.longitude != null ? (
+                        <ActivityMarker
+                          key={a.id}
+                          activityId={a.id}
+                          longitude={a.longitude}
+                          latitude={a.latitude}
+                          title={a.title}
+                          location={a.location}
+                          category={a.category}
+                          onClick={setSelectedActivity}
+                        />
+                      ) : null,
+                    )}
+                    {selectedActivityData &&
+                      selectedActivityData.latitude != null &&
+                      selectedActivityData.longitude != null && (
+                        <MarkerPopup
+                          longitude={selectedActivityData.longitude}
+                          latitude={selectedActivityData.latitude}
+                          title={selectedActivityData.title}
+                          subtitle={selectedActivityData.location ?? undefined}
+                          onClose={() => setSelectedActivity(null)}
+                        />
+                      )}
                   </MapView>
                 </Suspense>
               </div>
-              <div className="px-4 py-2.5 border-t border-cloud-100">
+              <div className="px-4 py-2.5 border-t border-cloud-100 flex items-center justify-between">
                 <p className="text-sm font-medium text-cloud-700">{trip.destination}</p>
+                {geoActivities && geoActivities.length > 0 && (
+                  <p className="text-xs text-cloud-500">
+                    {geoActivities.length} {geoActivities.length === 1 ? 'location' : 'locations'}
+                  </p>
+                )}
               </div>
             </div>
           )}

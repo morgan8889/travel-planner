@@ -1,7 +1,7 @@
 from datetime import timedelta
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -67,6 +67,29 @@ async def list_itinerary_days(
             )
         )
     return days
+
+
+@router.get("/trips/{trip_id}/activities", response_model=list[ActivityResponse])
+async def list_trip_activities(
+    trip_id: UUID,
+    user_id: CurrentUserId,
+    db: AsyncSession = Depends(get_db),
+    has_location: bool = Query(default=False),
+):
+    """List all activities for a trip, optionally filtered to those with coordinates."""
+    await verify_trip_member(trip_id, db, user_id)
+    stmt = (
+        select(Activity)
+        .join(ItineraryDay)
+        .where(ItineraryDay.trip_id == trip_id)
+        .order_by(ItineraryDay.date, Activity.sort_order)
+    )
+    if has_location:
+        stmt = stmt.where(
+            Activity.latitude.is_not(None), Activity.longitude.is_not(None)
+        )
+    result = await db.execute(stmt)
+    return [ActivityResponse.model_validate(a) for a in result.scalars().all()]
 
 
 @router.post(
@@ -189,6 +212,8 @@ async def create_activity(
         start_time=activity_data.start_time,
         end_time=activity_data.end_time,
         location=activity_data.location,
+        latitude=activity_data.latitude,
+        longitude=activity_data.longitude,
         notes=activity_data.notes,
         confirmation_number=activity_data.confirmation_number,
         sort_order=next_sort_order,
