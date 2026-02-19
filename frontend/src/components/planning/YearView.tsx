@@ -130,6 +130,8 @@ export function YearView({
                         stackIndex={tripIdx}
                         compact
                         showLabel={false}
+                        startDate={trip.start_date}
+                        endDate={trip.end_date}
                         onClick={() => onTripClick(trip)}
                       />
                     )

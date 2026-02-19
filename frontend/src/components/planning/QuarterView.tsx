@@ -138,6 +138,8 @@ export function QuarterView({
                         stackIndex={tripIdx}
                         compact
                         showLabel
+                        startDate={trip.start_date}
+                        endDate={trip.end_date}
                         onClick={() => onTripClick(trip)}
                       />
                     )

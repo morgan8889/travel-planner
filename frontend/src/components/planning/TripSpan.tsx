@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { TripStatus } from '../../lib/types'
 
 const TRIP_COLORS: Record<string, string> = {
@@ -22,6 +23,9 @@ interface TripSpanProps {
   compact?: boolean
   /** Show destination label text (compact mode only) */
   showLabel?: boolean
+  /** Full date range for tooltip display */
+  startDate?: string
+  endDate?: string
 }
 
 export function TripSpan({
@@ -33,7 +37,10 @@ export function TripSpan({
   onClick,
   compact = false,
   showLabel = true,
+  startDate,
+  endDate,
 }: TripSpanProps) {
+  const [hovered, setHovered] = useState(false)
   const colorClasses = TRIP_COLORS[status] || TRIP_COLORS.planning
 
   if (compact) {
@@ -47,12 +54,20 @@ export function TripSpan({
           bottom: `${2 + stackIndex * 4}px`,
         }}
         onClick={(e) => { e.stopPropagation(); onClick() }}
-        title={destination}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
       >
         {showLabel && (
           <span className="absolute top-full left-0 text-[8px] leading-none truncate max-w-full pointer-events-none mt-px">
             {destination}
           </span>
+        )}
+        {hovered && startDate && endDate && (
+          <div className="absolute bottom-full left-0 mb-1 px-2 py-1.5 bg-cloud-900 text-white text-[10px] rounded-lg shadow-lg whitespace-nowrap z-50 pointer-events-none">
+            <div className="font-semibold">{destination}</div>
+            <div className="opacity-80">{startDate} to {endDate}</div>
+            <div className="opacity-60 capitalize">{status}</div>
+          </div>
         )}
       </button>
     )
