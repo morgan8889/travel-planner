@@ -76,7 +76,11 @@ export function PlanningCenterPage() {
   }, [])
 
   const handleDayClick = useCallback((date: string) => {
-    setSidebarContent({ type: 'trip-create', startDate: date, endDate: date })
+    const start = new Date(date + 'T00:00:00')
+    const end = new Date(start)
+    end.setDate(end.getDate() + 7)
+    const endStr = end.toISOString().split('T')[0]
+    setSidebarContent({ type: 'trip-create', startDate: date, endDate: endStr })
   }, [])
 
   const handleDeleteTrip = useCallback(async (tripId: string) => {
@@ -244,8 +248,8 @@ export function PlanningCenterPage() {
         )}
         {sidebarContent?.type === 'trip-create' && (
           <SidebarTripCreate
-            startDate={sidebarContent.startDate}
-            endDate={sidebarContent.endDate}
+            initialStartDate={sidebarContent.startDate}
+            initialEndDate={sidebarContent.endDate}
             onCreated={closeSidebar}
           />
         )}
