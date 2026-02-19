@@ -70,7 +70,7 @@ describe('PlanningCenterPage', () => {
         return Promise.resolve({ data: { holidays: [], custom_days: [], enabled_countries: [] } })
       }
       if (url.includes('supported-countries')) {
-        return Promise.resolve({ data: [{ code: 'US', name: 'US' }] })
+        return Promise.resolve({ data: [{ code: 'US', name: 'United States' }] })
       }
       // trips
       return Promise.resolve({ data: [] })
@@ -106,6 +106,80 @@ describe('PlanningCenterPage', () => {
     await waitFor(() => {
       expect(screen.getByText('January')).toBeInTheDocument()
       expect(screen.getByText('December')).toBeInTheDocument()
+    })
+  })
+
+  it('shows trip bars in quarter view', async () => {
+    mockGet.mockImplementation((url: string) => {
+      if (url.includes('holidays')) {
+        return Promise.resolve({ data: { holidays: [], custom_days: [], enabled_countries: [] } })
+      }
+      if (url.includes('supported-countries')) {
+        return Promise.resolve({ data: [{ code: 'US', name: 'United States' }] })
+      }
+      // trips
+      const now = new Date()
+      const year = now.getFullYear()
+      const month = String(now.getMonth() + 1).padStart(2, '0')
+      return Promise.resolve({
+        data: [{
+          id: 'trip-1',
+          destination: 'Paris',
+          start_date: `${year}-${month}-10`,
+          end_date: `${year}-${month}-15`,
+          status: 'planning',
+          type: 'vacation',
+          member_count: 2,
+          destination_latitude: 48.8566,
+          destination_longitude: 2.3522,
+          notes: null,
+          parent_trip_id: null,
+          created_at: '2026-01-01',
+        }],
+      })
+    })
+
+    renderWithRouter()
+    await waitFor(() => expect(screen.getByText('Quarter')).toBeInTheDocument())
+    await userEvent.click(screen.getByText('Quarter'))
+
+    await waitFor(() => {
+      expect(screen.getAllByTitle('Paris')[0]).toBeInTheDocument()
+    })
+  })
+
+  it('clicking a day in quarter view opens trip create sidebar without zooming', async () => {
+    renderWithRouter()
+    await waitFor(() => expect(screen.getByText('Quarter')).toBeInTheDocument())
+    await userEvent.click(screen.getByText('Quarter'))
+
+    // Click a day number in the quarter view
+    await waitFor(() => {
+      expect(screen.getAllByText('15')[0]).toBeInTheDocument()
+    })
+    await userEvent.click(screen.getAllByText('15')[0])
+
+    // Should open sidebar with trip create form, NOT zoom to month view
+    await waitFor(() => {
+      expect(screen.getByText('New Trip')).toBeInTheDocument()
+    })
+    // Quarter buttons should still be visible (not zoomed to month)
+    expect(screen.queryByText('Sun')).not.toBeInTheDocument()
+  })
+
+  it('shows holiday country dropdown', async () => {
+    renderWithRouter()
+    await waitFor(() => {
+      expect(screen.getByText('Holidays:')).toBeInTheDocument()
+    })
+
+    // Click the trigger button that contains "Holidays:"
+    const holidaysLabel = screen.getByText('Holidays:')
+    const triggerButton = holidaysLabel.closest('button')!
+    await userEvent.click(triggerButton)
+
+    await waitFor(() => {
+      expect(screen.getByText('United States')).toBeInTheDocument()
     })
   })
 })

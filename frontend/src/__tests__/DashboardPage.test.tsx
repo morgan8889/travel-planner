@@ -97,7 +97,8 @@ describe('DashboardPage', () => {
     })
     renderDashboard()
 
-    expect(await screen.findByText('Paris, France')).toBeInTheDocument()
+    // Use getAllByText to handle both trip card and TripMarker rendering the same destination text
+    expect((await screen.findAllByText('Paris, France'))[0]).toBeInTheDocument()
     // Completed trip should not appear in upcoming list (it has no coords so no marker either)
     expect(screen.queryByText('Tokyo, Japan')).not.toBeInTheDocument()
   })
