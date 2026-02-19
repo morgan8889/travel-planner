@@ -68,9 +68,7 @@ async def get_holidays(
     all_holidays.sort(key=lambda h: h.date)
 
     # Get custom days (non-recurring for this year + recurring from any year)
-    result = await db.execute(
-        select(CustomDay).where(CustomDay.user_id == user_id)
-    )
+    result = await db.execute(select(CustomDay).where(CustomDay.user_id == user_id))
     all_custom = result.scalars().all()
     custom_days = []
     for cd in all_custom:
@@ -183,9 +181,7 @@ async def delete_custom_day(
     db: AsyncSession = Depends(get_db),
 ):
     """Delete a custom day."""
-    result = await db.execute(
-        select(CustomDay).where(CustomDay.id == custom_day_id)
-    )
+    result = await db.execute(select(CustomDay).where(CustomDay.id == custom_day_id))
     cd = result.scalar_one_or_none()
     if cd is None:
         raise HTTPException(status_code=404, detail="Custom day not found")

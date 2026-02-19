@@ -66,7 +66,7 @@ export function PlanningCenterPage() {
   const handleMonthClick = useCallback((month: number) => {
     setCurrentMonth(month)
     setZoomLevel('month')
-  }, [])
+  }, [setCurrentMonth, setZoomLevel])
 
   // Navigation
   const handlePrev = () => {

@@ -1,21 +1,20 @@
 from travel_planner.models import (
     Activity,
-    AnnualPlan,
     Base,
-    CalendarBlock,
     ChatMessage,
     ChatThread,
     Checklist,
     ChecklistItem,
     ChecklistItemUser,
+    CustomDay,
     GmailConnection,
+    HolidayCalendar,
     ImportRecord,
     ItineraryDay,
     Trip,
     TripMember,
     UserProfile,
 )
-from travel_planner.models.calendar import BlockType
 from travel_planner.models.itinerary import (
     ActivityCategory,
     ActivitySource,
@@ -56,19 +55,14 @@ def test_member_role_enum():
 
 
 def test_calendar_models_importable():
-    models = [AnnualPlan, CalendarBlock]
+    models = [HolidayCalendar, CustomDay]
     assert len(models) == 2
 
 
 def test_calendar_tables_exist():
     table_names = Base.metadata.tables.keys()
-    assert "annual_plans" in table_names
-    assert "calendar_blocks" in table_names
-
-
-def test_block_type_enum():
-    assert BlockType.pto == "pto"
-    assert BlockType.holiday == "holiday"
+    assert "holiday_calendars" in table_names
+    assert "custom_days" in table_names
 
 
 def test_itinerary_models_importable():
@@ -119,8 +113,8 @@ def test_all_14_tables_exist():
         "user_profiles",
         "trips",
         "trip_members",
-        "annual_plans",
-        "calendar_blocks",
+        "holiday_calendars",
+        "custom_days",
         "itinerary_days",
         "activities",
         "checklists",

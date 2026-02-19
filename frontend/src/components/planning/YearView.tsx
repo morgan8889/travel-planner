@@ -39,7 +39,6 @@ export function YearView({
   year,
   trips,
   holidays,
-  customDays,
   onMonthClick,
 }: YearViewProps) {
   const today = new Date().toISOString().split('T')[0]
