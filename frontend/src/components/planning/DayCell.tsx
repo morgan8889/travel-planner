@@ -14,6 +14,7 @@ interface DayCellProps {
   onMouseDown?: (date: string) => void
   onMouseEnter?: (date: string) => void
   onClick?: (date: string) => void
+  onHolidayClick?: (date: string) => void
 }
 
 export const DayCell = memo(function DayCell({
@@ -30,6 +31,7 @@ export const DayCell = memo(function DayCell({
   onMouseDown,
   onMouseEnter,
   onClick,
+  onHolidayClick,
 }: DayCellProps) {
   const label = holidayLabel || customDayLabel
 
@@ -44,7 +46,13 @@ export const DayCell = memo(function DayCell({
           ${holidayLabel ? 'font-semibold text-red-600' : ''}
           ${customDayLabel ? 'font-semibold text-amber-600' : ''}
         `}
-        onClick={() => onClick?.(date)}
+        onClick={() => {
+          if (holidayLabel && onHolidayClick) {
+            onHolidayClick(date)
+          } else {
+            onClick?.(date)
+          }
+        }}
         title={label}
       >
         {dayNumber}
@@ -70,6 +78,11 @@ export const DayCell = memo(function DayCell({
         onMouseDown?.(date)
       }}
       onMouseEnter={() => onMouseEnter?.(date)}
+      onClick={() => {
+        if (holidayLabel && onHolidayClick) {
+          onHolidayClick(date)
+        }
+      }}
     >
       <span
         className={`inline-flex items-center justify-center w-7 h-7 text-sm rounded-full
