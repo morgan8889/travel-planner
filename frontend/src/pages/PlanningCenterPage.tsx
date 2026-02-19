@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { TriangleAlert, CalendarPlus } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import { PlanningHeader, type ZoomLevel } from '../components/planning/PlanningHeader'
@@ -13,7 +13,7 @@ import { SidebarCustomDayForm } from '../components/planning/SidebarCustomDayFor
 import { TripSummaryBar } from '../components/planning/TripSummaryBar'
 import { useDragSelect } from '../components/planning/useDragSelect'
 import { useTrips, useDeleteTrip } from '../hooks/useTrips'
-import { useHolidays } from '../hooks/useHolidays'
+import { useHolidays, useEnableCountry } from '../hooks/useHolidays'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import type { TripSummary } from '../lib/types'
 
@@ -39,6 +39,20 @@ export function PlanningCenterPage() {
   const { data: trips, isLoading: tripsLoading, isError: tripsError, refetch: refetchTrips } = useTrips()
   const { data: holidayData, isLoading: holidaysLoading, isError: holidaysError, refetch: refetchHolidays } = useHolidays(currentYear)
   const deleteTrip = useDeleteTrip()
+  const enableCountry = useEnableCountry(currentYear)
+  const autoEnabledRef = useRef(false)
+
+  useEffect(() => {
+    if (
+      !autoEnabledRef.current &&
+      !holidaysLoading &&
+      holidayData &&
+      holidayData.enabled_countries.length === 0
+    ) {
+      autoEnabledRef.current = true
+      enableCountry.mutate('US')
+    }
+  }, [holidaysLoading, holidayData]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const currentQuarter = Math.floor(currentMonth / 3)
 
