@@ -5,7 +5,6 @@ import { TripsPage } from './pages/TripsPage'
 import { NewTripPage } from './pages/NewTripPage'
 import { TripDetailPage } from './pages/TripDetailPage'
 import { CalendarPage } from './pages/CalendarPage'
-import { DevSeedPage } from './pages/DevSeedPage'
 
 const rootRoute = createRootRoute({
   component: RootLayout,
@@ -41,13 +40,27 @@ const calendarRoute = createRoute({
   component: CalendarPage,
 })
 
-const devSeedRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/dev/seed',
-  component: DevSeedPage,
-})
+const devChildren = import.meta.env.DEV
+  ? await (async () => {
+      const { DevSeedPage } = await import('./pages/DevSeedPage')
+      return [
+        createRoute({
+          getParentRoute: () => rootRoute,
+          path: '/dev/seed',
+          component: DevSeedPage,
+        }),
+      ]
+    })()
+  : []
 
-const routeTree = rootRoute.addChildren([indexRoute, tripsRoute, newTripRoute, tripDetailRoute, calendarRoute, devSeedRoute])
+const routeTree = rootRoute.addChildren([
+  indexRoute,
+  tripsRoute,
+  newTripRoute,
+  tripDetailRoute,
+  calendarRoute,
+  ...devChildren,
+])
 
 export const router = createRouter({ routeTree })
 
