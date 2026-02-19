@@ -52,7 +52,13 @@ export function QuarterView({
   const months = [quarter * 3, quarter * 3 + 1, quarter * 3 + 2]
   const today = new Date().toISOString().split('T')[0]
 
-  const holidaySet = useMemo(() => new Set(holidays.map((h) => h.date)), [holidays])
+  const holidayMap = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const h of holidays) {
+      map.set(h.date, h.name)
+    }
+    return map
+  }, [holidays])
   const customDaySet = useMemo(() => {
     return new Set(customDays.map((cd) =>
       cd.recurring ? `${year}-${cd.date.slice(5)}` : cd.date
@@ -109,7 +115,7 @@ export function QuarterView({
                           isToday={day.date === today}
                           isCurrentMonth
                           isSelected={false}
-                          holidayLabel={holidaySet.has(day.date) ? 'holiday' : undefined}
+                          holidayLabel={holidayMap.get(day.date)}
                           customDayLabel={customDaySet.has(day.date) ? 'custom' : undefined}
                           compact
                           onClick={() => onDayClick(day.date)}
