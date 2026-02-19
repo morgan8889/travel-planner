@@ -259,4 +259,38 @@ describe('PlanningCenterPage', () => {
     const dayCell = screen.getAllByText('15')[0].closest('div')
     expect(dayCell?.className).toContain('ring-indigo-500')
   })
+
+  it('clicking a holiday day opens holiday detail sidebar', async () => {
+    mockGet.mockImplementation((url: string) => {
+      if (url.includes('holidays')) {
+        return Promise.resolve({
+          data: {
+            holidays: [{ date: `${testYear}-${testMonth}-15`, name: 'Test Holiday', country_code: 'US' }],
+            custom_days: [],
+            enabled_countries: ['US'],
+          },
+        })
+      }
+      if (url.includes('supported-countries')) {
+        return Promise.resolve({ data: [{ code: 'US', name: 'United States' }] })
+      }
+      return Promise.resolve({ data: [] })
+    })
+
+    renderWithRouter()
+    await waitFor(() => expect(screen.getByText('Quarter')).toBeInTheDocument())
+    await userEvent.click(screen.getByText('Quarter'))
+
+    // Wait for the holiday label to appear in the quarter view calendar
+    await waitFor(() => {
+      expect(screen.getByText('Test Holiday')).toBeInTheDocument()
+    })
+    // Click the holiday label in the DayCell — triggers onHolidayClick
+    await userEvent.click(screen.getByText('Test Holiday'))
+
+    // Sidebar should open with holiday detail including "Federal Holiday (US)"
+    await waitFor(() => {
+      expect(screen.getByText(/Federal Holiday/)).toBeInTheDocument()
+    })
+  })
 })
