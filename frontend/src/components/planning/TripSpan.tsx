@@ -18,6 +18,10 @@ interface TripSpanProps {
   /** Vertical offset for stacking overlapping trips */
   stackIndex: number
   onClick: () => void
+  /** Use compact (thin bar) variant for quarter/year views */
+  compact?: boolean
+  /** Show destination label text (compact mode only) */
+  showLabel?: boolean
 }
 
 export function TripSpan({
@@ -27,8 +31,32 @@ export function TripSpan({
   colSpan,
   stackIndex,
   onClick,
+  compact = false,
+  showLabel = true,
 }: TripSpanProps) {
   const colorClasses = TRIP_COLORS[status] || TRIP_COLORS.planning
+
+  if (compact) {
+    return (
+      <button
+        type="button"
+        className={`absolute left-0 h-1.5 rounded-full cursor-pointer transition-colors ${colorClasses}`}
+        style={{
+          width: `${(colSpan / 7) * 100}%`,
+          marginLeft: `${(startCol / 7) * 100}%`,
+          bottom: `${2 + stackIndex * 4}px`,
+        }}
+        onClick={(e) => { e.stopPropagation(); onClick() }}
+        title={destination}
+      >
+        {showLabel && (
+          <span className="absolute top-full left-0 text-[8px] leading-none truncate max-w-full pointer-events-none mt-px">
+            {destination}
+          </span>
+        )}
+      </button>
+    )
+  }
 
   return (
     <button
