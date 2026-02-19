@@ -19,10 +19,8 @@ interface TripSpanProps {
   /** Vertical offset for stacking overlapping trips */
   stackIndex: number
   onClick: () => void
-  /** Use compact (thin bar) variant for quarter/year views */
-  compact?: boolean
-  /** Show destination label text (compact mode only) */
-  showLabel?: boolean
+  /** Display size: 'small' (thin bar, tooltip only), 'medium' (bar with inline label), 'full' (month view) */
+  size?: 'small' | 'medium' | 'full'
   /** Full date range for tooltip display */
   startDate?: string
   endDate?: string
@@ -35,30 +33,32 @@ export function TripSpan({
   colSpan,
   stackIndex,
   onClick,
-  compact = false,
-  showLabel = true,
+  size = 'full',
   startDate,
   endDate,
 }: TripSpanProps) {
   const [hovered, setHovered] = useState(false)
   const colorClasses = TRIP_COLORS[status] || TRIP_COLORS.planning
 
-  if (compact) {
+  if (size === 'small' || size === 'medium') {
+    const heightClass = size === 'small' ? 'h-1.5' : 'h-3'
+    const bottomOffset = size === 'small' ? stackIndex * 4 : stackIndex * 5
+
     return (
       <button
         type="button"
-        className={`absolute left-0 h-1.5 rounded-full cursor-pointer transition-colors ${colorClasses}`}
+        className={`absolute left-0 ${heightClass} rounded-full cursor-pointer transition-colors ${colorClasses}`}
         style={{
           width: `${(colSpan / 7) * 100}%`,
           marginLeft: `${(startCol / 7) * 100}%`,
-          bottom: `${2 + stackIndex * 4}px`,
+          bottom: `${2 + bottomOffset}px`,
         }}
         onClick={(e) => { e.stopPropagation(); onClick() }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        {showLabel && (
-          <span className="absolute top-full left-0 text-[8px] leading-none truncate max-w-full pointer-events-none mt-px">
+        {size === 'medium' && (
+          <span className="absolute inset-0 flex items-center px-0.5 text-[7px] leading-none truncate pointer-events-none">
             {destination}
           </span>
         )}

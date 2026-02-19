@@ -134,8 +134,7 @@ export function YearView({
                         startCol={startCol}
                         colSpan={colSpan}
                         stackIndex={tripIdx}
-                        compact
-                        showLabel={false}
+                        size="small"
                         startDate={trip.start_date}
                         endDate={trip.end_date}
                         onClick={() => onTripClick(trip)}

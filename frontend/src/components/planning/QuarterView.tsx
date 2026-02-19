@@ -101,7 +101,7 @@ export function QuarterView({
                 (t) => t.start_date <= weekEnd && t.end_date >= weekStart
               )
               return (
-                <div key={_weekIdx} className="relative pb-5">
+                <div key={_weekIdx} className="relative pb-6">
                   <div className="grid grid-cols-7 gap-px">
                     {week.map((day, i) => {
                       if (!day.isCurrentMonth) {
@@ -142,8 +142,7 @@ export function QuarterView({
                         startCol={startCol}
                         colSpan={colSpan}
                         stackIndex={tripIdx}
-                        compact
-                        showLabel
+                        size="medium"
                         startDate={trip.start_date}
                         endDate={trip.end_date}
                         onClick={() => onTripClick(trip)}
