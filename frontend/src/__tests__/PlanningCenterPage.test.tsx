@@ -241,4 +241,22 @@ describe('PlanningCenterPage', () => {
     expect(screen.getByLabelText('Start')).toBeInTheDocument()
     expect(screen.getByLabelText('End')).toBeInTheDocument()
   })
+
+  it('highlights selected day when trip create sidebar is open', async () => {
+    renderWithRouter()
+    await waitFor(() => expect(screen.getByText('Quarter')).toBeInTheDocument())
+    await userEvent.click(screen.getByText('Quarter'))
+
+    await waitFor(() => {
+      expect(screen.getAllByText('15')[0]).toBeInTheDocument()
+    })
+    await userEvent.click(screen.getAllByText('15')[0])
+
+    await waitFor(() => {
+      expect(screen.getByText('New Trip')).toBeInTheDocument()
+    })
+    // The clicked day should have the indigo ring indicator
+    const dayCell = screen.getAllByText('15')[0].closest('div')
+    expect(dayCell?.className).toContain('ring-indigo-500')
+  })
 })
