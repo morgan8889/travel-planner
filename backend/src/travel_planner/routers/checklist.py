@@ -232,7 +232,11 @@ async def delete_checklist(
     """Delete a checklist and all its items."""
     await verify_trip_member(trip_id, db, user_id)
 
-    result = await db.execute(select(Checklist).where(Checklist.id == checklist_id))
+    result = await db.execute(
+        select(Checklist).where(
+            Checklist.id == checklist_id, Checklist.trip_id == trip_id
+        )
+    )
     checklist = result.scalar_one_or_none()
     if not checklist:
         raise HTTPException(status_code=404, detail="Checklist not found")

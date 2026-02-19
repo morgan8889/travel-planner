@@ -524,3 +524,38 @@ def test_delete_checklist(
         headers=auth_headers,
     )
     assert response.status_code == 204
+
+
+def test_delete_checklist_cross_trip_idor(
+    client: TestClient,
+    auth_headers: dict,
+    trip_id: str,
+    override_get_db,
+    mock_db_session,
+):
+    """Member of one trip cannot delete a checklist belonging to a different trip."""
+    from uuid import uuid4
+
+    foreign_checklist_id = uuid4()
+
+    # User is a valid member of their own trip
+    owner_user = _make_user()
+    owner_member = _make_member(user=owner_user)
+    trip = _make_trip(members=[owner_member])
+
+    # First call: verify_trip_member — user IS a member of trip_id
+    result_mock1 = MagicMock()
+    result_mock1.scalar_one_or_none.return_value = trip
+
+    # Second call: checklist scoped to trip_id returns None because the checklist
+    # belongs to a different trip
+    result_mock2 = MagicMock()
+    result_mock2.scalar_one_or_none.return_value = None
+
+    mock_db_session.execute = AsyncMock(side_effect=[result_mock1, result_mock2])
+
+    response = client.delete(
+        f"/checklist/trips/{trip_id}/checklists/{foreign_checklist_id}",
+        headers=auth_headers,
+    )
+    assert response.status_code == 404
