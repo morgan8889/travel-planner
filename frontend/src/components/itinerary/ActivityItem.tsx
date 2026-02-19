@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { GripVertical, Pencil, Trash2, Plane, Utensils, MapPin, Hotel, type LucideIcon } from 'lucide-react'
+import { GripVertical, Trash2, Plane, Utensils, MapPin, Hotel, type LucideIcon } from 'lucide-react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { Activity, ActivityCategory } from '../../lib/types'
-import { useDeleteActivity } from '../../hooks/useItinerary'
+import { useDeleteActivity, useUpdateActivity } from '../../hooks/useItinerary'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
-import { EditActivityModal } from './EditActivityModal'
+import { ActivityForm } from './ActivityForm'
 
 interface ActivityItemProps {
   activity: Activity
@@ -21,8 +21,9 @@ const CATEGORY_ICONS: Record<ActivityCategory, LucideIcon> = {
 
 export function ActivityItem({ activity, tripId }: ActivityItemProps) {
   const deleteActivity = useDeleteActivity(tripId)
+  const updateActivity = useUpdateActivity(tripId)
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
-  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
 
   const {
     attributes,
@@ -39,7 +40,7 @@ export function ActivityItem({ activity, tripId }: ActivityItemProps) {
     opacity: isDragging ? 0.5 : 1,
   }
 
-  const handleDelete = () => {
+  function handleDelete(): void {
     deleteActivity.mutate({
       activityId: activity.id,
       dayId: activity.itinerary_day_id,
@@ -55,15 +56,40 @@ export function ActivityItem({ activity, tripId }: ActivityItemProps) {
 
   const CategoryIcon = CATEGORY_ICONS[activity.category]
 
+  if (isExpanded) {
+    return (
+      <div ref={setNodeRef} style={style} className="bg-white border border-indigo-200 rounded-lg p-3">
+        <ActivityForm
+          activity={activity}
+          dayId={activity.itinerary_day_id}
+          tripId={tripId}
+          onSave={async (data) => {
+            await updateActivity.mutateAsync({
+              activityId: activity.id,
+              dayId: activity.itinerary_day_id,
+              data,
+            })
+            setIsExpanded(false)
+          }}
+          onCancel={() => setIsExpanded(false)}
+          isPending={updateActivity.isPending}
+          error={updateActivity.isError ? (updateActivity.error as Error) : null}
+        />
+      </div>
+    )
+  }
+
   return (
     <>
       <div
         ref={setNodeRef}
         style={style}
-        className="flex items-start gap-3 p-3 bg-white border border-cloud-200 rounded-lg hover:shadow-sm transition-shadow"
+        className="flex items-start gap-3 p-3 bg-white border border-cloud-200 rounded-lg hover:shadow-sm transition-shadow cursor-pointer"
+        onClick={() => setIsExpanded(true)}
       >
         <button
           className="flex-shrink-0 mt-1 cursor-grab active:cursor-grabbing text-cloud-400 hover:text-cloud-600 touch-none"
+          onClick={(e) => e.stopPropagation()}
           {...attributes}
           {...listeners}
         >
@@ -77,14 +103,10 @@ export function ActivityItem({ activity, tripId }: ActivityItemProps) {
             <h4 className="font-medium text-cloud-900 break-words">{activity.title}</h4>
             <div className="flex items-center gap-1">
               <button
-                onClick={() => setIsEditOpen(true)}
-                className="flex-shrink-0 p-1 text-cloud-400 hover:text-indigo-600 rounded transition-colors"
-                aria-label="Edit activity"
-              >
-                <Pencil className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setIsConfirmOpen(true)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setIsConfirmOpen(true)
+                }}
                 disabled={deleteActivity.isPending}
                 className="flex-shrink-0 p-1 text-cloud-400 hover:text-red-600 rounded transition-colors disabled:opacity-50"
                 aria-label="Delete activity"
@@ -127,14 +149,6 @@ export function ActivityItem({ activity, tripId }: ActivityItemProps) {
         message={`Are you sure you want to delete "${activity.title}"?`}
         confirmLabel="Delete"
         isLoading={deleteActivity.isPending}
-      />
-
-      <EditActivityModal
-        key={activity.id}
-        isOpen={isEditOpen}
-        onClose={() => setIsEditOpen(false)}
-        activity={activity}
-        tripId={tripId}
       />
     </>
   )
