@@ -83,4 +83,23 @@ describe('TripSummaryBar', () => {
     expect(screen.getByText(/1 trip/)).toBeInTheDocument()
     expect(screen.getByText(/1 holiday/)).toBeInTheDocument()
   })
+
+  it('expands to show all trips when +N more is clicked', () => {
+    const trips = Array.from({ length: 10 }, (_, i) => ({
+      ...baseMockTrip,
+      id: String(i + 1),
+      destination: `City ${i + 1}`,
+      start_date: `2026-${String(Math.floor(i / 3) + 1).padStart(2, '0')}-01`,
+      end_date: `2026-${String(Math.floor(i / 3) + 1).padStart(2, '0')}-10`,
+    }))
+    render(<TripSummaryBar {...defaultProps} trips={trips} />)
+    expect(screen.getByText('+2 more')).toBeInTheDocument()
+    expect(screen.queryByText(/City 9/)).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByText('+2 more'))
+
+    expect(screen.getByText(/City 9/)).toBeInTheDocument()
+    expect(screen.getByText(/City 10/)).toBeInTheDocument()
+    expect(screen.getByText('Show less')).toBeInTheDocument()
+  })
 })

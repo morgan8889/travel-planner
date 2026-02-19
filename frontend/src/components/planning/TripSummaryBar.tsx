@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useRef } from 'react'
 import type { TripSummary, HolidayEntry, CustomDay } from '../../lib/types'
 
 const CHIP_COLORS: Record<string, string> = {
@@ -69,10 +69,22 @@ export function TripSummaryBar({
     }).length
   }, [customDays, periodStart, periodEnd, currentYear])
 
+  const [expanded, setExpanded] = useState(false)
+
+  // Reset expanded state when the period changes (avoids useEffect + setState)
+  const prevPeriodRef = useRef(`${periodStart}-${periodEnd}`)
+  const currentPeriodKey = `${periodStart}-${periodEnd}`
+  if (prevPeriodRef.current !== currentPeriodKey) {
+    prevPeriodRef.current = currentPeriodKey
+    if (expanded) {
+      setExpanded(false)
+    }
+  }
+
   if (filteredTrips.length === 0 && holidayCount === 0 && eventCount === 0) return null
 
-  const visible = filteredTrips.slice(0, 8)
-  const overflow = filteredTrips.length - visible.length
+  const visible = expanded ? filteredTrips : filteredTrips.slice(0, 8)
+  const overflow = expanded ? 0 : filteredTrips.length - Math.min(filteredTrips.length, 8)
 
   const statParts: string[] = []
   if (filteredTrips.length > 0) statParts.push(`${filteredTrips.length} trip${filteredTrips.length !== 1 ? 's' : ''}`)
@@ -80,28 +92,41 @@ export function TripSummaryBar({
   if (eventCount > 0) statParts.push(`${eventCount} event${eventCount !== 1 ? 's' : ''}`)
 
   return (
-    <div className="px-4 py-2 bg-cloud-50 rounded-xl border border-cloud-200 space-y-1">
-      {visible.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          {visible.map((trip) => (
-            <button
-              key={trip.id}
-              type="button"
-              onClick={() => onTripClick(trip)}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full cursor-pointer transition-colors ${CHIP_COLORS[trip.status] || CHIP_COLORS.planning}`}
-            >
-              {trip.destination}
-              <span className="opacity-70">
-                {formatShortDate(trip.start_date)}&ndash;{formatShortDate(trip.end_date)}
-              </span>
-            </button>
-          ))}
-          {overflow > 0 && (
-            <span className="text-xs text-cloud-500">+{overflow} more</span>
-          )}
-        </div>
-      )}
-      <p className="text-xs text-cloud-500">{statParts.join(' | ')}</p>
+    <div className="flex items-start justify-between gap-4 px-4 py-2 bg-cloud-50 rounded-xl border border-cloud-200">
+      <div className="flex flex-wrap items-center gap-2 min-w-0">
+        {visible.map((trip) => (
+          <button
+            key={trip.id}
+            type="button"
+            onClick={() => onTripClick(trip)}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full cursor-pointer transition-colors ${CHIP_COLORS[trip.status] || CHIP_COLORS.planning}`}
+          >
+            {trip.destination}
+            <span className="opacity-70">
+              {formatShortDate(trip.start_date)}&ndash;{formatShortDate(trip.end_date)}
+            </span>
+          </button>
+        ))}
+        {overflow > 0 && (
+          <button
+            type="button"
+            onClick={() => setExpanded(true)}
+            className="text-xs text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer transition-colors"
+          >
+            +{overflow} more
+          </button>
+        )}
+        {expanded && filteredTrips.length > 8 && (
+          <button
+            type="button"
+            onClick={() => setExpanded(false)}
+            className="text-xs text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer transition-colors"
+          >
+            Show less
+          </button>
+        )}
+      </div>
+      <p className="text-xs text-cloud-500 whitespace-nowrap shrink-0 pt-1">{statParts.join(' | ')}</p>
     </div>
   )
 }
