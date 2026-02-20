@@ -38,6 +38,10 @@ function getMiniGrid(year: number, month: number) {
   for (let d = 1; d <= totalDays; d++) {
     days.push({ date: formatDate(year, month, d), dayNumber: d, isCurrentMonth: true })
   }
+  // Pad to 6 rows (42 cells) for consistent height across quarters
+  while (days.length < 42) {
+    days.push({ date: '', dayNumber: 0, isCurrentMonth: false })
+  }
   return days
 }
 
@@ -95,7 +99,7 @@ export function QuarterView({
             </button>
             <div className="grid grid-cols-7 gap-px mb-1">
               {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-                <div key={i} className="text-center text-[10px] text-cloud-400 pb-1">{d}</div>
+                <div key={i} className="text-center text-xs text-cloud-400 pb-1">{d}</div>
               ))}
             </div>
             {weeks.map((week, _weekIdx) => {

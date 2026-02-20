@@ -70,7 +70,7 @@ export function TripSpan({
         onMouseLeave={() => setHovered(false)}
       >
         {size === 'medium' && (
-          <span className="absolute inset-0 flex items-center px-0.5 text-[7px] leading-none truncate pointer-events-none">
+          <span className="absolute inset-0 flex items-center px-1 text-[9px] leading-none truncate pointer-events-none">
             {destination}
           </span>
         )}
