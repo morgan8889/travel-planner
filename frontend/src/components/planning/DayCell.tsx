@@ -57,7 +57,7 @@ export const DayCell = memo(function DayCell({
       >
         {dayNumber}
         {showLabel && label && (
-          <span className={`text-[8px] leading-tight truncate max-w-full ${holidayLabel ? 'text-red-500' : 'text-amber-500'}`}>
+          <span className={`text-[10px] leading-tight truncate max-w-full ${holidayLabel ? 'text-red-500' : 'text-amber-500'}`}>
             {label}
           </span>
         )}
