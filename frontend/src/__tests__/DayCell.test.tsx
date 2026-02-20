@@ -51,4 +51,20 @@ describe('DayCell compact mode', () => {
     expect(compactCell.className).toContain('min-h-[2.5rem]')
     expect(fullCell.className).toContain('min-h-[5rem]')
   })
+
+  it('compact mode without showLabel uses aspect-square, not h-full', () => {
+    const { container } = render(
+      <DayCell
+        date="2026-03-15"
+        dayNumber={15}
+        isToday={false}
+        isCurrentMonth={true}
+        isSelected={false}
+        compact={true}
+      />
+    )
+    const cell = container.firstChild as HTMLElement
+    expect(cell.className).toContain('aspect-square')
+    expect(cell.className).not.toContain('h-full')
+  })
 })
