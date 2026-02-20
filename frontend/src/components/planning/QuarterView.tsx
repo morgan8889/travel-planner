@@ -110,7 +110,7 @@ export function QuarterView({
                 (t) => t.start_date <= weekEnd && t.end_date >= weekStart
               )
               return (
-                <div key={_weekIdx} className="relative" style={{ paddingBottom: '36px' }}>
+                <div key={_weekIdx} className="relative" style={{ paddingBottom: '48px' }}>
                   <div className="grid grid-cols-7 border-t border-l border-cloud-100">
                     {week.map((day, i) => {
                       if (!day.isCurrentMonth) {

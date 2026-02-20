@@ -32,4 +32,10 @@ describe('QuarterView grid lines', () => {
     const headers = container.querySelectorAll('.border-b.border-cloud-200')
     expect(headers.length).toBeGreaterThan(0)
   })
+
+  it('week container has paddingBottom 48px to fit 3 trip bars', () => {
+    const { container } = render(<QuarterView {...baseProps} />)
+    const weekContainer = container.querySelector('[style]') as HTMLElement
+    expect(weekContainer.style.paddingBottom).toBe('48px')
+  })
 })
