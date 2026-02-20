@@ -32,3 +32,17 @@ describe('YearView grid lines', () => {
     expect(paddingCells.length).toBeGreaterThan(0)
   })
 })
+
+describe('YearView week container layout', () => {
+  it('week container uses flex flex-col', () => {
+    const { container } = render(<YearView {...baseProps} />)
+    const flexContainers = container.querySelectorAll('.flex.flex-col')
+    expect(flexContainers.length).toBeGreaterThan(0)
+  })
+
+  it('renders a relative h-4 trip bar strip below the day grid', () => {
+    const { container } = render(<YearView {...baseProps} />)
+    const strips = container.querySelectorAll('.relative.h-4')
+    expect(strips.length).toBeGreaterThan(0)
+  })
+})

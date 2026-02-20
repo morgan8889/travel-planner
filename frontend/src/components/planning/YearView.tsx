@@ -97,7 +97,7 @@ export function YearView({
                 (t) => t.start_date <= weekEnd && t.end_date >= weekStart
               )
               return (
-                <div key={_weekIdx} className="relative pb-2">
+                <div key={_weekIdx} className="flex flex-col">
                   <div className="grid grid-cols-7 border-t border-l border-cloud-100">
                     {week.map((day, i) => {
                       if (!day.isCurrentMonth) {
@@ -121,34 +121,36 @@ export function YearView({
                       )
                     })}
                   </div>
-                  {/* Compact trip bars — no labels in year view, tooltip only */}
-                  {weekTrips.slice(0, 2).map((trip, tripIdx) => {
-                    const startCol = Math.max(
-                      0,
-                      week.findIndex((d) => d.isCurrentMonth && d.date >= trip.start_date)
-                    )
-                    const endIdx = week.findIndex((d) => d.isCurrentMonth && d.date > trip.end_date)
-                    const endCol = endIdx === -1 ? 7 : endIdx
-                    const colSpan = endCol - startCol
-                    if (colSpan <= 0) return null
+                  {/* Dedicated trip bar strip below the day grid — always rendered for consistent row height */}
+                  <div className="relative h-4">
+                    {weekTrips.slice(0, 2).map((trip, tripIdx) => {
+                      const startCol = Math.max(
+                        0,
+                        week.findIndex((d) => d.isCurrentMonth && d.date >= trip.start_date)
+                      )
+                      const endIdx = week.findIndex((d) => d.isCurrentMonth && d.date > trip.end_date)
+                      const endCol = endIdx === -1 ? 7 : endIdx
+                      const colSpan = endCol - startCol
+                      if (colSpan <= 0) return null
 
-                    return (
-                      <TripSpan
-                        key={trip.id}
-                        destination={trip.destination}
-                        status={trip.status}
-                        colorBy="type"
-                        tripType={trip.type}
-                        startCol={startCol}
-                        colSpan={colSpan}
-                        stackIndex={tripIdx}
-                        size="small"
-                        startDate={trip.start_date}
-                        endDate={trip.end_date}
-                        onClick={() => onTripClick(trip)}
-                      />
-                    )
-                  })}
+                      return (
+                        <TripSpan
+                          key={trip.id}
+                          destination={trip.destination}
+                          status={trip.status}
+                          colorBy="type"
+                          tripType={trip.type}
+                          startCol={startCol}
+                          colSpan={colSpan}
+                          stackIndex={tripIdx}
+                          size="small"
+                          startDate={trip.start_date}
+                          endDate={trip.end_date}
+                          onClick={() => onTripClick(trip)}
+                        />
+                      )
+                    })}
+                  </div>
                 </div>
               )
             })}
