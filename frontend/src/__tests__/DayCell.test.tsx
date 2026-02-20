@@ -19,8 +19,19 @@ describe('DayCell compact mode', () => {
     expect(cell.className).toContain('border-cloud-100')
   })
 
-  it('does not add border classes in non-compact mode', () => {
-    const { container } = render(
+  it('compact mode renders compact-sized cell, not full-height', () => {
+    const { container: compactContainer } = render(
+      <DayCell
+        date="2026-03-15"
+        dayNumber={15}
+        isToday={false}
+        isCurrentMonth={true}
+        isSelected={false}
+        compact={true}
+        showLabel={true}
+      />
+    )
+    const { container: fullContainer } = render(
       <DayCell
         date="2026-03-15"
         dayNumber={15}
@@ -30,8 +41,9 @@ describe('DayCell compact mode', () => {
         compact={false}
       />
     )
-    const cell = container.firstChild as HTMLElement
-    // non-compact already has its own border-b border-r border-cloud-100
-    expect(cell.className).toContain('border-b')
+    const compactCell = compactContainer.firstChild as HTMLElement
+    const fullCell = fullContainer.firstChild as HTMLElement
+    expect(compactCell.className).toContain('min-h-[2.5rem]')
+    expect(fullCell.className).toContain('min-h-[5rem]')
   })
 })
