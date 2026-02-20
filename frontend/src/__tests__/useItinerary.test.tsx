@@ -41,6 +41,8 @@ import {
   useReorderActivities,
   useDeleteDay,
   useGenerateDays,
+  useMoveActivity,
+  useCreateActivityInDay,
 } from '../hooks/useItinerary'
 
 function createWrapper() {
@@ -176,5 +178,45 @@ describe('useGenerateDays', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(result.current.data).toEqual(days)
     expect(mockPost).toHaveBeenCalledWith('/itinerary/trips/trip-1/days/generate')
+  })
+})
+
+describe('useMoveActivity', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('calls updateActivity with itinerary_day_id', async () => {
+    const movedActivity = {
+      id: 'act-1',
+      itinerary_day_id: 'day-2',
+      title: 'Visit Museum',
+      category: 'activity',
+      sort_order: 0,
+    }
+    mockPatch.mockResolvedValue({ data: movedActivity })
+
+    const { result } = renderHook(() => useMoveActivity('trip-1'), { wrapper: createWrapper() })
+    result.current.mutate({ activityId: 'act-1', targetDayId: 'day-2' })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(mockPatch).toHaveBeenCalledWith('/itinerary/activities/act-1', { itinerary_day_id: 'day-2' })
+  })
+})
+
+describe('useCreateActivityInDay', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('creates activity in the specified day', async () => {
+    const newActivity = {
+      id: 'act-1',
+      itinerary_day_id: 'day-1',
+      title: 'Visit Museum',
+      category: 'activity',
+      sort_order: 0,
+    }
+    mockPost.mockResolvedValue({ data: newActivity })
+
+    const { result } = renderHook(() => useCreateActivityInDay('trip-1'), { wrapper: createWrapper() })
+    result.current.mutate({ dayId: 'day-1', data: { title: 'Visit Museum', category: 'activity' } })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(mockPost).toHaveBeenCalledWith('/itinerary/days/day-1/activities', { title: 'Visit Museum', category: 'activity' })
   })
 })
