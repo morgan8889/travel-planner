@@ -1,4 +1,5 @@
 import { render } from '@testing-library/react'
+import { describe, it, expect } from 'vitest'
 import { DayCell } from '../components/planning/DayCell'
 
 describe('DayCell compact mode', () => {

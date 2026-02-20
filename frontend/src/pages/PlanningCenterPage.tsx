@@ -52,7 +52,7 @@ export function PlanningCenterPage() {
       autoEnabledRef.current = true
       enableCountry.mutate('US')
     }
-  }, [holidaysLoading, holidayData]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [holidaysLoading, holidayData, enableCountry])
 
   const currentQuarter = Math.floor(currentMonth / 3)
 
@@ -270,6 +270,7 @@ export function PlanningCenterPage() {
         )}
         {sidebarContent?.type === 'trip-create' && (
           <SidebarTripCreate
+            key={`${sidebarContent.startDate}-${sidebarContent.endDate}`}
             initialStartDate={sidebarContent.startDate}
             initialEndDate={sidebarContent.endDate}
             onCreated={closeSidebar}
