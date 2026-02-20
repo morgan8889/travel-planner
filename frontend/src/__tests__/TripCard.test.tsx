@@ -50,6 +50,13 @@ const mockTrip: TripSummary = {
   member_count: 3,
   destination_latitude: null,
   destination_longitude: null,
+  member_previews: [
+    { initials: 'AS', color: '#6366f1' },
+    { initials: 'BJ', color: '#22c55e' },
+    { initials: 'CK', color: '#f59e0b' },
+  ],
+  itinerary_day_count: 7,
+  days_with_activities: 3,
 }
 
 describe('TripCard', () => {
@@ -76,17 +83,54 @@ describe('TripCard', () => {
     expect(badge).toHaveTextContent('Vacation')
   })
 
-  it('renders member avatars for member count', async () => {
+  it('renders real initials from member_previews', async () => {
     renderWithProviders(<TripCard trip={mockTrip} />)
     const memberSection = await screen.findByTestId('member-count')
     expect(memberSection).toBeInTheDocument()
-    const avatars = memberSection.querySelectorAll('.rounded-full')
-    expect(avatars.length).toBe(3)
+    expect(memberSection).toHaveTextContent('AS')
+    expect(memberSection).toHaveTextContent('BJ')
+    expect(memberSection).toHaveTextContent('CK')
   })
 
   it('shows overflow count when more than 3 members', async () => {
-    const tripWith5Members = { ...mockTrip, member_count: 5 }
+    const tripWith5Members = {
+      ...mockTrip,
+      member_count: 5,
+      member_previews: [
+        { initials: 'AS', color: '#6366f1' },
+        { initials: 'BJ', color: '#22c55e' },
+        { initials: 'CK', color: '#f59e0b' },
+      ],
+    }
     renderWithProviders(<TripCard trip={tripWith5Members} />)
     expect(await screen.findByText('+2')).toBeInTheDocument()
+  })
+
+  it('shows dash avatar when no members', async () => {
+    const soloTrip = { ...mockTrip, member_count: 0, member_previews: [] }
+    renderWithProviders(<TripCard trip={soloTrip} />)
+    const memberSection = await screen.findByTestId('member-count')
+    expect(memberSection).toHaveTextContent('—')
+  })
+
+  it('shows progress bar when itinerary_day_count > 0', async () => {
+    renderWithProviders(<TripCard trip={mockTrip} />)
+    const bar = await screen.findByTestId('itinerary-progress')
+    expect(bar).toBeInTheDocument()
+    expect(bar).toHaveTextContent('3 / 7 days planned')
+  })
+
+  it('hides progress bar when itinerary_day_count is 0', async () => {
+    const noItinerary = { ...mockTrip, itinerary_day_count: 0, days_with_activities: 0 }
+    renderWithProviders(<TripCard trip={noItinerary} />)
+    await screen.findByText('Paris, France')
+    expect(screen.queryByTestId('itinerary-progress')).not.toBeInTheDocument()
+  })
+
+  it('shows "All days planned" when all days have activities', async () => {
+    const allPlanned = { ...mockTrip, itinerary_day_count: 7, days_with_activities: 7 }
+    renderWithProviders(<TripCard trip={allPlanned} />)
+    const bar = await screen.findByTestId('itinerary-progress')
+    expect(bar).toHaveTextContent('All days planned')
   })
 })

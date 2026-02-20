@@ -62,6 +62,9 @@ const mockSabbaticalTrip: Trip = {
       member_count: 1,
       destination_latitude: null,
       destination_longitude: null,
+      member_previews: [{ initials: 'TU', color: '#6366f1' }],
+      itinerary_day_count: 0,
+      days_with_activities: 0,
     },
   ],
 }
