@@ -28,7 +28,7 @@ describe('YearView grid lines', () => {
   it('renders padding cells with border-b border-r border-cloud-100', () => {
     // Jan 2026 starts on Thursday — first week has 4 padding cells
     const { container } = render(<YearView {...baseProps} />)
-    const paddingCells = container.querySelectorAll('.aspect-square.border-b.border-r.border-cloud-100')
+    const paddingCells = container.querySelectorAll('.aspect-square.border-b.border-r.border-cloud-100:not(.cursor-pointer)')
     expect(paddingCells.length).toBeGreaterThan(0)
   })
 })
