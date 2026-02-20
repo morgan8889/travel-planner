@@ -98,10 +98,10 @@ export function YearView({
               )
               return (
                 <div key={_weekIdx} className="relative pb-2">
-                  <div className="grid grid-cols-7 gap-px">
+                  <div className="grid grid-cols-7 border-t border-l border-cloud-100">
                     {week.map((day, i) => {
                       if (!day.isCurrentMonth) {
-                        return <div key={i} className="aspect-square" />
+                        return <div key={i} className="aspect-square border-b border-r border-cloud-100" />
                       }
                       return (
                         <DayCell
