@@ -103,11 +103,14 @@ export function QuarterView({
               ))}
             </div>
             {weeks.map((week, _weekIdx) => {
+              const hasCurrentMonthDays = week.some((d) => d.isCurrentMonth)
               const weekStart = week.find((d) => d.isCurrentMonth)?.date ?? monthStart
               const weekEnd = [...week].reverse().find((d) => d.isCurrentMonth)?.date ?? monthEnd
-              const weekTrips = monthTrips.filter(
-                (t) => t.start_date <= weekEnd && t.end_date >= weekStart
-              )
+              const weekTrips = hasCurrentMonthDays
+                ? monthTrips.filter(
+                    (t) => t.start_date <= weekEnd && t.end_date >= weekStart
+                  )
+                : []
               return (
                 <div key={_weekIdx} className="relative" style={{ paddingBottom: `${weekTrips.length === 0 ? 2 : 4 + Math.min(weekTrips.length, 3) * 14}px` }}>
                   <div className="grid grid-cols-7 gap-px">
