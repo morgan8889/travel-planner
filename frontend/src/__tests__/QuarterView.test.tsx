@@ -35,7 +35,8 @@ describe('QuarterView grid lines', () => {
 
   it('week container has paddingBottom 48px to fit 3 trip bars', () => {
     const { container } = render(<QuarterView {...baseProps} />)
-    const weekContainer = container.querySelector('[style]') as HTMLElement
+    const weekContainer = container.querySelector('[style*="padding-bottom"]') as HTMLElement
+    expect(weekContainer).not.toBeNull()
     expect(weekContainer.style.paddingBottom).toBe('48px')
   })
 })
