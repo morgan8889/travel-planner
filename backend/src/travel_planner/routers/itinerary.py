@@ -325,6 +325,8 @@ async def update_activity(
             raise HTTPException(
                 status_code=404, detail="Target itinerary day not found"
             )
+        # If target day shares the current day's trip_id, user is already authorized
+        # (verify_day_access above confirmed membership in that trip)
         if target_day.trip_id != current_day.trip_id:
             raise HTTPException(
                 status_code=403, detail="Target day belongs to a different trip"
