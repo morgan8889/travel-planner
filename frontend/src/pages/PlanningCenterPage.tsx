@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { TriangleAlert, CalendarPlus } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import { PlanningHeader, type ZoomLevel } from '../components/planning/PlanningHeader'
@@ -10,9 +10,10 @@ import { SidebarTripDetail } from '../components/planning/SidebarTripDetail'
 import { SidebarTripCreate } from '../components/planning/SidebarTripCreate'
 import { SidebarHolidayDetail } from '../components/planning/SidebarHolidayDetail'
 import { SidebarCustomDayForm } from '../components/planning/SidebarCustomDayForm'
+import { TripSummaryBar } from '../components/planning/TripSummaryBar'
 import { useDragSelect } from '../components/planning/useDragSelect'
 import { useTrips, useDeleteTrip } from '../hooks/useTrips'
-import { useHolidays } from '../hooks/useHolidays'
+import { useHolidays, useEnableCountry } from '../hooks/useHolidays'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import type { TripSummary } from '../lib/types'
 
@@ -38,6 +39,20 @@ export function PlanningCenterPage() {
   const { data: trips, isLoading: tripsLoading, isError: tripsError, refetch: refetchTrips } = useTrips()
   const { data: holidayData, isLoading: holidaysLoading, isError: holidaysError, refetch: refetchHolidays } = useHolidays(currentYear)
   const deleteTrip = useDeleteTrip()
+  const enableCountry = useEnableCountry(currentYear)
+  const autoEnabledRef = useRef(false)
+
+  useEffect(() => {
+    if (
+      !autoEnabledRef.current &&
+      !holidaysLoading &&
+      holidayData &&
+      holidayData.enabled_countries.length === 0
+    ) {
+      autoEnabledRef.current = true
+      enableCountry.mutate('US')
+    }
+  }, [holidaysLoading, holidayData, enableCountry])
 
   const currentQuarter = Math.floor(currentMonth / 3)
 
@@ -61,7 +76,11 @@ export function PlanningCenterPage() {
   }, [])
 
   const handleDayClick = useCallback((date: string) => {
-    setSidebarContent({ type: 'trip-create', startDate: date, endDate: date })
+    const start = new Date(date + 'T00:00:00')
+    const end = new Date(start)
+    end.setDate(end.getDate() + 7)
+    const endStr = end.toISOString().split('T')[0]
+    setSidebarContent({ type: 'trip-create', startDate: date, endDate: endStr })
   }, [])
 
   const handleDeleteTrip = useCallback(async (tripId: string) => {
@@ -150,6 +169,14 @@ export function PlanningCenterPage() {
   const allHolidays = holidayData?.holidays ?? []
   const allCustomDays = holidayData?.custom_days ?? []
   const enabledCountries = holidayData?.enabled_countries ?? []
+  const selectedDate = sidebarContent?.type === 'trip-create' ? sidebarContent.startDate : null
+
+  const handleHolidayClick = (date: string) => {
+    const holiday = allHolidays.find((h) => h.date === date)
+    if (holiday) {
+      setSidebarContent({ type: 'holiday', name: holiday.name, date: holiday.date, countryCode: holiday.country_code })
+    }
+  }
 
   return (
     <div
@@ -166,6 +193,16 @@ export function PlanningCenterPage() {
         year={currentYear}
         enabledCountries={enabledCountries}
         onAddCustomDay={() => setSidebarContent({ type: 'custom-day-form' })}
+      />
+
+      <TripSummaryBar
+        trips={allTrips}
+        onTripClick={handleTripClick}
+        zoomLevel={zoomLevel}
+        currentMonth={currentMonth}
+        currentYear={currentYear}
+        holidays={allHolidays}
+        customDays={allCustomDays}
       />
 
       {allTrips.length === 0 && (
@@ -187,10 +224,12 @@ export function PlanningCenterPage() {
             trips={allTrips}
             holidays={allHolidays}
             customDays={allCustomDays}
+            selectedDate={selectedDate}
             selection={selection}
             onDragStart={onDragStart}
             onDragMove={onDragMove}
             onTripClick={handleTripClick}
+            onHolidayClick={handleHolidayClick}
           />
         )}
         {zoomLevel === 'quarter' && (
@@ -200,9 +239,11 @@ export function PlanningCenterPage() {
             trips={allTrips}
             holidays={allHolidays}
             customDays={allCustomDays}
+            selectedDate={selectedDate}
             onMonthClick={handleMonthClick}
             onDayClick={handleDayClick}
             onTripClick={handleTripClick}
+            onHolidayClick={handleHolidayClick}
           />
         )}
         {zoomLevel === 'year' && (
@@ -211,9 +252,11 @@ export function PlanningCenterPage() {
             trips={allTrips}
             holidays={allHolidays}
             customDays={allCustomDays}
+            selectedDate={selectedDate}
             onMonthClick={handleMonthClick}
             onDayClick={handleDayClick}
             onTripClick={handleTripClick}
+            onHolidayClick={handleHolidayClick}
           />
         )}
       </div>
@@ -227,8 +270,9 @@ export function PlanningCenterPage() {
         )}
         {sidebarContent?.type === 'trip-create' && (
           <SidebarTripCreate
-            startDate={sidebarContent.startDate}
-            endDate={sidebarContent.endDate}
+            key={`${sidebarContent.startDate}-${sidebarContent.endDate}`}
+            initialStartDate={sidebarContent.startDate}
+            initialEndDate={sidebarContent.endDate}
             onCreated={closeSidebar}
           />
         )}

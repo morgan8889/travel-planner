@@ -9,9 +9,11 @@ interface QuarterViewProps {
   trips: TripSummary[]
   holidays: HolidayEntry[]
   customDays: CustomDay[]
+  selectedDate?: string | null
   onMonthClick: (month: number) => void      // month header click (drill-down)
   onDayClick: (date: string) => void          // empty day click (quick-add)
   onTripClick: (trip: TripSummary) => void    // trip bar click (detail sidebar)
+  onHolidayClick?: (date: string) => void
 }
 
 const MONTH_NAMES = [
@@ -36,6 +38,10 @@ function getMiniGrid(year: number, month: number) {
   for (let d = 1; d <= totalDays; d++) {
     days.push({ date: formatDate(year, month, d), dayNumber: d, isCurrentMonth: true })
   }
+  // Pad to 6 rows (42 cells) for consistent height across quarters
+  while (days.length < 42) {
+    days.push({ date: '', dayNumber: 0, isCurrentMonth: false })
+  }
   return days
 }
 
@@ -45,14 +51,22 @@ export function QuarterView({
   trips,
   holidays,
   customDays,
+  selectedDate,
   onMonthClick,
   onDayClick,
   onTripClick,
+  onHolidayClick,
 }: QuarterViewProps) {
   const months = [quarter * 3, quarter * 3 + 1, quarter * 3 + 2]
   const today = new Date().toISOString().split('T')[0]
 
-  const holidaySet = useMemo(() => new Set(holidays.map((h) => h.date)), [holidays])
+  const holidayMap = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const h of holidays) {
+      map.set(h.date, h.name)
+    }
+    return map
+  }, [holidays])
   const customDaySet = useMemo(() => {
     return new Set(customDays.map((cd) =>
       cd.recurring ? `${year}-${cd.date.slice(5)}` : cd.date
@@ -83,23 +97,24 @@ export function QuarterView({
             >
               {MONTH_NAMES[month]}
             </button>
-            <div className="grid grid-cols-7 gap-px mb-1">
+            <div className="grid grid-cols-7 border-b border-cloud-200 mb-1">
               {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-                <div key={i} className="text-center text-[10px] text-cloud-400 pb-1">{d}</div>
+                <div key={i} className="text-center text-xs text-cloud-400 pb-1">{d}</div>
               ))}
             </div>
             {weeks.map((week, _weekIdx) => {
+              if (!week.some((d) => d.isCurrentMonth)) return null
               const weekStart = week.find((d) => d.isCurrentMonth)?.date ?? monthStart
               const weekEnd = [...week].reverse().find((d) => d.isCurrentMonth)?.date ?? monthEnd
               const weekTrips = monthTrips.filter(
                 (t) => t.start_date <= weekEnd && t.end_date >= weekStart
               )
               return (
-                <div key={_weekIdx} className="relative pb-3">
-                  <div className="grid grid-cols-7 gap-px">
+                <div key={_weekIdx} className="relative" style={{ paddingBottom: '48px' }}>
+                  <div className="grid grid-cols-7 border-t border-l border-cloud-100">
                     {week.map((day, i) => {
                       if (!day.isCurrentMonth) {
-                        return <div key={i} className="aspect-square" />
+                        return <div key={i} className="min-h-[2.5rem] border-b border-r border-cloud-100" />
                       }
                       return (
                         <DayCell
@@ -109,16 +124,19 @@ export function QuarterView({
                           isToday={day.date === today}
                           isCurrentMonth
                           isSelected={false}
-                          holidayLabel={holidaySet.has(day.date) ? 'holiday' : undefined}
+                          isSelectedForCreate={day.date === selectedDate}
+                          holidayLabel={holidayMap.get(day.date)}
                           customDayLabel={customDaySet.has(day.date) ? 'custom' : undefined}
                           compact
+                          showLabel
                           onClick={() => onDayClick(day.date)}
+                          onHolidayClick={onHolidayClick}
                         />
                       )
                     })}
                   </div>
-                  {/* Compact trip bars — max 2 visible per week */}
-                  {weekTrips.slice(0, 2).map((trip, tripIdx) => {
+                  {/* Compact trip bars — max 3 visible per week */}
+                  {weekTrips.slice(0, 3).map((trip, tripIdx) => {
                     const startCol = Math.max(
                       0,
                       week.findIndex((d) => d.isCurrentMonth && d.date >= trip.start_date)
@@ -136,15 +154,16 @@ export function QuarterView({
                         startCol={startCol}
                         colSpan={colSpan}
                         stackIndex={tripIdx}
-                        compact
-                        showLabel
+                        size="medium"
+                        startDate={trip.start_date}
+                        endDate={trip.end_date}
                         onClick={() => onTripClick(trip)}
                       />
                     )
                   })}
-                  {weekTrips.length > 2 && (
+                  {weekTrips.length > 3 && (
                     <span className="absolute right-0 bottom-0 text-[8px] text-cloud-500">
-                      +{weekTrips.length - 2}
+                      +{weekTrips.length - 3}
                     </span>
                   )}
                 </div>

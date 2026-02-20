@@ -8,9 +8,11 @@ interface YearViewProps {
   trips: TripSummary[]
   holidays: HolidayEntry[]
   customDays: CustomDay[]
+  selectedDate?: string | null
   onMonthClick: (month: number) => void      // month header click (drill-down)
   onDayClick: (date: string) => void          // empty day click (quick-add)
   onTripClick: (trip: TripSummary) => void    // trip bar click (detail sidebar)
+  onHolidayClick?: (date: string) => void
 }
 
 const MONTH_NAMES = [
@@ -43,13 +45,21 @@ export function YearView({
   trips,
   holidays,
   customDays,
+  selectedDate,
   onMonthClick,
   onDayClick,
   onTripClick,
+  onHolidayClick,
 }: YearViewProps) {
   const today = new Date().toISOString().split('T')[0]
 
-  const holidaySet = useMemo(() => new Set(holidays.map((h) => h.date)), [holidays])
+  const holidayMap = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const h of holidays) {
+      map.set(h.date, h.name)
+    }
+    return map
+  }, [holidays])
   const customDaySet = useMemo(() => {
     return new Set(customDays.map((cd) =>
       cd.recurring ? `${year}-${cd.date.slice(5)}` : cd.date
@@ -87,11 +97,11 @@ export function YearView({
                 (t) => t.start_date <= weekEnd && t.end_date >= weekStart
               )
               return (
-                <div key={_weekIdx} className="relative pb-2">
-                  <div className="grid grid-cols-7 gap-px">
+                <div key={_weekIdx} className="flex flex-col">
+                  <div className="grid grid-cols-7 border-t border-l border-cloud-100">
                     {week.map((day, i) => {
                       if (!day.isCurrentMonth) {
-                        return <div key={i} className="aspect-square" />
+                        return <div key={i} className="aspect-square border-b border-r border-cloud-100" />
                       }
                       return (
                         <DayCell
@@ -101,39 +111,46 @@ export function YearView({
                           isToday={day.date === today}
                           isCurrentMonth
                           isSelected={false}
-                          holidayLabel={holidaySet.has(day.date) ? 'holiday' : undefined}
+                          isSelectedForCreate={day.date === selectedDate}
+                          holidayLabel={holidayMap.get(day.date)}
                           customDayLabel={customDaySet.has(day.date) ? 'custom' : undefined}
                           compact
                           onClick={() => onDayClick(day.date)}
+                          onHolidayClick={onHolidayClick}
                         />
                       )
                     })}
                   </div>
-                  {/* Compact trip bars — no labels in year view, tooltip only */}
-                  {weekTrips.slice(0, 2).map((trip, tripIdx) => {
-                    const startCol = Math.max(
-                      0,
-                      week.findIndex((d) => d.isCurrentMonth && d.date >= trip.start_date)
-                    )
-                    const endIdx = week.findIndex((d) => d.isCurrentMonth && d.date > trip.end_date)
-                    const endCol = endIdx === -1 ? 7 : endIdx
-                    const colSpan = endCol - startCol
-                    if (colSpan <= 0) return null
+                  {/* Dedicated trip bar strip below the day grid — always rendered for consistent row height */}
+                  <div className="relative h-4">
+                    {weekTrips.slice(0, 2).map((trip, tripIdx) => {
+                      const startCol = Math.max(
+                        0,
+                        week.findIndex((d) => d.isCurrentMonth && d.date >= trip.start_date)
+                      )
+                      const endIdx = week.findIndex((d) => d.isCurrentMonth && d.date > trip.end_date)
+                      const endCol = endIdx === -1 ? 7 : endIdx
+                      const colSpan = endCol - startCol
+                      if (colSpan <= 0) return null
 
-                    return (
-                      <TripSpan
-                        key={trip.id}
-                        destination={trip.destination}
-                        status={trip.status}
-                        startCol={startCol}
-                        colSpan={colSpan}
-                        stackIndex={tripIdx}
-                        compact
-                        showLabel={false}
-                        onClick={() => onTripClick(trip)}
-                      />
-                    )
-                  })}
+                      return (
+                        <TripSpan
+                          key={trip.id}
+                          destination={trip.destination}
+                          status={trip.status}
+                          colorBy="type"
+                          tripType={trip.type}
+                          startCol={startCol}
+                          colSpan={colSpan}
+                          stackIndex={tripIdx}
+                          size="small"
+                          startDate={trip.start_date}
+                          endDate={trip.end_date}
+                          onClick={() => onTripClick(trip)}
+                        />
+                      )
+                    })}
+                  </div>
                 </div>
               )
             })}
