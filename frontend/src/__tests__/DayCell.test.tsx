@@ -24,7 +24,7 @@ describe('DayCell compact mode', () => {
     expect(cell.className).not.toContain('items-center')
   })
 
-  it('compact mode renders compact-sized cell, not full-height', () => {
+  it('showLabel branch uses h-full min-h-[2.5rem], non-compact uses min-h-[5rem]', () => {
     const { container: compactContainer } = render(
       <DayCell
         date="2026-03-15"
