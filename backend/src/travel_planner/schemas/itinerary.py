@@ -54,6 +54,7 @@ class ActivityUpdate(BaseModel):
     notes: str | None = None
     confirmation_number: str | None = None
     sort_order: int | None = None
+    itinerary_day_id: UUID | None = None
 
     @model_validator(mode="after")
     def end_time_after_start_time(self) -> "ActivityUpdate":

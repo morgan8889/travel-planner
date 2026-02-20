@@ -301,24 +301,41 @@ async def update_activity(
     user_id: CurrentUserId,
     db: AsyncSession = Depends(get_db),
 ):
-    """Update an activity"""
-    # Get the activity
+    """Update an activity. Pass itinerary_day_id to move it to another day."""
     result = await db.execute(select(Activity).where(Activity.id == activity_id))
     activity = result.scalar_one_or_none()
     if not activity:
         raise HTTPException(status_code=404, detail="Activity not found")
 
-    # Verify user has access to the day
-    await verify_day_access(activity.itinerary_day_id, db, user_id)
+    # Verify user has access to the current day (returns the day object)
+    current_day = await verify_day_access(activity.itinerary_day_id, db, user_id)
 
-    # Update only provided fields
+    # Handle cross-day move
+    if (
+        activity_data.itinerary_day_id is not None
+        and activity_data.itinerary_day_id != activity.itinerary_day_id
+    ):
+        result2 = await db.execute(
+            select(ItineraryDay).where(
+                ItineraryDay.id == activity_data.itinerary_day_id
+            )
+        )
+        target_day = result2.scalar_one_or_none()
+        if target_day is None:
+            raise HTTPException(
+                status_code=404, detail="Target itinerary day not found"
+            )
+        if target_day.trip_id != current_day.trip_id:
+            raise HTTPException(
+                status_code=403, detail="Target day belongs to a different trip"
+            )
+
     update_data = activity_data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(activity, field, value)
 
     await db.commit()
     await db.refresh(activity)
-
     return ActivityResponse.model_validate(activity)
 
 

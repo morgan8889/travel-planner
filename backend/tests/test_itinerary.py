@@ -735,3 +735,78 @@ def test_generate_itinerary_days_skips_existing(
     assert len(data) == 3
     # Verify only 2 days were added (not the existing one)
     assert mock_db_session.add.call_count == 2
+
+
+def test_update_activity_moves_to_different_day(
+    client: TestClient,
+    auth_headers: dict,
+    override_get_db,
+    mock_db_session,
+    activity_id: str,
+    itinerary_day_id: str,
+):
+    """PATCH /itinerary/activities/{id} with itinerary_day_id moves
+    activity to target day.
+    """
+    from travel_planner.models.itinerary import Activity, ActivityCategory, ItineraryDay
+
+    source_day_id = UUID(itinerary_day_id)
+    target_day_id = UUID("aaa04567-e89b-12d3-a456-426614174099")
+    act_id = UUID(activity_id)
+
+    owner_user = _make_user()
+    owner_member = _make_member(user=owner_user)
+    trip = _make_trip(members=[owner_member])
+
+    # Mock activity
+    activity = MagicMock(spec=Activity)
+    activity.id = act_id
+    activity.itinerary_day_id = source_day_id
+    activity.title = "Visit Museum"
+    activity.category = ActivityCategory.activity
+    activity.start_time = None
+    activity.end_time = None
+    activity.location = None
+    activity.latitude = None
+    activity.longitude = None
+    activity.notes = None
+    activity.confirmation_number = None
+    activity.sort_order = 0
+
+    # Mock source day
+    source_day = MagicMock(spec=ItineraryDay)
+    source_day.id = source_day_id
+    source_day.trip_id = trip.id
+
+    # Mock target day (same trip)
+    target_day = MagicMock(spec=ItineraryDay)
+    target_day.id = target_day_id
+    target_day.trip_id = trip.id
+
+    # Execute call sequence:
+    # 1. select Activity (get activity)
+    # 2. select ItineraryDay (verify_day_access — get source day)
+    # 3. select Trip (verify_trip_member inside verify_day_access)
+    # 4. select ItineraryDay (get target day)
+    act_mock = MagicMock()
+    act_mock.scalar_one_or_none.return_value = activity
+
+    src_day_mock = MagicMock()
+    src_day_mock.scalar_one_or_none.return_value = source_day
+
+    trip_mock = MagicMock()
+    trip_mock.scalar_one_or_none.return_value = trip
+
+    tgt_day_mock = MagicMock()
+    tgt_day_mock.scalar_one_or_none.return_value = target_day
+
+    mock_db_session.execute = AsyncMock(
+        side_effect=[act_mock, src_day_mock, trip_mock, tgt_day_mock]
+    )
+
+    response = client.patch(
+        f"/itinerary/activities/{activity_id}",
+        json={"itinerary_day_id": str(target_day_id)},
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
