@@ -176,7 +176,7 @@ async def list_trips(
 
     # Bulk itinerary stats — 1 extra query for all trips
     trip_ids = [t.id for t in trips]
-    stats_map: dict[object, tuple[int, int]] = {}
+    stats_map: dict[UUID, tuple[int, int]] = {}
     if trip_ids:
         activity_per_day = (
             select(
