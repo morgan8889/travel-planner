@@ -97,7 +97,7 @@ export function QuarterView({
             >
               {MONTH_NAMES[month]}
             </button>
-            <div className="grid grid-cols-7 gap-px mb-1">
+            <div className="grid grid-cols-7 border-b border-cloud-200 mb-1">
               {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
                 <div key={i} className="text-center text-xs text-cloud-400 pb-1">{d}</div>
               ))}
@@ -111,10 +111,10 @@ export function QuarterView({
               )
               return (
                 <div key={_weekIdx} className="relative" style={{ paddingBottom: '36px' }}>
-                  <div className="grid grid-cols-7 gap-px">
+                  <div className="grid grid-cols-7 border-t border-l border-cloud-100">
                     {week.map((day, i) => {
                       if (!day.isCurrentMonth) {
-                        return <div key={i} className="min-h-[2.5rem]" />
+                        return <div key={i} className="min-h-[2.5rem] border-b border-r border-cloud-100" />
                       }
                       return (
                         <DayCell
