@@ -2,7 +2,7 @@ import { render } from '@testing-library/react'
 import { DayCell } from '../components/planning/DayCell'
 
 describe('DayCell compact mode', () => {
-  it('renders border classes for grid lines', () => {
+  it('renders border classes and full-cell layout in compact mode', () => {
     const { container } = render(
       <DayCell
         date="2026-03-15"
@@ -11,12 +11,17 @@ describe('DayCell compact mode', () => {
         isCurrentMonth={true}
         isSelected={false}
         compact={true}
+        showLabel={true}
       />
     )
     const cell = container.firstChild as HTMLElement
     expect(cell.className).toContain('border-b')
     expect(cell.className).toContain('border-r')
     expect(cell.className).toContain('border-cloud-100')
+    expect(cell.className).toContain('h-full')
+    expect(cell.className).toContain('items-start')
+    expect(cell.className).not.toContain('rounded-sm')
+    expect(cell.className).not.toContain('items-center')
   })
 
   it('compact mode renders compact-sized cell, not full-height', () => {

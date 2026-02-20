@@ -38,7 +38,7 @@ export const DayCell = memo(function DayCell({
   if (compact) {
     return (
       <div
-        className={`w-full ${showLabel ? 'min-h-[2.5rem]' : 'aspect-square'} border-b border-r border-cloud-100 flex flex-col items-center justify-center text-xs rounded-sm cursor-pointer
+        className={`w-full ${showLabel ? 'h-full min-h-[2.5rem]' : 'aspect-square'} border-b border-r border-cloud-100 flex flex-col items-start p-1 text-xs cursor-pointer
           ${isCurrentMonth ? 'text-cloud-700' : 'text-cloud-300'}
           ${isToday ? 'ring-2 ring-indigo-500 ring-inset font-bold' : ''}
           ${!isToday && isSelectedForCreate ? 'ring-2 ring-indigo-500 bg-indigo-50' : ''}
