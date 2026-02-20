@@ -69,10 +69,10 @@ describe('TripSpan', () => {
       expect(btn.textContent).toContain('Paris')
     })
 
-    it('uses stackIndex * 5 for bottom offset', () => {
+    it('uses stackIndex * 14 for bottom offset', () => {
       render(<TripSpan {...baseProps} size="medium" stackIndex={1} />)
       const btn = screen.getByRole('button')
-      expect(btn.style.bottom).toBe(`${2 + 1 * 5}px`)
+      expect(btn.style.bottom).toBe(`${2 + 1 * 14}px`)
     })
 
     it('shows tooltip on hover', async () => {

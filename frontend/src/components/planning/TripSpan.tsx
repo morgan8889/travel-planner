@@ -54,7 +54,7 @@ export function TripSpan({
 
   if (size === 'small' || size === 'medium') {
     const heightClass = size === 'small' ? 'h-1.5' : 'h-3'
-    const bottomOffset = size === 'small' ? stackIndex * 4 : stackIndex * 5
+    const bottomOffset = size === 'small' ? stackIndex * 4 : stackIndex * 14
 
     return (
       <button
