@@ -204,7 +204,12 @@ export function ItineraryTimeline({ days, allActivities, tripId }: ItineraryTime
           sort_order = targetActs.length > 0 ? targetActs[targetActs.length - 1].sort_order + 1 : 0
         } else {
           const targetIdx = targetActs.findIndex((a) => a.id === savedInsertionPoint.beforeActivityId)
-          sort_order = targetIdx >= 0 ? targetActs[targetIdx].sort_order : targetActs.length
+          if (targetIdx >= 0) {
+            const prev = targetIdx > 0 ? targetActs[targetIdx - 1].sort_order : targetActs[targetIdx].sort_order - 1
+            sort_order = (prev + targetActs[targetIdx].sort_order) / 2
+          } else {
+            sort_order = targetActs.length
+          }
         }
       } else {
         sort_order = targetActs.length > 0 ? targetActs[targetActs.length - 1].sort_order + 1 : 0
