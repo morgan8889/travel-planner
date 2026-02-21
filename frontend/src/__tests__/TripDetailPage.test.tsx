@@ -24,6 +24,9 @@ const mockTrip: Trip = {
   created_at: '2026-01-01T00:00:00Z',
   destination_latitude: null,
   destination_longitude: null,
+  member_previews: [],
+  itinerary_day_count: 0,
+  days_with_activities: 0,
   members: [
     {
       id: 'member-1',
@@ -72,6 +75,9 @@ const mockSabbaticalTrip: Trip = {
 const mockGetTrip = vi.fn()
 const mockPatch = vi.fn()
 const mockDelete = vi.fn()
+const mockItineraryListDays = vi.fn()
+const mockItineraryListActivities = vi.fn()
+const mockChecklistList = vi.fn()
 
 vi.mock('../lib/api', () => ({
   api: {
@@ -87,6 +93,29 @@ vi.mock('../lib/api', () => ({
       request: { use: vi.fn() },
       response: { use: vi.fn() },
     },
+  },
+  itineraryApi: {
+    listDays: (tripId: string) => mockItineraryListDays(tripId),
+    listActivities: (dayId: string) => Promise.resolve({ data: [] }),
+    listTripActivities: (tripId: string) => mockItineraryListActivities(tripId),
+    createDay: vi.fn(),
+    createActivity: vi.fn(),
+    updateActivity: vi.fn(),
+    deleteActivity: vi.fn(),
+    reorderActivities: vi.fn(),
+    deleteDay: vi.fn(),
+    generateDays: vi.fn(),
+    moveActivity: vi.fn(),
+  },
+  checklistApi: {
+    list: (tripId: string) => mockChecklistList(tripId),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    createItem: vi.fn(),
+    updateItem: vi.fn(),
+    deleteItem: vi.fn(),
+    toggleItem: vi.fn(),
   },
 }))
 
@@ -126,6 +155,9 @@ function renderWithRouter(tripId: string = 'trip-1') {
 describe('TripDetailPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockItineraryListDays.mockResolvedValue({ data: [] })
+    mockItineraryListActivities.mockResolvedValue({ data: [] })
+    mockChecklistList.mockResolvedValue({ data: [] })
   })
 
   it('renders loading skeleton while fetching', async () => {
@@ -231,5 +263,22 @@ describe('TripDetailPage', () => {
 
     expect(await screen.findByText('Unable to load trip')).toBeInTheDocument()
     expect(screen.getByText('Try Again')).toBeInTheDocument()
+  })
+
+  it('renders itinerary-timeline when itinerary days are loaded', async () => {
+    const mockDay = {
+      id: 'day-1',
+      trip_id: 'trip-1',
+      date: '2026-06-15',
+      day_number: 1,
+      notes: null,
+    }
+    mockGetTrip.mockResolvedValue({ data: mockTrip })
+    mockItineraryListDays.mockResolvedValue({ data: [mockDay] })
+    mockItineraryListActivities.mockResolvedValue({ data: [] })
+    renderWithRouter()
+
+    const timeline = await screen.findByTestId('itinerary-timeline')
+    expect(timeline).toBeInTheDocument()
   })
 })
