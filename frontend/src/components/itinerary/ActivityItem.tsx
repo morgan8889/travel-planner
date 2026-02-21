@@ -35,9 +35,9 @@ export function ActivityItem({ activity, tripId }: ActivityItemProps) {
   } = useSortable({ id: activity.id })
 
   const style = {
-    transform: CSS.Transform.toString(transform),
+    transform: CSS.Translate.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0 : 1,
   }
 
   function handleDelete(): void {
