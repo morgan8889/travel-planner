@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
-import { describe, it, expect } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { describe, it, expect, vi } from 'vitest'
 import { YearView } from '../components/planning/YearView'
 import type { TripSummary, CustomDay } from '../lib/types'
 
@@ -122,5 +123,23 @@ describe('YearView trip inventory panel', () => {
   it('shows no trips message when year has no trips', () => {
     render(<YearView {...baseProps} trips={[]} />)
     expect(screen.getByText(/no trips planned/i)).toBeInTheDocument()
+  })
+
+  it('renders a recurring custom day resolved to the current year', () => {
+    const customDays: CustomDay[] = [
+      { id: 'cd-2', user_id: 'u-1', name: 'Annual Review', date: '2024-11-15', recurring: true, created_at: '2026-01-01T00:00:00Z' },
+    ]
+    render(<YearView {...baseProps} customDays={customDays} />)
+    expect(screen.getByText('Annual Review')).toBeInTheDocument()
+  })
+
+  it('calls onTripClick when a trip row in the inventory panel is clicked', async () => {
+    const user = userEvent.setup()
+    const onTripClick = vi.fn()
+    const trips = [makeTripSummary({ destination: 'Rome' })]
+    render(<YearView {...baseProps} trips={trips} onTripClick={onTripClick} />)
+    const romeButtons = screen.getAllByRole('button', { name: /rome/i })
+    await user.click(romeButtons[0])
+    expect(onTripClick).toHaveBeenCalledWith(expect.objectContaining({ destination: 'Rome' }))
   })
 })
