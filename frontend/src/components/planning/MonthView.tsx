@@ -180,10 +180,7 @@ export function MonthView({
             })}
 
             {weekTrips.length > 3 && (
-              <span
-                className="absolute right-1 text-[10px] text-cloud-500"
-                style={{ bottom: '2px' }}
-              >
+              <span className="absolute right-1 bottom-0.5 bg-cloud-100 text-cloud-500 text-[10px] font-medium px-1.5 py-0.5 rounded-full">
                 +{weekTrips.length - 3} more
               </span>
             )}

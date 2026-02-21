@@ -87,7 +87,7 @@ export const DayCell = memo(function DayCell({
     >
       <div className="flex items-start justify-between">
         <span
-          className={`inline-flex items-center justify-center w-7 h-7 text-sm rounded-full shrink-0
+          className={`inline-flex items-center justify-center w-7 h-7 text-sm rounded-[50%] shrink-0
             ${isToday ? 'bg-indigo-600 text-white font-bold' : ''}
             ${!isToday && isCurrentMonth ? 'text-cloud-800' : ''}
             ${!isToday && !isCurrentMonth ? 'text-cloud-400' : ''}
