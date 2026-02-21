@@ -77,6 +77,7 @@ export function TripsPage() {
           return (
             <button
               key={filter.label}
+              data-testid="status-filter"
               onClick={() => toggleStatus(filter.value)}
               className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${
                 isActive

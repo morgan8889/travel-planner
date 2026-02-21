@@ -147,11 +147,9 @@ describe('TripsPage', () => {
     expect(screen.getByText('Lisbon, Portugal')).toBeInTheDocument()
 
     // Click "Planning" filter — only Paris (planning) shown
-    const filterButtons = screen.getAllByText('Planning')
-    const filterPill = filterButtons.find(
-      (el) => el.tagName === 'BUTTON' && !el.closest('[data-testid]')
-    )!
-    await user.click(filterPill)
+    const filterPills = screen.getAllByTestId('status-filter')
+    const planningPill = filterPills.find((el) => el.textContent === 'Planning')!
+    await user.click(planningPill)
 
     expect(screen.getByText('Paris, France')).toBeInTheDocument()
     expect(screen.queryByText('Lisbon, Portugal')).not.toBeInTheDocument()
@@ -165,9 +163,9 @@ describe('TripsPage', () => {
     await screen.findByText('Paris, France')
 
     // Select "Planning"
-    const allPlanningText = screen.getAllByText('Planning')
-    const planningPill = allPlanningText.find((el) => el.tagName === 'BUTTON' && !el.closest('[data-testid]'))!
-    await user.click(planningPill)
+    const filterPillsMulti = screen.getAllByTestId('status-filter')
+    const planningPillMulti = filterPillsMulti.find((el) => el.textContent === 'Planning')!
+    await user.click(planningPillMulti)
 
     // Only Paris visible
     expect(screen.getByText('Paris, France')).toBeInTheDocument()
@@ -189,9 +187,9 @@ describe('TripsPage', () => {
     await screen.findByText('Paris, France')
 
     // Select "Planning" to filter
-    const allPlanningText = screen.getAllByText('Planning')
-    const planningPill = allPlanningText.find((el) => el.tagName === 'BUTTON' && !el.closest('[data-testid]'))!
-    await user.click(planningPill)
+    const filterPillsClear = screen.getAllByTestId('status-filter')
+    const planningPillClear = filterPillsClear.find((el) => el.textContent === 'Planning')!
+    await user.click(planningPillClear)
     expect(screen.queryByText('Lisbon, Portugal')).not.toBeInTheDocument()
 
     // Click All to clear
