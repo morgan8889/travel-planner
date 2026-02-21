@@ -2,6 +2,44 @@ import { render } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
 import { DayCell } from '../components/planning/DayCell'
 
+describe('DayCell full mode holiday label', () => {
+  it('renders holiday label on same row as date number (not below)', () => {
+    const { container } = render(
+      <DayCell
+        date="2026-12-25"
+        dayNumber={25}
+        isToday={false}
+        isCurrentMonth={true}
+        isSelected={false}
+        holidayLabel="Christmas"
+      />
+    )
+    // The date number and holiday label should share a parent flex row
+    const flexRow = container.querySelector('.flex.items-start.justify-between')
+    expect(flexRow).toBeInTheDocument()
+    // Holiday label is inside that flex row
+    const label = container.querySelector('.flex.items-start.justify-between span:last-child')
+    expect(label?.textContent).toBe('Christmas')
+  })
+
+  it('does not render holiday label below the date number in full mode', () => {
+    const { container } = render(
+      <DayCell
+        date="2026-12-25"
+        dayNumber={25}
+        isToday={false}
+        isCurrentMonth={true}
+        isSelected={false}
+        holidayLabel="Christmas"
+      />
+    )
+    // No <p> tag with the label (old layout used <p>)
+    const pTags = container.querySelectorAll('p')
+    const labelP = Array.from(pTags).find((p) => p.textContent === 'Christmas')
+    expect(labelP).toBeUndefined()
+  })
+})
+
 describe('DayCell compact mode', () => {
   it('renders border classes and full-cell layout in compact mode', () => {
     const { container } = render(

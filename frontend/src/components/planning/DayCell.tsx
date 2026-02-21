@@ -84,20 +84,22 @@ export const DayCell = memo(function DayCell({
         }
       }}
     >
-      <span
-        className={`inline-flex items-center justify-center w-7 h-7 text-sm rounded-full
-          ${isToday ? 'bg-indigo-600 text-white font-bold' : ''}
-          ${!isToday && isCurrentMonth ? 'text-cloud-800' : ''}
-          ${!isToday && !isCurrentMonth ? 'text-cloud-400' : ''}
-        `}
-      >
-        {dayNumber}
-      </span>
-      {label && (
-        <p className={`text-[10px] leading-tight mt-0.5 truncate ${holidayLabel ? 'text-red-500' : 'text-amber-500'}`}>
-          {label}
-        </p>
-      )}
+      <div className="flex items-start justify-between">
+        <span
+          className={`inline-flex items-center justify-center w-7 h-7 text-sm rounded-full shrink-0
+            ${isToday ? 'bg-indigo-600 text-white font-bold' : ''}
+            ${!isToday && isCurrentMonth ? 'text-cloud-800' : ''}
+            ${!isToday && !isCurrentMonth ? 'text-cloud-400' : ''}
+          `}
+        >
+          {dayNumber}
+        </span>
+        {label && (
+          <span className={`text-[10px] leading-tight mt-1 truncate max-w-[calc(100%-2rem)] text-right ${holidayLabel ? 'text-red-500' : 'text-amber-500'}`}>
+            {label}
+          </span>
+        )}
+      </div>
     </div>
   )
 })
