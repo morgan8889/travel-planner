@@ -133,13 +133,30 @@ describe('YearView trip inventory panel', () => {
     expect(screen.getByText('Annual Review')).toBeInTheDocument()
   })
 
-  it('calls onTripClick when a trip row in the inventory panel is clicked', async () => {
+})
+
+describe('YearView inventory highlight', () => {
+  it('does NOT call onTripClick when inventory panel trip is clicked', async () => {
     const user = userEvent.setup()
     const onTripClick = vi.fn()
     const trips = [makeTripSummary({ destination: 'Rome' })]
     render(<YearView {...baseProps} trips={trips} onTripClick={onTripClick} />)
     const romeButtons = screen.getAllByRole('button', { name: /rome/i })
-    await user.click(romeButtons[0])
-    expect(onTripClick).toHaveBeenCalledWith(expect.objectContaining({ destination: 'Rome' }))
+    // Inventory button is last in DOM order (after all grid bars)
+    await user.click(romeButtons[romeButtons.length - 1])
+    // Inventory click should NOT open sidebar — no onTripClick call
+    expect(onTripClick).not.toHaveBeenCalled()
+  })
+
+  it('grid bar click still calls onTripClick', async () => {
+    const user = userEvent.setup()
+    const onTripClick = vi.fn()
+    const trips = [makeTripSummary({ destination: 'Paris', start_date: '2026-06-01', end_date: '2026-06-07' })]
+    render(<YearView {...baseProps} trips={trips} onTripClick={onTripClick} />)
+    // The grid bar is a button with the destination text — grid bars appear before inventory button
+    const gridBars = screen.getAllByRole('button', { name: /paris/i })
+    // Click the first one — grid bars come before the inventory button in DOM order
+    await user.click(gridBars[0])
+    expect(onTripClick).toHaveBeenCalledWith(expect.objectContaining({ destination: 'Paris' }))
   })
 })

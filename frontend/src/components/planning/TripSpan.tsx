@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { TripStatus, TripType } from '../../lib/types'
 
 const TRIP_COLORS: Record<string, string> = {
@@ -32,6 +32,7 @@ interface TripSpanProps {
   endDate?: string
   colorBy?: 'status' | 'type'
   tripType?: TripType
+  isHighlighted?: boolean
 }
 
 export function TripSpan({
@@ -46,8 +47,20 @@ export function TripSpan({
   endDate,
   colorBy,
   tripType,
+  isHighlighted,
 }: TripSpanProps) {
   const [hovered, setHovered] = useState(false)
+  const [pulsing, setPulsing] = useState(false)
+
+  useEffect(() => {
+    if (!isHighlighted) return
+    const startTimer = setTimeout(() => setPulsing(true), 0)
+    const endTimer = setTimeout(() => setPulsing(false), 1000)
+    return () => {
+      clearTimeout(startTimer)
+      clearTimeout(endTimer)
+    }
+  }, [isHighlighted])
   const colorClasses = colorBy === 'type' && tripType
     ? (TYPE_COLORS[tripType] || TRIP_COLORS.planning)
     : (TRIP_COLORS[status] || TRIP_COLORS.planning)
@@ -59,7 +72,7 @@ export function TripSpan({
     return (
       <button
         type="button"
-        className={`absolute left-0 ${heightClass} rounded-full cursor-pointer transition-colors ${colorClasses}`}
+        className={`absolute left-0 ${heightClass} rounded-full cursor-pointer transition-colors ${colorClasses}${isHighlighted ? ` ring-2 ring-indigo-500 ring-offset-1${pulsing ? ' animate-pulse' : ''}` : ''}`}
         style={{
           width: `${(colSpan / 7) * 100}%`,
           marginLeft: `${(startCol / 7) * 100}%`,
@@ -88,7 +101,7 @@ export function TripSpan({
   return (
     <button
       type="button"
-      className={`absolute left-0 h-5 rounded-sm text-[11px] font-medium px-1.5 truncate cursor-pointer transition-colors ${colorClasses}`}
+      className={`absolute left-0 h-5 rounded-sm text-[11px] font-medium px-1.5 truncate cursor-pointer transition-colors ${colorClasses}${isHighlighted ? ` ring-2 ring-indigo-500 ring-offset-1${pulsing ? ' animate-pulse' : ''}` : ''}`}
       style={{
         gridColumnStart: startCol + 1,
         gridColumnEnd: startCol + colSpan + 1,
