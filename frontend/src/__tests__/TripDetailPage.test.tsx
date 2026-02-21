@@ -282,6 +282,37 @@ describe('TripDetailPage', () => {
     expect(timeline).toBeInTheDocument()
   })
 
+  it('toggles Add activity button to Cancel when form is open', async () => {
+    const user = userEvent.setup()
+    const mockDay = {
+      id: 'day-1',
+      trip_id: 'trip-1',
+      date: '2026-06-15',
+      notes: null,
+      activity_count: 0,
+    }
+    mockGetTrip.mockResolvedValue({ data: mockTrip })
+    mockItineraryListDays.mockResolvedValue({ data: [mockDay] })
+    mockItineraryListActivities.mockResolvedValue({ data: [] })
+    renderWithRouter()
+
+    // Initially shows "Add activity"
+    const addBtn = await screen.findByText('Add activity')
+    expect(addBtn).toBeInTheDocument()
+
+    // Click to open form
+    await user.click(addBtn)
+
+    // Now shows "Cancel" in the header toggle button (ActivityForm also has its own Cancel)
+    const cancelButtons = screen.getAllByText('Cancel')
+    expect(cancelButtons.length).toBeGreaterThanOrEqual(1)
+    expect(screen.queryByText('Add activity')).not.toBeInTheDocument()
+
+    // Click the first Cancel (header toggle) to close
+    await user.click(cancelButtons[0])
+    expect(await screen.findByText('Add activity')).toBeInTheDocument()
+  })
+
   it('shows drop indicator below activities in a day that has activities', async () => {
     const mockDay = {
       id: 'day-1',

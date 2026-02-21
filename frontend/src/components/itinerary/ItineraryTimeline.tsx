@@ -1,5 +1,5 @@
 import { useState, useMemo, type ReactNode } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, X } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -174,8 +174,17 @@ export function ItineraryTimeline({ days, allActivities, tripId }: ItineraryTime
                   onClick={() => setExpandedDayId(isAdding ? null : day.id)}
                   className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
                 >
-                  <Plus className="w-3 h-3" />
-                  Add activity
+                  {isAdding ? (
+                    <>
+                      <X className="w-3 h-3" />
+                      Cancel
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-3 h-3" />
+                      Add activity
+                    </>
+                  )}
                 </button>
                 <button
                   onClick={() => setDeletingDayId(day.id)}
