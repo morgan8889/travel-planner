@@ -289,6 +289,30 @@ def test_list_trips_includes_itinerary_stats(
     assert data[0]["days_with_activities"] == 3
 
 
+# --- Test: list_trips returns start_date in expected format ---
+
+
+def test_list_trips_returns_start_date(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """Trips endpoint returns start_date in ISO format after order_by change."""
+    owner_member = _make_member()
+    trip = _make_trip(members=[owner_member])
+    # _make_trip already sets start_date = date(2026, 6, 1)
+
+    result_mock = MagicMock()
+    result_mock.scalars.return_value.all.return_value = [trip]
+    stats_mock = MagicMock()
+    stats_mock.__iter__ = MagicMock(return_value=iter([]))
+    mock_db_session.execute = AsyncMock(side_effect=[result_mock, stats_mock])
+
+    response = client.get("/trips", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["start_date"] == "2026-06-01"
+
+
 # --- Test 7: Get trip detail success ---
 
 

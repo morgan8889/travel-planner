@@ -167,6 +167,7 @@ async def list_trips(
         .join(TripMember)
         .where(TripMember.user_id == user_id)
         .options(selectinload(Trip.members).joinedload(TripMember.user))
+        .order_by(Trip.start_date)
     )
     if status is not None:
         stmt = stmt.where(Trip.status == status)
