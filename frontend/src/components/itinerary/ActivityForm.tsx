@@ -23,6 +23,7 @@ export interface ActivityFormData {
   longitude: number | null
   notes: string | null
   confirmation_number: string | null
+  check_out_date: string | null
 }
 
 export function ActivityForm({ activity, onSave, onCancel, isPending, error }: ActivityFormProps) {
@@ -37,7 +38,15 @@ export function ActivityForm({ activity, onSave, onCancel, isPending, error }: A
   const [longitude, setLongitude] = useState<number | null>(activity?.longitude ?? null)
   const [notes, setNotes] = useState(activity?.notes ?? '')
   const [confirmationNumber, setConfirmationNumber] = useState(activity?.confirmation_number ?? '')
+  const [checkOutDate, setCheckOutDate] = useState(activity?.check_out_date ?? '')
   const [locationDirty, setLocationDirty] = useState(false)
+
+  function handleCategoryChange(value: ActivityCategory): void {
+    setCategory(value)
+    if (value !== 'lodging') {
+      setCheckOutDate('')
+    }
+  }
 
   function handleLocationChange(value: string): void {
     setLocation(value)
@@ -69,6 +78,7 @@ export function ActivityForm({ activity, onSave, onCancel, isPending, error }: A
       longitude: resolvedLongitude,
       notes: notes || null,
       confirmation_number: confirmationNumber || null,
+      check_out_date: checkOutDate || null,
     })
   }
 
@@ -95,7 +105,7 @@ export function ActivityForm({ activity, onSave, onCancel, isPending, error }: A
         <span className="block text-sm font-medium text-cloud-700 mb-1">Category *</span>
         <CategorySelector
           value={category}
-          onChange={setCategory}
+          onChange={handleCategoryChange}
           disabled={isPending}
         />
       </div>
@@ -128,6 +138,22 @@ export function ActivityForm({ activity, onSave, onCancel, isPending, error }: A
           />
         </div>
       </div>
+
+      {category === 'lodging' && (
+        <div>
+          <label htmlFor={`${fieldId}-check_out_date`} className="block text-sm font-medium text-cloud-700 mb-1">
+            Check-out Date
+          </label>
+          <input
+            type="date"
+            id={`${fieldId}-check_out_date`}
+            value={checkOutDate}
+            onChange={(e) => setCheckOutDate(e.target.value)}
+            disabled={isPending}
+            className="w-full px-3 py-2 border border-cloud-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50"
+          />
+        </div>
+      )}
 
       <div>
         <label htmlFor={`${fieldId}-location`} className="block text-sm font-medium text-cloud-700 mb-1">

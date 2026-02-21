@@ -5,6 +5,35 @@ from pydantic import BaseModel, Field, model_validator
 
 from travel_planner.models.trip import MemberRole, TripStatus, TripType
 
+AVATAR_COLORS = [
+    "#6366f1",  # indigo
+    "#22c55e",  # green
+    "#f59e0b",  # amber
+    "#f43f5e",  # rose
+    "#06b6d4",  # cyan
+    "#a855f7",  # purple
+    "#3b82f6",  # blue
+    "#f97316",  # orange
+]
+
+
+def _member_initials(display_name: str, email: str | None) -> str:
+    if display_name and display_name != "Anonymous":
+        parts = display_name.split()
+        return "".join(p[0] for p in parts if p)[:2].upper()
+    if email:
+        return email.split("@")[0][:2].upper()
+    return "?"
+
+
+def _member_color(user_id: uuid.UUID) -> str:
+    return AVATAR_COLORS[user_id.int % len(AVATAR_COLORS)]
+
+
+class MemberPreview(BaseModel):
+    initials: str
+    color: str
+
 
 class TripCreate(BaseModel):
     type: TripType
@@ -68,6 +97,15 @@ class TripSummary(BaseModel):
     parent_trip_id: uuid.UUID | None
     created_at: datetime
     member_count: int
+    member_previews: list[MemberPreview] = []
+    itinerary_day_count: int = 0
+    days_with_activities: int = 0
+    transport_total: int = 0
+    transport_confirmed: int = 0
+    lodging_total: int = 0
+    lodging_confirmed: int = 0
+    activity_total: int = 0
+    activity_confirmed: int = 0
     model_config = {"from_attributes": True}
 
 

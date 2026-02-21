@@ -20,7 +20,7 @@ import { AddMemberModal } from '../components/trips/AddMemberModal'
 import { TripCard } from '../components/trips/TripCard'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
-import { ItineraryDayCard } from '../components/itinerary/ItineraryDayCard'
+import { ItineraryTimeline } from '../components/itinerary/ItineraryTimeline'
 import { AddDayModal } from '../components/itinerary/AddDayModal'
 import { ChecklistCard } from '../components/checklist/ChecklistCard'
 import { AddChecklistModal } from '../components/checklist/AddChecklistModal'
@@ -101,6 +101,7 @@ export function TripDetailPage() {
 
   // Activity locations for map
   const { data: geoActivities } = useTripActivities(tripId, true)
+  const { data: allActivities } = useTripActivities(tripId)
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null)
 
   const [isEditing, setIsEditing] = useState(false)
@@ -497,11 +498,11 @@ export function TripDetailPage() {
                 <p className="text-sm text-cloud-500 mt-2">Generating itinerary days...</p>
               </div>
             ) : itineraryDays && itineraryDays.length > 0 ? (
-              <div className="space-y-4">
-                {itineraryDays.map((day) => (
-                  <ItineraryDayCard key={day.id} day={day} tripId={tripId} />
-                ))}
-              </div>
+              <ItineraryTimeline
+                days={itineraryDays}
+                allActivities={allActivities ?? []}
+                tripId={tripId}
+              />
             ) : (
               <div className="bg-white rounded-xl border border-cloud-200 p-8 text-center">
                 <p className="text-cloud-600 mb-4">No itinerary days yet.</p>

@@ -31,6 +31,7 @@ class ActivityCreate(BaseModel):
     longitude: float | None = Field(default=None, ge=-180, le=180)
     notes: str | None = None
     confirmation_number: str | None = None
+    check_out_date: date | None = None
 
     @model_validator(mode="after")
     def end_time_after_start_time(self) -> "ActivityCreate":
@@ -54,6 +55,8 @@ class ActivityUpdate(BaseModel):
     notes: str | None = None
     confirmation_number: str | None = None
     sort_order: int | None = None
+    itinerary_day_id: UUID | None = None
+    check_out_date: date | None = None
 
     @model_validator(mode="after")
     def end_time_after_start_time(self) -> "ActivityUpdate":
@@ -81,6 +84,7 @@ class ActivityResponse(BaseModel):
     notes: str | None
     confirmation_number: str | None
     sort_order: int
+    check_out_date: date | None
 
 
 class ActivityReorderUpdate(BaseModel):

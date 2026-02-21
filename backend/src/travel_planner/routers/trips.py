@@ -1,23 +1,27 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from travel_planner.auth import CurrentUser, CurrentUserId
 from travel_planner.db import get_db
+from travel_planner.models.itinerary import Activity, ItineraryDay
 from travel_planner.models.trip import MemberRole, Trip, TripMember, TripStatus
 from travel_planner.models.user import UserProfile
 from travel_planner.schemas.trip import (
     AddMemberRequest,
+    MemberPreview,
     TripCreate,
     TripMemberResponse,
     TripResponse,
     TripSummary,
     TripUpdate,
     UpdateMemberRole,
+    _member_color,
+    _member_initials,
 )
 
 router = APIRouter(prefix="/trips", tags=["trips"])
@@ -162,7 +166,8 @@ async def list_trips(
         select(Trip)
         .join(TripMember)
         .where(TripMember.user_id == user_id)
-        .options(selectinload(Trip.members))
+        .options(selectinload(Trip.members).joinedload(TripMember.user))
+        .order_by(Trip.start_date)
     )
     if status is not None:
         stmt = stmt.where(Trip.status == status)
@@ -170,23 +175,109 @@ async def list_trips(
     result = await db.execute(stmt)
     trips = result.scalars().all()
 
-    return [
-        TripSummary(
-            id=t.id,
-            type=t.type,
-            destination=t.destination,
-            start_date=t.start_date,
-            end_date=t.end_date,
-            status=t.status,
-            notes=t.notes,
-            destination_latitude=t.destination_latitude,
-            destination_longitude=t.destination_longitude,
-            parent_trip_id=t.parent_trip_id,
-            created_at=t.created_at,
-            member_count=len(t.members),
+    # Bulk itinerary stats — 1 extra query for all trips
+    trip_ids = [t.id for t in trips]
+    stats_map: dict = {}
+    if trip_ids:
+        activity_per_day = (
+            select(
+                Activity.itinerary_day_id,
+                func.count(Activity.id).label("cnt"),
+            )
+            .group_by(Activity.itinerary_day_id)
+            .subquery("activity_per_day")
         )
-        for t in trips
-    ]
+        stats_stmt = (
+            select(
+                ItineraryDay.trip_id,
+                func.count(func.distinct(ItineraryDay.id)).label("day_count"),
+                func.count(func.distinct(activity_per_day.c.itinerary_day_id)).label(
+                    "active_count"
+                ),
+                func.count(Activity.id)
+                .filter(Activity.category == "transport")
+                .label("transport_total"),
+                func.count(Activity.id)
+                .filter(
+                    Activity.category == "transport",
+                    Activity.confirmation_number.isnot(None),
+                )
+                .label("transport_confirmed"),
+                func.count(Activity.id)
+                .filter(Activity.category == "lodging")
+                .label("lodging_total"),
+                func.count(Activity.id)
+                .filter(
+                    Activity.category == "lodging",
+                    Activity.confirmation_number.isnot(None),
+                )
+                .label("lodging_confirmed"),
+                func.count(Activity.id)
+                .filter(Activity.category == "activity")
+                .label("activity_total"),
+                func.count(Activity.id)
+                .filter(
+                    Activity.category == "activity",
+                    Activity.confirmation_number.isnot(None),
+                )
+                .label("activity_confirmed"),
+            )
+            .outerjoin(
+                activity_per_day,
+                activity_per_day.c.itinerary_day_id == ItineraryDay.id,
+            )
+            .outerjoin(Activity, Activity.itinerary_day_id == ItineraryDay.id)
+            .where(ItineraryDay.trip_id.in_(trip_ids))
+            .group_by(ItineraryDay.trip_id)
+        )
+        stats_result = await db.execute(stats_stmt)
+        stats_map = {row.trip_id: row for row in stats_result}
+
+    summaries = []
+    for t in trips:
+        row = stats_map.get(t.id)
+        day_count = row.day_count if row else 0
+        active_count = row.active_count if row else 0
+        transport_total = row.transport_total if row else 0
+        transport_confirmed = row.transport_confirmed if row else 0
+        lodging_total = row.lodging_total if row else 0
+        lodging_confirmed = row.lodging_confirmed if row else 0
+        activity_total = row.activity_total if row else 0
+        activity_confirmed = row.activity_confirmed if row else 0
+        sorted_members = sorted(t.members, key=lambda m: m.id)
+        previews = [
+            MemberPreview(
+                initials=_member_initials(m.user.display_name, m.user.email),
+                color=_member_color(m.user_id),
+            )
+            for m in sorted_members
+        ]
+        summaries.append(
+            TripSummary(
+                id=t.id,
+                type=t.type,
+                destination=t.destination,
+                start_date=t.start_date,
+                end_date=t.end_date,
+                status=t.status,
+                notes=t.notes,
+                destination_latitude=t.destination_latitude,
+                destination_longitude=t.destination_longitude,
+                parent_trip_id=t.parent_trip_id,
+                created_at=t.created_at,
+                member_count=len(t.members),
+                member_previews=previews,
+                itinerary_day_count=day_count,
+                days_with_activities=active_count,
+                transport_total=transport_total,
+                transport_confirmed=transport_confirmed,
+                lodging_total=lodging_total,
+                lodging_confirmed=lodging_confirmed,
+                activity_total=activity_total,
+                activity_confirmed=activity_confirmed,
+            )
+        )
+    return summaries
 
 
 @router.get("/{trip_id}", response_model=TripResponse)

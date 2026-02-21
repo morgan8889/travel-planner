@@ -170,7 +170,9 @@ def test_list_trips_returns_user_trips(
 
     result_mock = MagicMock()
     result_mock.scalars.return_value.all.return_value = [trip]
-    mock_db_session.execute = AsyncMock(return_value=result_mock)
+    stats_mock = MagicMock()
+    stats_mock.__iter__ = MagicMock(return_value=iter([]))
+    mock_db_session.execute = AsyncMock(side_effect=[result_mock, stats_mock])
 
     response = client.get("/trips", headers=auth_headers)
     assert response.status_code == 200
@@ -192,12 +194,123 @@ def test_list_trips_status_filter(
 
     result_mock = MagicMock()
     result_mock.scalars.return_value.all.return_value = [trip]
-    mock_db_session.execute = AsyncMock(return_value=result_mock)
+    stats_mock = MagicMock()
+    stats_mock.__iter__ = MagicMock(return_value=iter([]))
+    mock_db_session.execute = AsyncMock(side_effect=[result_mock, stats_mock])
 
     response = client.get("/trips?status=dreaming", headers=auth_headers)
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 1
+
+
+def test_list_trips_includes_member_previews(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """GET /trips returns member_previews with initials and colors."""
+    owner_user = _make_user(display_name="Alice Smith")
+    owner_member = _make_member(user=owner_user)
+    trip = _make_trip(members=[owner_member])
+
+    result_mock = MagicMock()
+    result_mock.scalars.return_value.all.return_value = [trip]
+    # Second execute call for itinerary stats
+    stats_mock = MagicMock()
+    stats_mock.__iter__ = MagicMock(return_value=iter([]))
+    mock_db_session.execute = AsyncMock(side_effect=[result_mock, stats_mock])
+
+    response = client.get("/trips", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert "member_previews" in data[0]
+    assert len(data[0]["member_previews"]) == 1
+    assert data[0]["member_previews"][0]["initials"] == "AS"
+
+
+def test_list_trips_returns_all_member_previews(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """All member previews are returned, not just the first 3."""
+    import uuid
+
+    members = [
+        _make_member(
+            member_id=uuid.uuid4(),
+            user_id=uuid.uuid4(),
+            role=MemberRole.owner if i == 0 else MemberRole.member,
+        )
+        for i in range(5)
+    ]
+    for i, m in enumerate(members):
+        m.user = _make_user(
+            user_id=m.user_id,
+            display_name=f"User {i}",
+            email=f"user{i}@test.com",
+        )
+    trip = _make_trip(members=members)
+
+    result_mock = MagicMock()
+    result_mock.scalars.return_value.all.return_value = [trip]
+    stats_mock = MagicMock()
+    stats_mock.__iter__ = MagicMock(return_value=iter([]))
+    mock_db_session.execute = AsyncMock(side_effect=[result_mock, stats_mock])
+
+    response = client.get("/trips", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data[0]["member_previews"]) == 5
+
+
+def test_list_trips_includes_itinerary_stats(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """GET /trips returns itinerary_day_count and days_with_activities."""
+    owner_user = _make_user()
+    owner_member = _make_member(user=owner_user)
+    trip = _make_trip(members=[owner_member])
+
+    result_mock = MagicMock()
+    result_mock.scalars.return_value.all.return_value = [trip]
+
+    # Stats row: trip_id, day_count=5, active_count=3
+    stats_row = MagicMock()
+    stats_row.trip_id = trip.id
+    stats_row.day_count = 5
+    stats_row.active_count = 3
+    stats_mock = MagicMock()
+    stats_mock.__iter__ = MagicMock(return_value=iter([stats_row]))
+    mock_db_session.execute = AsyncMock(side_effect=[result_mock, stats_mock])
+
+    response = client.get("/trips", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data[0]["itinerary_day_count"] == 5
+    assert data[0]["days_with_activities"] == 3
+
+
+# --- Test: list_trips returns start_date in expected format ---
+
+
+def test_list_trips_returns_start_date(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """Trips endpoint returns start_date in ISO format after order_by change."""
+    owner_member = _make_member()
+    trip = _make_trip(members=[owner_member])
+    # _make_trip already sets start_date = date(2026, 6, 1)
+
+    result_mock = MagicMock()
+    result_mock.scalars.return_value.all.return_value = [trip]
+    stats_mock = MagicMock()
+    stats_mock.__iter__ = MagicMock(return_value=iter([]))
+    mock_db_session.execute = AsyncMock(side_effect=[result_mock, stats_mock])
+
+    response = client.get("/trips", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["start_date"] == "2026-06-01"
 
 
 # --- Test 7: Get trip detail success ---
@@ -659,6 +772,43 @@ def test_update_member_role_not_found(
         headers=auth_headers,
     )
     assert response.status_code == 404
+
+
+def test_list_trips_includes_booking_stats(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """TripSummary includes per-category booking counts."""
+    owner_member = _make_member()
+    trip = _make_trip(members=[owner_member])
+
+    result_mock = MagicMock()
+    result_mock.scalars.return_value.all.return_value = [trip]
+
+    stats_row = MagicMock()
+    stats_row.trip_id = trip.id
+    stats_row.day_count = 3
+    stats_row.active_count = 2
+    stats_row.transport_total = 2
+    stats_row.transport_confirmed = 1
+    stats_row.lodging_total = 1
+    stats_row.lodging_confirmed = 1
+    stats_row.activity_total = 4
+    stats_row.activity_confirmed = 2
+
+    stats_mock = MagicMock()
+    stats_mock.__iter__ = MagicMock(return_value=iter([stats_row]))
+
+    mock_db_session.execute = AsyncMock(side_effect=[result_mock, stats_mock])
+
+    response = client.get("/trips", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()[0]
+    assert data["transport_total"] == 2
+    assert data["transport_confirmed"] == 1
+    assert data["lodging_total"] == 1
+    assert data["lodging_confirmed"] == 1
+    assert data["activity_total"] == 4
+    assert data["activity_confirmed"] == 2
 
 
 # --- Test 25: Create child trip ---

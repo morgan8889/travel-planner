@@ -25,6 +25,12 @@ const mockTrips: TripSummary[] = [
     member_count: 2,
     destination_latitude: null,
     destination_longitude: null,
+    member_previews: [
+      { initials: 'AS', color: '#6366f1' },
+      { initials: 'BJ', color: '#22c55e' },
+    ],
+    itinerary_day_count: 5,
+    days_with_activities: 2,
   },
   {
     id: 'trip-2',
@@ -39,6 +45,9 @@ const mockTrips: TripSummary[] = [
     member_count: 1,
     destination_latitude: null,
     destination_longitude: null,
+    member_previews: [{ initials: 'AS', color: '#6366f1' }],
+    itinerary_day_count: 0,
+    days_with_activities: 0,
   },
 ]
 

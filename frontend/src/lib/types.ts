@@ -10,6 +10,11 @@ export interface TripMember {
   email: string
 }
 
+export interface MemberPreview {
+  initials: string
+  color: string
+}
+
 export interface TripSummary {
   id: string
   type: TripType
@@ -23,6 +28,15 @@ export interface TripSummary {
   parent_trip_id: string | null
   created_at: string
   member_count: number
+  member_previews?: MemberPreview[]
+  itinerary_day_count?: number
+  days_with_activities?: number
+  transport_total?: number
+  transport_confirmed?: number
+  lodging_total?: number
+  lodging_confirmed?: number
+  activity_total?: number
+  activity_confirmed?: number
 }
 
 export interface Trip extends Omit<TripSummary, 'member_count'> {
@@ -85,6 +99,7 @@ export interface Activity {
   notes: string | null
   confirmation_number: string | null
   sort_order: number
+  check_out_date: string | null
 }
 
 export interface CreateItineraryDay {
@@ -102,6 +117,7 @@ export interface CreateActivity {
   longitude?: number | null
   notes?: string | null
   confirmation_number?: string | null
+  check_out_date?: string | null
 }
 
 export interface UpdateActivity {
@@ -115,6 +131,8 @@ export interface UpdateActivity {
   notes?: string | null
   confirmation_number?: string | null
   sort_order?: number
+  itinerary_day_id?: string
+  check_out_date?: string | null
 }
 
 export interface ChecklistItem {
