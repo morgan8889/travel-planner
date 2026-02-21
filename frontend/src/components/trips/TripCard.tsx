@@ -29,7 +29,12 @@ function formatDateRange(startDate: string, endDate: string): string {
 
 export function TripCard({ trip }: TripCardProps) {
   const dateRange = formatDateRange(trip.start_date, trip.end_date)
-  const { member_count, member_previews, itinerary_day_count, days_with_activities } = trip
+  const {
+    member_count,
+    member_previews = [],
+    itinerary_day_count = 0,
+    days_with_activities = 0,
+  } = trip
 
   const progressLabel =
     days_with_activities >= itinerary_day_count

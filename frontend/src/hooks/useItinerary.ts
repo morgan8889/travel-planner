@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { itineraryApi } from '../lib/api'
-import type { CreateItineraryDay, CreateActivity, UpdateActivity } from '../lib/types'
+import type { Activity, CreateItineraryDay, CreateActivity, UpdateActivity } from '../lib/types'
 
 export const itineraryKeys = {
   all: ['itinerary'] as const,
@@ -145,7 +145,7 @@ export function useMoveActivity(tripId: string) {
     onMutate: async ({ activityId, targetDayId }) => {
       await queryClient.cancelQueries({ queryKey: tripActivitiesKey })
       const previous = queryClient.getQueryData(tripActivitiesKey)
-      queryClient.setQueryData<import('../lib/types').Activity[]>(tripActivitiesKey, (old) =>
+      queryClient.setQueryData<Activity[]>(tripActivitiesKey, (old) =>
         old?.map((a) => a.id === activityId ? { ...a, itinerary_day_id: targetDayId } : a) ?? []
       )
       return { previous }
