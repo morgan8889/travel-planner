@@ -223,8 +223,9 @@ export function ItineraryTimeline({ days, allActivities, tripId }: ItineraryTime
         onClose={() => setDeletingDayId(null)}
         onConfirm={() => {
           if (deletingDayId) {
-            deleteDay.mutate(deletingDayId)
-            setDeletingDayId(null)
+            deleteDay.mutate(deletingDayId, {
+              onSuccess: () => setDeletingDayId(null),
+            })
           }
         }}
         title="Delete Day"

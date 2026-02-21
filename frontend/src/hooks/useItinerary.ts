@@ -6,11 +6,13 @@ export const itineraryKeys = {
   all: ['itinerary'] as const,
   days: (tripId: string) => [...itineraryKeys.all, 'days', tripId] as const,
   activities: (dayId: string) => [...itineraryKeys.all, 'activities', dayId] as const,
+  tripActivities: (tripId: string, hasLocation = false) =>
+    [...itineraryKeys.all, 'trip-activities', tripId, { hasLocation }] as const,
 }
 
 export function useTripActivities(tripId: string, hasLocation = false) {
   return useQuery({
-    queryKey: [...itineraryKeys.all, 'trip-activities', tripId, { hasLocation }],
+    queryKey: itineraryKeys.tripActivities(tripId, hasLocation),
     queryFn: async () => {
       const { data } = await itineraryApi.listTripActivities(tripId, hasLocation)
       return data
@@ -135,7 +137,8 @@ export function useGenerateDays(tripId: string) {
 
 export function useMoveActivity(tripId: string) {
   const queryClient = useQueryClient()
-  const tripActivitiesKey = [...itineraryKeys.all, 'trip-activities', tripId, { hasLocation: false }] as const
+  // Exact key for the hasLocation=false cache entry used by ItineraryTimeline (optimistic update target)
+  const tripActivitiesKey = itineraryKeys.tripActivities(tripId)
 
   return useMutation({
     mutationFn: async ({ activityId, targetDayId }: { activityId: string; targetDayId: string }) => {
@@ -159,7 +162,8 @@ export function useMoveActivity(tripId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: itineraryKeys.days(tripId) })
-      queryClient.invalidateQueries({ queryKey: tripActivitiesKey })
+      // Use the prefix (no hasLocation) to invalidate both hasLocation variants
+      queryClient.invalidateQueries({ queryKey: [...itineraryKeys.all, 'trip-activities', tripId] })
     },
   })
 }
@@ -174,9 +178,8 @@ export function useCreateActivityInDay(tripId: string) {
     onSuccess: (_data, { dayId }) => {
       queryClient.invalidateQueries({ queryKey: itineraryKeys.activities(dayId) })
       queryClient.invalidateQueries({ queryKey: itineraryKeys.days(tripId) })
-      queryClient.invalidateQueries({
-        queryKey: [...itineraryKeys.all, 'trip-activities', tripId],
-      })
+      // Use the prefix (no hasLocation) to invalidate both hasLocation variants
+      queryClient.invalidateQueries({ queryKey: [...itineraryKeys.all, 'trip-activities', tripId] })
     },
   })
 }
@@ -190,9 +193,8 @@ export function useReorderActivitiesForDay(tripId: string) {
     },
     onSuccess: (_data, { dayId }) => {
       queryClient.invalidateQueries({ queryKey: itineraryKeys.activities(dayId) })
-      queryClient.invalidateQueries({
-        queryKey: [...itineraryKeys.all, 'trip-activities', tripId],
-      })
+      // Use the prefix (no hasLocation) to invalidate both hasLocation variants
+      queryClient.invalidateQueries({ queryKey: [...itineraryKeys.all, 'trip-activities', tripId] })
     },
   })
 }
