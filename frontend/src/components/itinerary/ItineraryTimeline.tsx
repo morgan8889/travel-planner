@@ -1,5 +1,5 @@
 import { useState, useMemo, type ReactNode } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, X } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -47,14 +47,20 @@ function EmptyDayDropZone({ dayId }: { dayId: string }) {
   )
 }
 
-function DroppableDay({ dayId, children }: { dayId: string; children: ReactNode }) {
+function DroppableDay({ dayId, hasActivities, children }: { dayId: string; hasActivities: boolean; children: ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id: `day-${dayId}`, data: { dayId } })
   return (
     <div
       ref={setNodeRef}
-      className={`min-h-[2.5rem] rounded transition-colors ${isOver ? 'bg-indigo-50/50' : ''}`}
+      className={`min-h-[2.5rem] rounded transition-colors ${isOver && !hasActivities ? 'bg-indigo-50/50' : ''}`}
     >
       {children}
+      {isOver && hasActivities && (
+        <div
+          data-testid="drop-hint"
+          className="h-10 rounded border-2 border-dashed border-indigo-400 bg-indigo-50 mt-2 transition-colors"
+        />
+      )}
     </div>
   )
 }
@@ -168,8 +174,17 @@ export function ItineraryTimeline({ days, allActivities, tripId }: ItineraryTime
                   onClick={() => setExpandedDayId(isAdding ? null : day.id)}
                   className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
                 >
-                  <Plus className="w-3 h-3" />
-                  Add activity
+                  {isAdding ? (
+                    <>
+                      <X className="w-3 h-3" />
+                      Cancel
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-3 h-3" />
+                      Add activity
+                    </>
+                  )}
                 </button>
                 <button
                   onClick={() => setDeletingDayId(day.id)}
@@ -182,7 +197,7 @@ export function ItineraryTimeline({ days, allActivities, tripId }: ItineraryTime
 
               {/* Activities list */}
               <div className="ml-6 space-y-2">
-                <DroppableDay dayId={day.id}>
+                <DroppableDay dayId={day.id} hasActivities={dayActs.length > 0}>
                   <SortableContext
                     items={dayActs.map((a) => a.id)}
                     strategy={verticalListSortingStrategy}

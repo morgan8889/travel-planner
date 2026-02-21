@@ -137,24 +137,64 @@ describe('TripsPage', () => {
     expect(screen.getByText('Completed')).toBeInTheDocument()
   })
 
-  it('clicking a status filter pill refetches with status param', async () => {
+  it('clicking a status filter pill filters trips client-side', async () => {
+    const user = userEvent.setup()
+    mockGet.mockResolvedValue({ data: mockTrips })
+    renderWithProviders(<TripsPage />)
+
+    // Both trips visible initially
+    expect(await screen.findByText('Paris, France')).toBeInTheDocument()
+    expect(screen.getByText('Lisbon, Portugal')).toBeInTheDocument()
+
+    // Click "Planning" filter — only Paris (planning) shown
+    const filterPills = screen.getAllByTestId('status-filter')
+    const planningPill = filterPills.find((el) => el.textContent === 'Planning')!
+    await user.click(planningPill)
+
+    expect(screen.getByText('Paris, France')).toBeInTheDocument()
+    expect(screen.queryByText('Lisbon, Portugal')).not.toBeInTheDocument()
+  })
+
+  it('allows selecting multiple status filters simultaneously', async () => {
     const user = userEvent.setup()
     mockGet.mockResolvedValue({ data: mockTrips })
     renderWithProviders(<TripsPage />)
 
     await screen.findByText('Paris, France')
-    mockGet.mockResolvedValue({ data: [mockTrips[0]] })
 
-    // "Planning" text also appears in the trip card badge, so target the filter button specifically
-    const filterButtons = screen.getAllByText('Planning')
-    const filterPill = filterButtons.find(
-      (el) => el.tagName === 'BUTTON' && !el.closest('[data-testid]')
-    )!
-    await user.click(filterPill)
+    // Select "Planning"
+    const filterPillsMulti = screen.getAllByTestId('status-filter')
+    const planningPillMulti = filterPillsMulti.find((el) => el.textContent === 'Planning')!
+    await user.click(planningPillMulti)
 
-    await waitFor(() => {
-      expect(mockGet).toHaveBeenCalledWith('/trips', { params: { status: 'planning' } })
-    })
+    // Only Paris visible
+    expect(screen.getByText('Paris, France')).toBeInTheDocument()
+    expect(screen.queryByText('Lisbon, Portugal')).not.toBeInTheDocument()
+
+    // Also select "Dreaming"
+    await user.click(screen.getByRole('button', { name: 'Dreaming' }))
+
+    // Both visible now
+    expect(screen.getByText('Paris, France')).toBeInTheDocument()
+    expect(screen.getByText('Lisbon, Portugal')).toBeInTheDocument()
+  })
+
+  it('clicking All clears active status filters', async () => {
+    const user = userEvent.setup()
+    mockGet.mockResolvedValue({ data: mockTrips })
+    renderWithProviders(<TripsPage />)
+
+    await screen.findByText('Paris, France')
+
+    // Select "Planning" to filter
+    const filterPillsClear = screen.getAllByTestId('status-filter')
+    const planningPillClear = filterPillsClear.find((el) => el.textContent === 'Planning')!
+    await user.click(planningPillClear)
+    expect(screen.queryByText('Lisbon, Portugal')).not.toBeInTheDocument()
+
+    // Click All to clear
+    await user.click(screen.getByRole('button', { name: 'All' }))
+    expect(screen.getByText('Lisbon, Portugal')).toBeInTheDocument()
   })
 
   it('renders error state with retry button on fetch failure', async () => {

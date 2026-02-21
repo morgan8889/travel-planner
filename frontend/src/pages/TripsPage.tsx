@@ -35,8 +35,23 @@ function SkeletonCard() {
 }
 
 export function TripsPage() {
-  const [statusFilter, setStatusFilter] = useState<TripStatus | undefined>(undefined)
-  const { data: trips, isLoading, error, refetch } = useTrips(statusFilter)
+  const [activeStatuses, setActiveStatuses] = useState<TripStatus[]>([])
+  const { data: allTrips, isLoading, error, refetch } = useTrips()
+
+  function toggleStatus(value: TripStatus | undefined) {
+    if (value === undefined) {
+      setActiveStatuses([])
+      return
+    }
+    setActiveStatuses((prev) =>
+      prev.includes(value) ? prev.filter((s) => s !== value) : [...prev, value]
+    )
+  }
+
+  const trips =
+    activeStatuses.length === 0
+      ? allTrips
+      : allTrips?.filter((t) => activeStatuses.includes(t.status))
 
   return (
     <div>
@@ -54,19 +69,26 @@ export function TripsPage() {
 
       {/* Status Filter Pills */}
       <div className="flex flex-wrap gap-2 mb-6">
-        {statusFilters.map((filter) => (
-          <button
-            key={filter.label}
-            onClick={() => setStatusFilter(filter.value)}
-            className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${
-              statusFilter === filter.value
-                ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-600/20 ring-offset-1'
-                : 'bg-white text-cloud-600 border border-cloud-200 hover:border-indigo-300 hover:text-indigo-700 hover:bg-indigo-50/50'
-            }`}
-          >
-            {filter.label}
-          </button>
-        ))}
+        {statusFilters.map((filter) => {
+          const isActive =
+            filter.value === undefined
+              ? activeStatuses.length === 0
+              : activeStatuses.includes(filter.value)
+          return (
+            <button
+              key={filter.label}
+              data-testid="status-filter"
+              onClick={() => toggleStatus(filter.value)}
+              className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${
+                isActive
+                  ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-600/20 ring-offset-1'
+                  : 'bg-white text-cloud-600 border border-cloud-200 hover:border-indigo-300 hover:text-indigo-700 hover:bg-indigo-50/50'
+              }`}
+            >
+              {filter.label}
+            </button>
+          )
+        })}
       </div>
 
       {/* Loading State */}

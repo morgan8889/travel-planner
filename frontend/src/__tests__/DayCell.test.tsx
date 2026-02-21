@@ -1,6 +1,25 @@
-import { render } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
 import { DayCell } from '../components/planning/DayCell'
+
+describe('DayCell full mode holiday label', () => {
+  it('renders holiday label on same row as date number', () => {
+    render(
+      <DayCell
+        date="2026-12-25"
+        dayNumber={25}
+        isToday={false}
+        isCurrentMonth={true}
+        isSelected={false}
+        holidayLabel="Christmas"
+      />
+    )
+    const label = screen.getByText('Christmas')
+    const dateNumber = screen.getByText('25')
+    expect(label.parentElement).toBe(dateNumber.parentElement)
+    expect(label.tagName).not.toBe('P')
+  })
+})
 
 describe('DayCell compact mode', () => {
   it('renders border classes and full-cell layout in compact mode', () => {
