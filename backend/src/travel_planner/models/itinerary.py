@@ -76,6 +76,7 @@ class Activity(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     confirmation_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    check_out_date: Mapped[dt.date | None] = mapped_column(Date, nullable=True)
     source: Mapped[ActivitySource] = mapped_column(
         Enum(ActivitySource), default=ActivitySource.manual
     )

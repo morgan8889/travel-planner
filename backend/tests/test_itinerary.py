@@ -284,6 +284,7 @@ def test_list_activities(
     activity1.notes = None
     activity1.confirmation_number = None
     activity1.sort_order = 0
+    activity1.check_out_date = None
 
     activity2 = MagicMock(spec=Activity)
     activity2.id = UUID("aaae4567-e89b-12d3-a456-426614174009")
@@ -296,6 +297,7 @@ def test_list_activities(
     activity2.notes = "Book tickets in advance"
     activity2.confirmation_number = None
     activity2.sort_order = 1
+    activity2.check_out_date = None
 
     # First call: verify_day_access - get day
     result_mock1 = MagicMock()
@@ -354,6 +356,7 @@ def test_update_activity(
     activity.notes = None
     activity.confirmation_number = None
     activity.sort_order = 0
+    activity.check_out_date = None
 
     # First call: get activity
     result_mock1 = MagicMock()
@@ -462,6 +465,7 @@ def test_reorder_activities(
     activity1.notes = None
     activity1.confirmation_number = None
     activity1.sort_order = 0
+    activity1.check_out_date = None
 
     activity2 = MagicMock(spec=Activity)
     activity2.id = UUID("aaae4567-e89b-12d3-a456-426614174009")
@@ -474,6 +478,7 @@ def test_reorder_activities(
     activity2.notes = None
     activity2.confirmation_number = None
     activity2.sort_order = 1
+    activity2.check_out_date = None
 
     # verify_day_access: get day, then verify_trip_member
     result_mock1 = MagicMock()
@@ -770,6 +775,7 @@ def test_update_activity_moves_to_different_day(
     activity.notes = None
     activity.confirmation_number = None
     activity.sort_order = 0
+    activity.check_out_date = None
 
     # Mock source day
     source_day = MagicMock(spec=ItineraryDay)
@@ -857,6 +863,64 @@ def test_update_activity_move_target_day_not_found(
         headers=auth_headers,
     )
     assert response.status_code == 404
+
+
+def test_create_activity_with_check_out_date(
+    client: TestClient,
+    auth_headers: dict,
+    itinerary_day_id: str,
+    override_get_db,
+    mock_db_session,
+):
+    """Create lodging activity with check_out_date stores and returns the field"""
+    # Setup: Day exists and user has access
+    day_id = UUID(itinerary_day_id)
+    owner_user = _make_user()
+    owner_member = _make_member(user=owner_user)
+    trip = _make_trip(members=[owner_member])
+
+    day = MagicMock(spec=ItineraryDay)
+    day.id = day_id
+    day.trip_id = TRIP_ID
+
+    # First call: verify_day_access - get day with trip and member
+    result_mock1 = MagicMock()
+    result_mock1.scalar_one_or_none.return_value = day
+
+    result_mock2 = MagicMock()
+    result_mock2.scalar_one_or_none.return_value = trip
+
+    # Third call: get max sort_order
+    result_mock3 = MagicMock()
+    result_mock3.scalar.return_value = 0  # Max sort_order is 0
+
+    mock_db_session.execute = AsyncMock(
+        side_effect=[result_mock1, result_mock2, result_mock3]
+    )
+    mock_db_session.add = MagicMock()
+    mock_db_session.commit = AsyncMock()
+
+    # Mock refresh to set the ID and check_out_date on the activity object
+    async def mock_refresh(obj):
+        obj.id = UUID("888e4567-e89b-12d3-a456-426614174007")
+        obj.check_out_date = date(2026, 12, 18)
+
+    mock_db_session.refresh = AsyncMock(side_effect=mock_refresh)
+
+    response = client.post(
+        f"/itinerary/days/{itinerary_day_id}/activities",
+        headers=auth_headers,
+        json={
+            "title": "Hotel Paris",
+            "category": "lodging",
+            "check_out_date": "2026-12-18",
+        },
+    )
+    assert response.status_code == 201
+    data = response.json()
+    assert data["title"] == "Hotel Paris"
+    assert data["category"] == "lodging"
+    assert data["check_out_date"] == "2026-12-18"
 
 
 def test_update_activity_move_target_day_different_trip(

@@ -118,6 +118,14 @@ export function ActivityItem({ activity, tripId }: ActivityItemProps) {
           {timeRange && (
             <p className="text-sm text-cloud-600 mt-1">{timeRange}</p>
           )}
+          {activity.category === 'lodging' && activity.check_out_date && (
+            <p className="text-sm text-cloud-600 mt-1">
+              Check-out: {new Date(activity.check_out_date + 'T00:00:00').toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              })}
+            </p>
+          )}
           {activity.location && (
             <p className="text-sm text-cloud-600 mt-1">{activity.location}</p>
           )}

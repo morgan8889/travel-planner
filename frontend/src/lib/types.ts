@@ -99,6 +99,7 @@ export interface Activity {
   notes: string | null
   confirmation_number: string | null
   sort_order: number
+  check_out_date?: string | null
 }
 
 export interface CreateItineraryDay {
@@ -116,6 +117,7 @@ export interface CreateActivity {
   longitude?: number | null
   notes?: string | null
   confirmation_number?: string | null
+  check_out_date?: string | null
 }
 
 export interface UpdateActivity {
@@ -130,6 +132,7 @@ export interface UpdateActivity {
   confirmation_number?: string | null
   sort_order?: number
   itinerary_day_id?: string
+  check_out_date?: string | null
 }
 
 export interface ChecklistItem {
