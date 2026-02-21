@@ -99,7 +99,7 @@ export interface Activity {
   notes: string | null
   confirmation_number: string | null
   sort_order: number
-  check_out_date?: string | null
+  check_out_date: string | null
 }
 
 export interface CreateItineraryDay {

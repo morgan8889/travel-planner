@@ -41,6 +41,13 @@ export function ActivityForm({ activity, onSave, onCancel, isPending, error }: A
   const [checkOutDate, setCheckOutDate] = useState(activity?.check_out_date ?? '')
   const [locationDirty, setLocationDirty] = useState(false)
 
+  function handleCategoryChange(value: ActivityCategory): void {
+    setCategory(value)
+    if (value !== 'lodging') {
+      setCheckOutDate('')
+    }
+  }
+
   function handleLocationChange(value: string): void {
     setLocation(value)
     setLatitude(null)
@@ -98,7 +105,7 @@ export function ActivityForm({ activity, onSave, onCancel, isPending, error }: A
         <span className="block text-sm font-medium text-cloud-700 mb-1">Category *</span>
         <CategorySelector
           value={category}
-          onChange={setCategory}
+          onChange={handleCategoryChange}
           disabled={isPending}
         />
       </div>
