@@ -100,6 +100,12 @@ class TripSummary(BaseModel):
     member_previews: list[MemberPreview] = []
     itinerary_day_count: int = 0
     days_with_activities: int = 0
+    transport_total: int = 0
+    transport_confirmed: int = 0
+    lodging_total: int = 0
+    lodging_confirmed: int = 0
+    activity_total: int = 0
+    activity_confirmed: int = 0
     model_config = {"from_attributes": True}
 
 

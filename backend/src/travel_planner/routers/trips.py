@@ -177,7 +177,7 @@ async def list_trips(
 
     # Bulk itinerary stats — 1 extra query for all trips
     trip_ids = [t.id for t in trips]
-    stats_map: dict[UUID, tuple[int, int]] = {}
+    stats_map: dict = {}
     if trip_ids:
         activity_per_day = (
             select(
@@ -192,22 +192,56 @@ async def list_trips(
                 ItineraryDay.trip_id,
                 func.count(ItineraryDay.id).label("day_count"),
                 func.count(activity_per_day.c.itinerary_day_id).label("active_count"),
+                func.count(Activity.id)
+                .filter(Activity.category == "transport")
+                .label("transport_total"),
+                func.count(Activity.id)
+                .filter(
+                    Activity.category == "transport",
+                    Activity.confirmation_number.isnot(None),
+                )
+                .label("transport_confirmed"),
+                func.count(Activity.id)
+                .filter(Activity.category == "lodging")
+                .label("lodging_total"),
+                func.count(Activity.id)
+                .filter(
+                    Activity.category == "lodging",
+                    Activity.confirmation_number.isnot(None),
+                )
+                .label("lodging_confirmed"),
+                func.count(Activity.id)
+                .filter(Activity.category == "activity")
+                .label("activity_total"),
+                func.count(Activity.id)
+                .filter(
+                    Activity.category == "activity",
+                    Activity.confirmation_number.isnot(None),
+                )
+                .label("activity_confirmed"),
             )
             .outerjoin(
                 activity_per_day,
                 activity_per_day.c.itinerary_day_id == ItineraryDay.id,
             )
+            .outerjoin(Activity, Activity.itinerary_day_id == ItineraryDay.id)
             .where(ItineraryDay.trip_id.in_(trip_ids))
             .group_by(ItineraryDay.trip_id)
         )
         stats_result = await db.execute(stats_stmt)
-        stats_map = {
-            row.trip_id: (row.day_count, row.active_count) for row in stats_result
-        }
+        stats_map = {row.trip_id: row for row in stats_result}
 
     summaries = []
     for t in trips:
-        day_count, active_count = stats_map.get(t.id, (0, 0))
+        row = stats_map.get(t.id)
+        day_count = row.day_count if row else 0
+        active_count = row.active_count if row else 0
+        transport_total = row.transport_total if row else 0
+        transport_confirmed = row.transport_confirmed if row else 0
+        lodging_total = row.lodging_total if row else 0
+        lodging_confirmed = row.lodging_confirmed if row else 0
+        activity_total = row.activity_total if row else 0
+        activity_confirmed = row.activity_confirmed if row else 0
         sorted_members = sorted(t.members, key=lambda m: m.id)
         previews = [
             MemberPreview(
@@ -233,6 +267,12 @@ async def list_trips(
                 member_previews=previews,
                 itinerary_day_count=day_count,
                 days_with_activities=active_count,
+                transport_total=transport_total,
+                transport_confirmed=transport_confirmed,
+                lodging_total=lodging_total,
+                lodging_confirmed=lodging_confirmed,
+                activity_total=activity_total,
+                activity_confirmed=activity_confirmed,
             )
         )
     return summaries

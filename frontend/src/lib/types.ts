@@ -31,6 +31,12 @@ export interface TripSummary {
   member_previews?: MemberPreview[]
   itinerary_day_count?: number
   days_with_activities?: number
+  transport_total?: number
+  transport_confirmed?: number
+  lodging_total?: number
+  lodging_confirmed?: number
+  activity_total?: number
+  activity_confirmed?: number
 }
 
 export interface Trip extends Omit<TripSummary, 'member_count'> {

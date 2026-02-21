@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Calendar } from 'lucide-react'
+import { Calendar, Hotel, MapPin, Plane } from 'lucide-react'
 import type { TripSummary } from '../../lib/types'
 import { TripStatusBadge } from './TripStatusBadge'
 import { TripTypeBadge } from './TripTypeBadge'
@@ -34,7 +34,19 @@ export function TripCard({ trip }: TripCardProps) {
     member_previews = [],
     itinerary_day_count = 0,
     days_with_activities = 0,
+    transport_total = 0,
+    transport_confirmed = 0,
+    lodging_total = 0,
+    lodging_confirmed = 0,
+    activity_total = 0,
+    activity_confirmed = 0,
   } = trip
+
+  const bookingChips = [
+    { icon: Plane, total: transport_total, confirmed: transport_confirmed, label: 'flight' },
+    { icon: Hotel, total: lodging_total, confirmed: lodging_confirmed, label: 'hotel' },
+    { icon: MapPin, total: activity_total, confirmed: activity_confirmed, label: 'activity' },
+  ].filter((c) => c.total > 0)
 
   const progressLabel =
     days_with_activities >= itinerary_day_count
@@ -71,6 +83,24 @@ export function TripCard({ trip }: TripCardProps) {
                 style={{ width: `${progressPct}%` }}
               />
             </div>
+          </div>
+        )}
+
+        {bookingChips.length > 0 && (
+          <div className="flex items-center gap-2 mb-3">
+            {bookingChips.map(({ icon: Icon, total, confirmed, label }) => (
+              <div
+                key={label}
+                className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                  confirmed === total
+                    ? 'bg-emerald-50 text-emerald-700'
+                    : 'bg-cloud-100 text-cloud-600'
+                }`}
+              >
+                <Icon className="w-3 h-3" />
+                <span>{confirmed}/{total}</span>
+              </div>
+            ))}
           </div>
         )}
 

@@ -774,6 +774,43 @@ def test_update_member_role_not_found(
     assert response.status_code == 404
 
 
+def test_list_trips_includes_booking_stats(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """TripSummary includes per-category booking counts."""
+    owner_member = _make_member()
+    trip = _make_trip(members=[owner_member])
+
+    result_mock = MagicMock()
+    result_mock.scalars.return_value.all.return_value = [trip]
+
+    stats_row = MagicMock()
+    stats_row.trip_id = trip.id
+    stats_row.day_count = 3
+    stats_row.active_count = 2
+    stats_row.transport_total = 2
+    stats_row.transport_confirmed = 1
+    stats_row.lodging_total = 1
+    stats_row.lodging_confirmed = 1
+    stats_row.activity_total = 4
+    stats_row.activity_confirmed = 2
+
+    stats_mock = MagicMock()
+    stats_mock.__iter__ = MagicMock(return_value=iter([stats_row]))
+
+    mock_db_session.execute = AsyncMock(side_effect=[result_mock, stats_mock])
+
+    response = client.get("/trips", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()[0]
+    assert data["transport_total"] == 2
+    assert data["transport_confirmed"] == 1
+    assert data["lodging_total"] == 1
+    assert data["lodging_confirmed"] == 1
+    assert data["activity_total"] == 4
+    assert data["activity_confirmed"] == 2
+
+
 # --- Test 25: Create child trip ---
 
 
