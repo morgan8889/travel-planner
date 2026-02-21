@@ -44,22 +44,30 @@ describe('MonthView overflow indicator', () => {
       makeTrip('t4'),
     ]
     const { container } = render(<MonthView {...baseProps} trips={trips} />)
-    const pill = container.querySelector('.rounded-full')
+    // Find by text, then verify it has the pill styling
+    const pill = Array.from(container.querySelectorAll('span')).find(
+      (el) => el.textContent === '+1 more'
+    )
     expect(pill).toBeInTheDocument()
-    expect(pill?.textContent).toMatch(/\+1 more/)
+    expect(pill?.classList.contains('rounded-full')).toBe(true)
   })
 
   it('does not render overflow pill when 3 or fewer trips overlap', () => {
     const trips = [makeTrip('t1'), makeTrip('t2'), makeTrip('t3')]
     const { container } = render(<MonthView {...baseProps} trips={trips} />)
-    expect(container.querySelector('.rounded-full')).not.toBeInTheDocument()
+    const pill = Array.from(container.querySelectorAll('span')).find(
+      (el) => el.textContent?.includes('more')
+    )
+    expect(pill).toBeUndefined()
     expect(screen.queryByText(/more/)).not.toBeInTheDocument()
   })
 
   it('overflow pill has bg-cloud-100 class', () => {
     const trips = [makeTrip('t1'), makeTrip('t2'), makeTrip('t3'), makeTrip('t4')]
     const { container } = render(<MonthView {...baseProps} trips={trips} />)
-    const pill = container.querySelector('.bg-cloud-100')
-    expect(pill).toBeInTheDocument()
+    const pill = Array.from(container.querySelectorAll('span')).find(
+      (el) => el.textContent === '+1 more'
+    )
+    expect(pill?.classList.contains('bg-cloud-100')).toBe(true)
   })
 })
