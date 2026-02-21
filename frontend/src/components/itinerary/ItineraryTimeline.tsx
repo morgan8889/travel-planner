@@ -275,6 +275,8 @@ export function ItineraryTimeline({ days, allActivities, tripId }: ItineraryTime
                     strategy={verticalListSortingStrategy}
                   >
                     {dayActs.map((act, idx) => {
+                      // Only needed for the first activity — inserting before any activity
+                      // at idx > 0 is handled by showLineBetween on the preceding activity.
                       const showLineBefore =
                         insertionPoint?.dayId === day.id &&
                         insertionPoint.beforeActivityId === act.id &&
