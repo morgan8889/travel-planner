@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, type ReactNode } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import {
   DndContext,
@@ -47,7 +47,7 @@ function EmptyDayDropZone({ dayId }: { dayId: string }) {
   )
 }
 
-function DroppableDay({ dayId, children }: { dayId: string; children: React.ReactNode }) {
+function DroppableDay({ dayId, children }: { dayId: string; children: ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id: `day-${dayId}`, data: { dayId } })
   return (
     <div
@@ -121,6 +121,7 @@ export function ItineraryTimeline({ days, allActivities, tripId }: ItineraryTime
     }
 
     if (sourceDayId === targetDayId) {
+      // Dropping on the day container itself (not a specific activity) is a no-op — no reorder needed
       if (!overId.startsWith('day-') && !overId.startsWith('empty-')) {
         const dayActs = activitiesByDay.get(sourceDayId) ?? []
         const oldIndex = dayActs.findIndex((a) => a.id === active.id)
