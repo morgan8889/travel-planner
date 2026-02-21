@@ -190,8 +190,10 @@ async def list_trips(
         stats_stmt = (
             select(
                 ItineraryDay.trip_id,
-                func.count(ItineraryDay.id).label("day_count"),
-                func.count(activity_per_day.c.itinerary_day_id).label("active_count"),
+                func.count(func.distinct(ItineraryDay.id)).label("day_count"),
+                func.count(func.distinct(activity_per_day.c.itinerary_day_id)).label(
+                    "active_count"
+                ),
                 func.count(Activity.id)
                 .filter(Activity.category == "transport")
                 .label("transport_total"),
