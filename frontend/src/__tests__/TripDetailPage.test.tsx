@@ -281,4 +281,38 @@ describe('TripDetailPage', () => {
     const timeline = await screen.findByTestId('itinerary-timeline')
     expect(timeline).toBeInTheDocument()
   })
+
+  it('shows drop indicator below activities in a day that has activities', async () => {
+    const mockDay = {
+      id: 'day-1',
+      trip_id: 'trip-1',
+      date: '2026-06-15',
+      notes: null,
+      activity_count: 1,
+    }
+    const mockActivity = {
+      id: 'act-1',
+      itinerary_day_id: 'day-1',
+      title: 'Museum Visit',
+      category: 'activity',
+      start_time: null,
+      end_time: null,
+      location: null,
+      latitude: null,
+      longitude: null,
+      notes: null,
+      confirmation_number: null,
+      sort_order: 0,
+      check_out_date: null,
+    }
+    mockGetTrip.mockResolvedValue({ data: mockTrip })
+    mockItineraryListDays.mockResolvedValue({ data: [mockDay] })
+    mockItineraryListActivities.mockResolvedValue({ data: [mockActivity] })
+    renderWithRouter()
+
+    // Timeline renders
+    await screen.findByTestId('itinerary-timeline')
+    // No drop indicator visible when not dragging
+    expect(document.querySelector('[data-testid="drop-hint"]')).not.toBeInTheDocument()
+  })
 })
