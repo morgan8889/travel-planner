@@ -96,7 +96,7 @@ vi.mock('../lib/api', () => ({
   },
   itineraryApi: {
     listDays: (tripId: string) => mockItineraryListDays(tripId),
-    listActivities: (dayId: string) => Promise.resolve({ data: [] }),
+    listActivities: () => Promise.resolve({ data: [] }),
     listTripActivities: (tripId: string) => mockItineraryListActivities(tripId),
     createDay: vi.fn(),
     createActivity: vi.fn(),
