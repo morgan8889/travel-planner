@@ -213,7 +213,7 @@ async def list_trips(
                 initials=_member_initials(m.user.display_name, m.user.email),
                 color=_member_color(m.user_id),
             )
-            for m in sorted_members[:3]
+            for m in sorted_members
         ]
         summaries.append(
             TripSummary(

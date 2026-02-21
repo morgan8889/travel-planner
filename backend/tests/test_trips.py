@@ -228,6 +228,40 @@ def test_list_trips_includes_member_previews(
     assert data[0]["member_previews"][0]["initials"] == "AS"
 
 
+def test_list_trips_returns_all_member_previews(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """All member previews are returned, not just the first 3."""
+    import uuid
+
+    members = [
+        _make_member(
+            member_id=uuid.uuid4(),
+            user_id=uuid.uuid4(),
+            role=MemberRole.owner if i == 0 else MemberRole.member,
+        )
+        for i in range(5)
+    ]
+    for i, m in enumerate(members):
+        m.user = _make_user(
+            user_id=m.user_id,
+            display_name=f"User {i}",
+            email=f"user{i}@test.com",
+        )
+    trip = _make_trip(members=members)
+
+    result_mock = MagicMock()
+    result_mock.scalars.return_value.all.return_value = [trip]
+    stats_mock = MagicMock()
+    stats_mock.__iter__ = MagicMock(return_value=iter([]))
+    mock_db_session.execute = AsyncMock(side_effect=[result_mock, stats_mock])
+
+    response = client.get("/trips", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data[0]["member_previews"]) == 5
+
+
 def test_list_trips_includes_itinerary_stats(
     client: TestClient, auth_headers: dict, override_get_db, mock_db_session
 ):

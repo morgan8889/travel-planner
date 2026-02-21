@@ -93,13 +93,6 @@ export function TripCard({ trip }: TripCardProps) {
                     <span className="text-[10px] font-medium text-white">{m.initials}</span>
                   </div>
                 ))}
-                {member_count > 3 && (
-                  <div className="w-7 h-7 rounded-full bg-cloud-200 border-2 border-white flex items-center justify-center">
-                    <span className="text-[10px] font-medium text-cloud-600">
-                      +{member_count - 3}
-                    </span>
-                  </div>
-                )}
               </>
             )}
           </div>

@@ -92,7 +92,7 @@ describe('TripCard', () => {
     expect(memberSection).toHaveTextContent('CK')
   })
 
-  it('shows overflow count when more than 3 members', async () => {
+  it('renders all member avatars when more than 3 members', async () => {
     const tripWith5Members = {
       ...mockTrip,
       member_count: 5,
@@ -100,10 +100,17 @@ describe('TripCard', () => {
         { initials: 'AS', color: '#6366f1' },
         { initials: 'BJ', color: '#22c55e' },
         { initials: 'CK', color: '#f59e0b' },
+        { initials: 'DL', color: '#a855f7' },
+        { initials: 'EM', color: '#ec4899' },
       ],
     }
     renderWithProviders(<TripCard trip={tripWith5Members} />)
-    expect(await screen.findByText('+2')).toBeInTheDocument()
+    const memberSection = await screen.findByTestId('member-count')
+    expect(memberSection).toHaveTextContent('AS')
+    expect(memberSection).toHaveTextContent('BJ')
+    expect(memberSection).toHaveTextContent('CK')
+    expect(memberSection).toHaveTextContent('DL')
+    expect(memberSection).toHaveTextContent('EM')
   })
 
   it('shows dash avatar when no members', async () => {
