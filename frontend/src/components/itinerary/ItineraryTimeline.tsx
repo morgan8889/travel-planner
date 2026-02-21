@@ -47,6 +47,18 @@ function EmptyDayDropZone({ dayId }: { dayId: string }) {
   )
 }
 
+function DroppableDay({ dayId, children }: { dayId: string; children: React.ReactNode }) {
+  const { setNodeRef, isOver } = useDroppable({ id: `day-${dayId}`, data: { dayId } })
+  return (
+    <div
+      ref={setNodeRef}
+      className={`min-h-[2.5rem] rounded transition-colors ${isOver ? 'bg-indigo-50/50' : ''}`}
+    >
+      {children}
+    </div>
+  )
+}
+
 export function ItineraryTimeline({ days, allActivities, tripId }: ItineraryTimelineProps) {
   const [activeId, setActiveId] = useState<string | null>(null)
   const [expandedDayId, setExpandedDayId] = useState<string | null>(null)
@@ -58,7 +70,7 @@ export function ItineraryTimeline({ days, allActivities, tripId }: ItineraryTime
   const deleteDay = useDeleteDay(tripId)
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
@@ -94,12 +106,14 @@ export function ItineraryTimeline({ days, allActivities, tripId }: ItineraryTime
     if (!draggedActivity) return
 
     const sourceDayId = draggedActivity.itinerary_day_id
-
-    // Determine target day
-    let targetDayId: string
     const overId = String(over.id)
+
+    let targetDayId: string
+
     if (overId.startsWith('empty-')) {
       targetDayId = overId.replace('empty-', '')
+    } else if (overId.startsWith('day-')) {
+      targetDayId = overId.replace('day-', '')
     } else {
       const overActivity = allActivities.find((a) => a.id === overId)
       if (!overActivity) return
@@ -107,17 +121,17 @@ export function ItineraryTimeline({ days, allActivities, tripId }: ItineraryTime
     }
 
     if (sourceDayId === targetDayId) {
-      // Same day: reorder
-      const dayActs = activitiesByDay.get(sourceDayId) ?? []
-      const oldIndex = dayActs.findIndex((a) => a.id === active.id)
-      const newIndex = dayActs.findIndex((a) => a.id === over.id)
-      if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return
-      const reordered = [...dayActs]
-      const [moved] = reordered.splice(oldIndex, 1)
-      reordered.splice(newIndex, 0, moved)
-      reorderActivities.mutate({ dayId: sourceDayId, activityIds: reordered.map((a) => a.id) })
+      if (!overId.startsWith('day-') && !overId.startsWith('empty-')) {
+        const dayActs = activitiesByDay.get(sourceDayId) ?? []
+        const oldIndex = dayActs.findIndex((a) => a.id === active.id)
+        const newIndex = dayActs.findIndex((a) => a.id === over.id)
+        if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return
+        const reordered = [...dayActs]
+        const [moved] = reordered.splice(oldIndex, 1)
+        reordered.splice(newIndex, 0, moved)
+        reorderActivities.mutate({ dayId: sourceDayId, activityIds: reordered.map((a) => a.id) })
+      }
     } else {
-      // Cross-day move
       moveActivity.mutate({ activityId: String(active.id), targetDayId })
     }
   }
@@ -167,19 +181,19 @@ export function ItineraryTimeline({ days, allActivities, tripId }: ItineraryTime
 
               {/* Activities list */}
               <div className="ml-6 space-y-2">
-                <SortableContext
-                  items={dayActs.map((a) => a.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  {dayActs.map((activity) => (
-                    <ActivityItem key={activity.id} activity={activity} tripId={tripId} />
-                  ))}
-                </SortableContext>
-
-                {dayActs.length === 0 && !isAdding && (
-                  <EmptyDayDropZone dayId={day.id} />
-                )}
-
+                <DroppableDay dayId={day.id}>
+                  <SortableContext
+                    items={dayActs.map((a) => a.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {dayActs.map((activity) => (
+                      <ActivityItem key={activity.id} activity={activity} tripId={tripId} />
+                    ))}
+                  </SortableContext>
+                  {dayActs.length === 0 && !isAdding && (
+                    <EmptyDayDropZone dayId={day.id} />
+                  )}
+                </DroppableDay>
                 {isAdding && (
                   <ActivityForm
                     dayId={day.id}
