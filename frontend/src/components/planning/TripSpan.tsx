@@ -53,10 +53,7 @@ export function TripSpan({
   const [pulsing, setPulsing] = useState(false)
 
   useEffect(() => {
-    if (!isHighlighted) {
-      setPulsing(false)
-      return
-    }
+    if (!isHighlighted) return
     const startTimer = setTimeout(() => setPulsing(true), 0)
     const endTimer = setTimeout(() => setPulsing(false), 1000)
     return () => {
