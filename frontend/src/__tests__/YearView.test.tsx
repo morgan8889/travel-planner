@@ -201,7 +201,6 @@ describe('YearView event badges', () => {
   })
 
   it('does not render any dot for months with no events', () => {
-    render(<YearView {...baseProps} customDays={[]} />)
     // No amber-400 heading spans when there are no events
     const { container } = render(<YearView {...baseProps} customDays={[]} />)
     const dots = container.querySelectorAll('span.bg-amber-400.w-2.h-2.rounded-full')

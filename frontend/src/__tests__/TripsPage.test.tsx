@@ -207,7 +207,7 @@ describe('TripsPage', () => {
   })
 
   it('hides completed and active trips by default', async () => {
-    const tripsWithCompleted = [
+    const tripsWithCompletedAndActive = [
       ...mockTrips,
       {
         ...mockTrips[0],
@@ -215,12 +215,19 @@ describe('TripsPage', () => {
         destination: 'Tokyo, Japan',
         status: 'completed' as const,
       },
+      {
+        ...mockTrips[0],
+        id: 'trip-4',
+        destination: 'Berlin, Germany',
+        status: 'active' as const,
+      },
     ]
-    mockGet.mockResolvedValue({ data: tripsWithCompleted })
+    mockGet.mockResolvedValue({ data: tripsWithCompletedAndActive })
     renderWithProviders(<TripsPage />)
 
     await screen.findByText('Paris, France')
     expect(screen.queryByText('Tokyo, Japan')).not.toBeInTheDocument()
+    expect(screen.queryByText('Berlin, Germany')).not.toBeInTheDocument()
   })
 
   it('renders error state with retry button on fetch failure', async () => {
