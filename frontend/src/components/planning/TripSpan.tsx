@@ -102,12 +102,15 @@ export function TripSpan({
 
   useEffect(() => {
     if (!isHighlighted) {
-      setPulsing(false)
-      return
+      const t = setTimeout(() => setPulsing(false), 0)
+      return () => clearTimeout(t)
     }
-    setPulsing(true)
+    const startTimer = setTimeout(() => setPulsing(true), 0)
     const endTimer = setTimeout(() => setPulsing(false), 1000)
-    return () => clearTimeout(endTimer)
+    return () => {
+      clearTimeout(startTimer)
+      clearTimeout(endTimer)
+    }
   }, [isHighlighted])
 
   const colorClasses =
