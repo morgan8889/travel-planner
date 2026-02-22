@@ -75,7 +75,7 @@ function TripPopover({ destination, tripType, notes, startDate, endDate }: TripP
       {dateLabel && <div className="opacity-70 mt-0.5">{dateLabel}</div>}
       {tripType && (
         <div className="opacity-60 capitalize mt-0.5">
-          {tripType.replace('_', ' ')}
+          {tripType.replaceAll('_', ' ')}
         </div>
       )}
     </div>
@@ -101,13 +101,13 @@ export function TripSpan({
   const [pulsing, setPulsing] = useState(false)
 
   useEffect(() => {
-    if (!isHighlighted) return
-    const startTimer = setTimeout(() => setPulsing(true), 0)
-    const endTimer = setTimeout(() => setPulsing(false), 1000)
-    return () => {
-      clearTimeout(startTimer)
-      clearTimeout(endTimer)
+    if (!isHighlighted) {
+      setPulsing(false)
+      return
     }
+    setPulsing(true)
+    const endTimer = setTimeout(() => setPulsing(false), 1000)
+    return () => clearTimeout(endTimer)
   }, [isHighlighted])
 
   const colorClasses =
@@ -138,6 +138,8 @@ export function TripSpan({
         }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
+        onFocus={() => setHovered(true)}
+        onBlur={() => setHovered(false)}
       >
         {size === 'medium' && (
           <span className="absolute inset-0 flex items-center px-1 text-[9px] leading-none truncate pointer-events-none">
@@ -163,8 +165,6 @@ export function TripSpan({
       type="button"
       className={`absolute left-0 h-5 rounded-sm text-[11px] font-medium px-1.5 truncate cursor-pointer transition-colors ${colorClasses}${highlightClasses}`}
       style={{
-        gridColumnStart: startCol + 1,
-        gridColumnEnd: startCol + colSpan + 1,
         top: `${2.5 + stackIndex * 1.5}rem`,
         width: `${(colSpan / 7) * 100}%`,
         marginLeft: `${(startCol / 7) * 100}%`,
@@ -172,6 +172,8 @@ export function TripSpan({
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onFocus={() => setHovered(true)}
+      onBlur={() => setHovered(false)}
     >
       {destination}
       {hovered && (

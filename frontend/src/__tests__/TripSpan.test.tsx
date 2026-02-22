@@ -91,8 +91,7 @@ describe('TripSpan popover card', () => {
       />,
     )
     fireEvent.mouseEnter(screen.getByRole('button'))
-    // destination appears in both inline text and popover
-    expect(screen.getAllByText('Austin, TX').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Austin, TX').length).toBeGreaterThanOrEqual(2)
   })
 
   it('shows single date in popover for same-day events', () => {
