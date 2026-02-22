@@ -14,6 +14,7 @@ from travel_planner.models.trip import (
     TripType,
 )
 from travel_planner.models.user import UserProfile
+from travel_planner.routers.itinerary import _sync_itinerary_days
 
 TEST_USER_ID = UUID("123e4567-e89b-12d3-a456-426614174000")
 TEST_USER_EMAIL = "test@example.com"
@@ -875,3 +876,129 @@ def test_get_trip_includes_children(
     data = response.json()
     assert len(data["children"]) == 1
     assert data["children"][0]["id"] == str(CHILD_TRIP_ID)
+
+
+# ---------------------------------------------------------------------------
+# Direct unit tests for _sync_itinerary_days
+# ---------------------------------------------------------------------------
+
+
+def _make_row(row_id: UUID, row_date: date, cnt: int = 0) -> MagicMock:
+    """Create a mock result row from the itinerary-days query."""
+    row = MagicMock()
+    row.id = row_id
+    row.date = row_date
+    row.cnt = cnt
+    return row
+
+
+@pytest.mark.asyncio
+async def test_sync_creates_days_for_full_range():
+    """_sync_itinerary_days creates one ItineraryDay per date in range."""
+    db = AsyncMock()
+    result = MagicMock()
+    result.all.return_value = []  # no existing days
+    db.execute = AsyncMock(return_value=result)
+
+    await _sync_itinerary_days(TRIP_ID, date(2026, 6, 1), date(2026, 6, 3), db)
+
+    # Expect 3 db.add calls and one commit
+    assert db.add.call_count == 3
+    db.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_sync_skips_existing_dates():
+    """_sync_itinerary_days skips dates that already have an ItineraryDay."""
+    db = AsyncMock()
+    day_id = UUID("aaa00000-0000-0000-0000-000000000001")
+    existing_row = _make_row(day_id, date(2026, 6, 1), cnt=0)
+    result = MagicMock()
+    result.all.return_value = [existing_row]
+    db.execute = AsyncMock(return_value=result)
+
+    await _sync_itinerary_days(TRIP_ID, date(2026, 6, 1), date(2026, 6, 3), db)
+
+    # Only 2 new days (June 2 and June 3)
+    assert db.add.call_count == 2
+    db.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_sync_no_op_when_dates_missing():
+    """_sync_itinerary_days returns immediately when dates are absent."""
+    db = AsyncMock()
+
+    await _sync_itinerary_days(TRIP_ID, None, None, db)
+
+    db.execute.assert_not_called()
+    db.commit.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_sync_no_op_when_range_exceeds_365_days():
+    """_sync_itinerary_days returns immediately for ranges > 365 days."""
+    db = AsyncMock()
+
+    await _sync_itinerary_days(TRIP_ID, date(2025, 1, 1), date(2026, 6, 1), db)
+
+    db.execute.assert_not_called()
+    db.commit.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_sync_deletes_empty_orphan_days():
+    """_sync_itinerary_days bulk-deletes empty days outside the new range."""
+    db = AsyncMock()
+    orphan_id = UUID("bbb00000-0000-0000-0000-000000000002")
+    # One existing day outside the new range with 0 activities
+    orphan_row = _make_row(orphan_id, date(2026, 5, 31), cnt=0)
+    # One existing day inside the new range
+    in_range_id = UUID("ccc00000-0000-0000-0000-000000000003")
+    in_range_row = _make_row(in_range_id, date(2026, 6, 1), cnt=1)
+    result = MagicMock()
+    result.all.return_value = [orphan_row, in_range_row]
+    db.execute = AsyncMock(return_value=result)
+
+    await _sync_itinerary_days(TRIP_ID, date(2026, 6, 1), date(2026, 6, 2), db)
+
+    # Two execute calls: initial query + sa_delete for orphan
+    assert db.execute.call_count == 2
+    # One add call for June 2 (June 1 already exists)
+    assert db.add.call_count == 1
+    db.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_sync_preserves_orphan_days_with_activities():
+    """_sync_itinerary_days does NOT delete orphan days that have activities."""
+    db = AsyncMock()
+    orphan_id = UUID("ddd00000-0000-0000-0000-000000000004")
+    # Orphan day with 2 activities — must not be deleted
+    orphan_row = _make_row(orphan_id, date(2026, 5, 31), cnt=2)
+    result = MagicMock()
+    result.all.return_value = [orphan_row]
+    db.execute = AsyncMock(return_value=result)
+
+    await _sync_itinerary_days(TRIP_ID, date(2026, 6, 1), date(2026, 6, 1), db)
+
+    # Only one execute call (the initial fetch); no sa_delete
+    assert db.execute.call_count == 1
+    db.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_sync_no_commit_when_nothing_changes():
+    """_sync_itinerary_days skips db.commit when days are already in sync."""
+    db = AsyncMock()
+    day_id = UUID("eee00000-0000-0000-0000-000000000005")
+    existing_row = _make_row(day_id, date(2026, 6, 1), cnt=0)
+    result = MagicMock()
+    result.all.return_value = [existing_row]
+    db.execute = AsyncMock(return_value=result)
+
+    # Range is exactly one day that already exists — nothing to add or delete
+    await _sync_itinerary_days(TRIP_ID, date(2026, 6, 1), date(2026, 6, 1), db)
+
+    db.add.assert_not_called()
+    db.commit.assert_not_called()

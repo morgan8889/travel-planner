@@ -1,7 +1,8 @@
-from datetime import timedelta
+from datetime import date, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from sqlalchemy import delete as sa_delete
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,6 +20,56 @@ from travel_planner.schemas.itinerary import (
 )
 
 router = APIRouter(prefix="/itinerary", tags=["itinerary"])
+
+
+async def _sync_itinerary_days(
+    trip_id: UUID,
+    start_date: date | None,
+    end_date: date | None,
+    db: AsyncSession,
+) -> None:
+    """Sync itinerary days with the trip's date range.
+
+    Creates one ItineraryDay per date in [start_date, end_date] that doesn't
+    already exist, and deletes any existing days outside the range that have
+    zero activities.  No-op when dates are absent or span exceeds 365 days.
+    """
+    if not start_date or not end_date:
+        return
+    if (end_date - start_date).days > 365:
+        return
+
+    # Fetch existing days with activity counts in a single query
+    result = await db.execute(
+        select(ItineraryDay.id, ItineraryDay.date, func.count(Activity.id).label("cnt"))
+        .outerjoin(Activity, Activity.itinerary_day_id == ItineraryDay.id)
+        .where(ItineraryDay.trip_id == trip_id)
+        .group_by(ItineraryDay.id, ItineraryDay.date)
+    )
+    rows = result.all()
+    existing_dates = {row.date for row in rows}
+
+    # Add missing days within the range
+    changed = False
+    current = start_date
+    while current <= end_date:
+        if current not in existing_dates:
+            db.add(ItineraryDay(trip_id=trip_id, date=current))
+            changed = True
+        current += timedelta(days=1)
+
+    # Bulk-delete empty orphan days outside the range
+    orphan_ids = [
+        row.id
+        for row in rows
+        if (row.date < start_date or row.date > end_date) and row.cnt == 0
+    ]
+    if orphan_ids:
+        await db.execute(sa_delete(ItineraryDay).where(ItineraryDay.id.in_(orphan_ids)))
+        changed = True
+
+    if changed:
+        await db.commit()
 
 
 async def verify_day_access(
