@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from travel_planner.auth import CurrentUser, CurrentUserId
 from travel_planner.config import settings
 from travel_planner.db import get_db
+from travel_planner.models.calendar import CustomDay, HolidayCalendar
 from travel_planner.models.gmail import GmailConnection, ImportRecord
 from travel_planner.models.trip import MemberRole, Trip, TripMember
 from travel_planner.models.user import UserProfile
@@ -85,9 +86,12 @@ async def delete_account(
     )
     await db.execute(sa_delete(ImportRecord).where(ImportRecord.user_id == user_id))
 
-    await db.commit()
+    # 5. Delete calendar records
+    await db.execute(sa_delete(HolidayCalendar).where(HolidayCalendar.user_id == user_id))
+    await db.execute(sa_delete(CustomDay).where(CustomDay.user_id == user_id))
 
-    # 5. Delete Supabase auth user (also cascades to user_profiles)
+    # 6. Delete Supabase auth user first — if this fails, we abort before committing DB
+    #    changes, so data is preserved and the user can retry.
     if settings.supabase_service_role_key:
         async with httpx.AsyncClient() as client:
             resp = await client.delete(
@@ -102,5 +106,8 @@ async def delete_account(
                     status_code=500,
                     detail="Failed to delete auth user from Supabase",
                 )
+
+    # Commit only after Supabase deletion succeeded (or was skipped)
+    await db.commit()
 
     return Response(status_code=204)

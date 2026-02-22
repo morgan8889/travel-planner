@@ -24,7 +24,7 @@ import { ItineraryTimeline } from '../components/itinerary/ItineraryTimeline'
 import { AddDayModal } from '../components/itinerary/AddDayModal'
 import { ChecklistCard } from '../components/checklist/ChecklistCard'
 import { AddChecklistModal } from '../components/checklist/AddChecklistModal'
-import { GmailImportSection } from '../components/trip/GmailImportSection'
+import { GmailImportSection } from '../components/trips/GmailImportSection'
 import type { TripCreate, TripStatus, TripUpdate } from '../lib/types'
 
 function formatDateRange(startDate: string, endDate: string): string {

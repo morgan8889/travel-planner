@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createElement, type ReactNode } from 'react'
-import { GmailImportSection } from '../components/trip/GmailImportSection'
+import { GmailImportSection } from '../components/trips/GmailImportSection'
 
 const mockUseGmailStatus = vi.fn()
 const mockUseScanGmail = vi.fn()

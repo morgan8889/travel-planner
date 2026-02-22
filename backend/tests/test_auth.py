@@ -197,6 +197,8 @@ def test_delete_account_no_service_key(
         MagicMock(),  # delete TripMembers
         MagicMock(),  # delete GmailConnections
         MagicMock(),  # delete ImportRecords
+        MagicMock(),  # delete HolidayCalendars
+        MagicMock(),  # delete CustomDays
     ]
 
     response = client.delete("/auth/me", headers=auth_headers)
@@ -215,6 +217,8 @@ def test_delete_account_calls_supabase_admin_when_key_set(
         MagicMock(),
         MagicMock(),
         MagicMock(),
+        MagicMock(),  # delete HolidayCalendars
+        MagicMock(),  # delete CustomDays
     ]
 
     with patch("travel_planner.routers.auth.settings") as mock_settings:

@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from travel_planner.auth import CurrentUserId
 from travel_planner.db import get_db
 from travel_planner.deps import verify_trip_member
-from travel_planner.models.itinerary import Activity, ItineraryDay
+from travel_planner.models.itinerary import Activity, ImportStatus, ItineraryDay
 from travel_planner.schemas.itinerary import (
     ActivityCreate,
     ActivityReorderUpdate,
@@ -123,7 +123,7 @@ async def list_trip_activities(
     user_id: CurrentUserId,
     db: AsyncSession = Depends(get_db),
     has_location: bool = Query(default=False),
-    import_status: str | None = Query(default=None),
+    import_status: ImportStatus | None = Query(default=None),
 ):
     """List all activities for a trip, optionally filtered to those with coordinates."""
     await verify_trip_member(trip_id, db, user_id)
@@ -138,9 +138,7 @@ async def list_trip_activities(
             Activity.latitude.is_not(None), Activity.longitude.is_not(None)
         )
     if import_status is not None:
-        from travel_planner.models.itinerary import ImportStatus
-
-        stmt = stmt.where(Activity.import_status == ImportStatus(import_status))
+        stmt = stmt.where(Activity.import_status == import_status)
     result = await db.execute(stmt)
     return [ActivityResponse.model_validate(a) for a in result.scalars().all()]
 

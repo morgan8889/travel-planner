@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { gmailApi, itineraryApi } from '../lib/api'
+import { itineraryKeys } from './useItinerary'
 
 export const gmailKeys = {
   status: ['gmail', 'status'] as const,
@@ -14,7 +15,7 @@ export function useGmailStatus() {
 
 export function usePendingImports(tripId: string) {
   return useQuery({
-    queryKey: ['itinerary', tripId, 'pending-imports'],
+    queryKey: itineraryKeys.pendingImports(tripId),
     queryFn: () => itineraryApi.listTripPendingImports(tripId),
   })
 }
@@ -24,7 +25,7 @@ export function useScanGmail(tripId: string) {
   return useMutation({
     mutationFn: () => gmailApi.scan(tripId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['itinerary', tripId, 'pending-imports'] })
+      queryClient.invalidateQueries({ queryKey: itineraryKeys.pendingImports(tripId) })
       queryClient.invalidateQueries({ queryKey: gmailKeys.status })
     },
   })
@@ -46,8 +47,8 @@ export function useConfirmImport(tripId: string) {
     mutationFn: (activityId: string) =>
       itineraryApi.updateActivity(activityId, { import_status: 'confirmed' }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['itinerary', tripId, 'pending-imports'] })
-      queryClient.invalidateQueries({ queryKey: ['itinerary', tripId] })
+      queryClient.invalidateQueries({ queryKey: itineraryKeys.pendingImports(tripId) })
+      queryClient.invalidateQueries({ queryKey: itineraryKeys.all })
     },
   })
 }
@@ -58,8 +59,8 @@ export function useRejectImport(tripId: string) {
     // Hard delete — ImportRecord stays so email won't be re-imported on next scan
     mutationFn: (activityId: string) => itineraryApi.deleteActivity(activityId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['itinerary', tripId, 'pending-imports'] })
-      queryClient.invalidateQueries({ queryKey: ['itinerary', tripId] })
+      queryClient.invalidateQueries({ queryKey: itineraryKeys.pendingImports(tripId) })
+      queryClient.invalidateQueries({ queryKey: itineraryKeys.all })
     },
   })
 }

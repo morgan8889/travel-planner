@@ -1,4 +1,7 @@
+import asyncio
 import base64
+import hashlib
+import hmac
 import json as _json
 from datetime import UTC, datetime
 from uuid import UUID
@@ -10,7 +13,6 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
-from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,6 +20,7 @@ from travel_planner.auth import CurrentUserId
 from travel_planner.config import settings
 from travel_planner.db import get_db
 from travel_planner.models.gmail import GmailConnection
+from travel_planner.schemas.gmail import GmailScanCreate
 
 router = APIRouter(prefix="/gmail", tags=["gmail"])
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
@@ -56,6 +59,28 @@ async def gmail_status(
     }
 
 
+def _sign_state(payload: str) -> str:
+    """Return base64url(payload) + '.' + HMAC-SHA256(payload) as hex digest."""
+    key = settings.google_client_secret.encode()
+    sig = hmac.new(key, payload.encode(), hashlib.sha256).hexdigest()
+    encoded = base64.urlsafe_b64encode(payload.encode()).decode().rstrip("=")
+    return f"{encoded}.{sig}"
+
+
+def _verify_and_decode_state(state: str) -> dict:
+    """Verify HMAC signature and return the decoded state dict, or raise 400."""
+    try:
+        encoded, sig = state.rsplit(".", 1)
+        payload = base64.urlsafe_b64decode(encoded + "==").decode()
+        key = settings.google_client_secret.encode()
+        expected = hmac.new(key, payload.encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(expected, sig):
+            raise HTTPException(status_code=400, detail="Invalid OAuth state")
+        return _json.loads(payload)
+    except (ValueError, KeyError) as exc:
+        raise HTTPException(status_code=400, detail="Invalid OAuth state") from exc
+
+
 @router.get("/auth-url")
 async def gmail_auth_url(
     user_id: CurrentUserId,
@@ -64,9 +89,8 @@ async def gmail_auth_url(
     if not settings.google_client_id or not settings.google_client_secret:
         raise HTTPException(status_code=503, detail="Google OAuth not configured")
     flow = _make_flow()
-    state = base64.urlsafe_b64encode(
-        _json.dumps({"user_id": str(user_id), "trip_id": trip_id}).encode()
-    ).decode()
+    payload = _json.dumps({"user_id": str(user_id), "trip_id": trip_id})
+    state = _sign_state(payload)
     auth_url, _ = flow.authorization_url(
         access_type="offline",
         prompt="consent",
@@ -81,12 +105,12 @@ async def gmail_callback(
     state: str,
     db: AsyncSession = Depends(get_db),
 ) -> RedirectResponse:
-    state_data = _json.loads(base64.urlsafe_b64decode(state + "==").decode())
+    state_data = _verify_and_decode_state(state)
     user_id = UUID(state_data["user_id"])
     trip_id = state_data.get("trip_id")
 
     flow = _make_flow()
-    flow.fetch_token(code=code)
+    await asyncio.to_thread(lambda: flow.fetch_token(code=code))
     creds = flow.credentials
 
     result = await db.execute(
@@ -101,8 +125,11 @@ async def gmail_callback(
         conn.access_token = creds.token
     if creds.refresh_token:
         conn.refresh_token = creds.refresh_token
-    if creds.expiry is not None:
-        conn.token_expiry = datetime.fromtimestamp(creds.expiry.timestamp(), tz=UTC)
+    conn.token_expiry = (
+        datetime.fromtimestamp(creds.expiry.timestamp(), tz=UTC)
+        if creds.expiry is not None
+        else datetime.now(tz=UTC)
+    )
     await db.commit()
 
     redirect = (
@@ -154,11 +181,7 @@ Email:
 {content}"""
 
 
-class ScanRequest(BaseModel):
-    trip_id: UUID
-
-
-def _build_service(conn: GmailConnection):
+async def _build_service(conn: GmailConnection):
     """Build authenticated Gmail service, auto-refreshing token if expired."""
     creds = Credentials(
         token=conn.access_token,
@@ -166,9 +189,10 @@ def _build_service(conn: GmailConnection):
         token_uri="https://oauth2.googleapis.com/token",
         client_id=settings.google_client_id,
         client_secret=settings.google_client_secret,
+        expiry=conn.token_expiry,
     )
     if creds.expired and creds.refresh_token:
-        creds.refresh(Request())
+        await asyncio.to_thread(creds.refresh, Request())
         conn.access_token = creds.token
     return build("gmail", "v1", credentials=creds)
 
@@ -227,7 +251,7 @@ async def _parse_with_claude(content: str) -> dict | None:
 
 @router.post("/scan")
 async def scan_gmail(
-    body: ScanRequest,
+    body: GmailScanCreate,
     user_id: CurrentUserId,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
@@ -269,12 +293,15 @@ async def scan_gmail(
     )
     already_imported = set(imported_result.scalars().all())
 
-    service = _build_service(conn)
+    service = await _build_service(conn)
     after = trip.start_date.strftime("%Y/%m/%d")
     before = trip.end_date.strftime("%Y/%m/%d")
     query = f"{TRAVEL_SEARCH} after:{after} before:{before}"
-    msgs_result = (
-        service.users().messages().list(userId="me", q=query, maxResults=50).execute()
+    msgs_result = await asyncio.to_thread(
+        lambda: service.users()
+        .messages()
+        .list(userId="me", q=query, maxResults=50)
+        .execute()
     )
     messages = msgs_result.get("messages", [])
 
@@ -287,8 +314,12 @@ async def scan_gmail(
             skipped_count += 1
             continue
 
-        svc_msg = service.users().messages()
-        msg = svc_msg.get(userId="me", id=email_id, format="full").execute()
+        msg = await asyncio.to_thread(
+            lambda eid=email_id: service.users()
+            .messages()
+            .get(userId="me", id=eid, format="full")
+            .execute()
+        )
         content = _extract_text(msg)
         if not content:
             skipped_count += 1
