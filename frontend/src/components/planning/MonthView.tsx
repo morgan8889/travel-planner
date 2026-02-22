@@ -174,6 +174,11 @@ export function MonthView({
                   startCol={startCol}
                   colSpan={colSpan}
                   stackIndex={tripIdx}
+                  colorBy="type"
+                  tripType={trip.type}
+                  startDate={trip.start_date}
+                  endDate={trip.end_date}
+                  notes={trip.notes}
                   onClick={() => onTripClick(trip)}
                 />
               )

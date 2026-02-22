@@ -52,9 +52,24 @@ function formatShortDate(dateStr: string): string {
   return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
+const TRIPS_DEFAULT = 5
+const EVENTS_DEFAULT = 5
+
+type PanelEventItem =
+  | { kind: 'trip'; trip: TripSummary; date: string }
+  | { kind: 'custom'; cd: CustomDay & { resolvedDate: string }; date: string }
+
+function getEventName(notes: string | null | undefined): string | null {
+  if (!notes) return null
+  const dashIdx = notes.indexOf(' — ')
+  return dashIdx !== -1 ? notes.slice(0, dashIdx) : notes.slice(0, 60)
+}
+
 type InventoryItem =
   | { type: 'trip'; trip: TripSummary }
   | { type: 'gap'; weeks: number }
+
+type ExpandedState = { year: number; trips: boolean; events: boolean; holidays: boolean }
 
 function buildInventory(trips: TripSummary[], year: number): InventoryItem[] {
   const yearStart = `${year}-01-01`
@@ -106,7 +121,26 @@ export function YearView({
     return new Set(customDays.map((cd) => (cd.recurring ? `${year}-${cd.date.slice(5)}` : cd.date)))
   }, [customDays, year])
 
-  const inventory = useMemo(() => buildInventory(trips, year), [trips, year])
+  const nonEventInventory = useMemo(
+    () => buildInventory(trips.filter((t) => t.type !== 'event'), year),
+    [trips, year],
+  )
+
+  const tripOnlyCount = useMemo(
+    () => nonEventInventory.filter((i) => i.type === 'trip').length,
+    [nonEventInventory],
+  )
+
+  const nonEventInventoryCollapsed = useMemo(() => {
+    const result: InventoryItem[] = []
+    let tripCount = 0
+    for (const item of nonEventInventory) {
+      if (tripCount >= TRIPS_DEFAULT) break
+      result.push(item)
+      if (item.type === 'trip') tripCount++
+    }
+    return result
+  }, [nonEventInventory])
 
   const customDaysForYear = useMemo(() => {
     return customDays
@@ -115,7 +149,46 @@ export function YearView({
       .sort((a, b) => a.resolvedDate.localeCompare(b.resolvedDate))
   }, [customDays, year])
 
+  const eventItems = useMemo((): PanelEventItem[] => {
+    const yearStart = `${year}-01-01`
+    const yearEnd = `${year}-12-31`
+    const eventTrips = trips
+      .filter((t) => t.type === 'event' && t.start_date <= yearEnd && t.end_date >= yearStart)
+      .map((t): PanelEventItem => ({ kind: 'trip', trip: t, date: t.start_date }))
+    const customs = customDaysForYear.map(
+      (cd): PanelEventItem => ({ kind: 'custom', cd, date: cd.resolvedDate }),
+    )
+    return [...eventTrips, ...customs].sort((a, b) => a.date.localeCompare(b.date))
+  }, [trips, customDaysForYear, year])
+
+  const holidaysForYear = useMemo(
+    () =>
+      holidays
+        .filter((h) => h.date >= `${year}-01-01` && h.date <= `${year}-12-31`)
+        .sort((a, b) => a.date.localeCompare(b.date)),
+    [holidays, year],
+  )
+
   const [highlightedTripId, setHighlightedTripId] = useState<string | null>(null)
+
+  const [expanded, setExpanded] = useState<ExpandedState>({ year, trips: false, events: false, holidays: false })
+  const tripsExpanded = expanded.year === year && expanded.trips
+  const eventsExpanded = expanded.year === year && expanded.events
+  const holidaysExpanded = expanded.year === year && expanded.holidays
+
+  const [hoveredCustomId, setHoveredCustomId] = useState<string | null>(null)
+
+  function setTripsExpanded(value: boolean) {
+    setExpanded((prev) => ({ ...prev, year, trips: value }))
+  }
+  function setEventsExpanded(value: boolean) {
+    if (!value) setHoveredCustomId(null)
+    setExpanded((prev) => ({ ...prev, year, events: value }))
+  }
+  function setHolidaysExpanded(value: boolean) {
+    setExpanded((prev) => ({ ...prev, year, holidays: value }))
+  }
+
   const monthRefs = useRef<(HTMLDivElement | null)[]>(Array(12).fill(null))
 
   function handleInventoryTripClick(trip: TripSummary) {
@@ -128,6 +201,7 @@ export function YearView({
       if (el && typeof el.scrollIntoView === 'function') {
         el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
       }
+      onTripClick(trip)
     }
   }
 
@@ -229,6 +303,7 @@ export function YearView({
                             size="medium"
                             startDate={trip.start_date}
                             endDate={trip.end_date}
+                            notes={trip.notes}
                             isHighlighted={trip.id === highlightedTripId}
                             onClick={() => onTripClick(trip)}
                           />
@@ -244,64 +319,206 @@ export function YearView({
       </div>
 
       {/* Trip inventory panel */}
-      <div className="w-60 shrink-0 border-l border-cloud-200 p-4 overflow-y-auto">
+      <div className="w-60 shrink-0 border-l border-cloud-200 p-4">
+        {/* Trips section */}
         <h3 className="text-xs font-semibold text-cloud-500 uppercase tracking-wide mb-3">
           Trips {year}
         </h3>
 
-        {inventory.length === 0 && (
+        {nonEventInventory.length === 0 && (
           <p className="text-xs text-cloud-400 italic">No trips planned</p>
         )}
 
-        {inventory.map((item, idx) => {
-          if (item.type === 'gap') {
+        {(tripsExpanded ? nonEventInventory : nonEventInventoryCollapsed).map(
+          (item, idx) => {
+            if (item.type === 'gap') {
+              return (
+                <div key={`gap-${idx}`} className="flex items-center gap-1 py-2">
+                  <div className="flex-1 border-t border-dashed border-cloud-200" />
+                  <span className="text-[10px] text-cloud-400 whitespace-nowrap shrink-0">
+                    {item.weeks} weeks free
+                  </span>
+                  <div className="flex-1 border-t border-dashed border-cloud-200" />
+                </div>
+              )
+            }
+            const { trip } = item
+            const dotColor = STATUS_DOT[trip.status] ?? 'bg-cloud-400'
             return (
-              <div key={`gap-${idx}`} className="flex items-center gap-1 py-2">
-                <div className="flex-1 border-t border-dashed border-cloud-200" />
-                <span className="text-[10px] text-cloud-400 whitespace-nowrap shrink-0">
-                  {item.weeks} weeks free
-                </span>
-                <div className="flex-1 border-t border-dashed border-cloud-200" />
-              </div>
+              <button
+                key={trip.id}
+                onClick={() => handleInventoryTripClick(trip)}
+                className="w-full flex items-start gap-2 py-2 text-left hover:bg-cloud-50 rounded-lg px-1 -mx-1 transition-colors group"
+              >
+                <div className={`w-2.5 h-2.5 rounded-full shrink-0 mt-0.5 ${dotColor}`} />
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-cloud-800 truncate group-hover:text-indigo-700 transition-colors">
+                    {trip.destination}
+                  </p>
+                  <p className="text-[10px] text-cloud-500">
+                    {formatShortDate(trip.start_date)} – {formatShortDate(trip.end_date)}
+                  </p>
+                </div>
+              </button>
             )
-          }
+          },
+        )}
 
-          const { trip } = item
-          const dotColor = STATUS_DOT[trip.status] ?? 'bg-cloud-400'
-          return (
-            <button
-              key={trip.id}
-              onClick={() => handleInventoryTripClick(trip)}
-              className="w-full flex items-start gap-2 py-2 text-left hover:bg-cloud-50 rounded-lg px-1 -mx-1 transition-colors group"
-            >
-              <div className={`w-2.5 h-2.5 rounded-full shrink-0 mt-0.5 ${dotColor}`} />
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-cloud-800 truncate group-hover:text-indigo-700 transition-colors">
-                  {trip.destination}
-                </p>
-                <p className="text-[10px] text-cloud-500">
-                  {formatShortDate(trip.start_date)} – {formatShortDate(trip.end_date)}
-                </p>
-              </div>
-            </button>
-          )
-        })}
+        {!tripsExpanded && tripOnlyCount > TRIPS_DEFAULT && (
+          <button
+            type="button"
+            onClick={() => setTripsExpanded(true)}
+            className="text-[10px] text-indigo-500 hover:text-indigo-700 py-1 text-left w-full"
+          >
+            + {tripOnlyCount - TRIPS_DEFAULT} more
+          </button>
+        )}
+        {tripsExpanded && tripOnlyCount > TRIPS_DEFAULT && (
+          <button
+            type="button"
+            onClick={() => setTripsExpanded(false)}
+            className="text-[10px] text-indigo-500 hover:text-indigo-700 py-1 text-left w-full"
+          >
+            Show less
+          </button>
+        )}
 
-        {/* Custom days / events section */}
-        {customDaysForYear.length > 0 && (
+        {/* Events section — event-type trips + custom days, merged by date */}
+        {eventItems.length > 0 && (
           <div className="mt-4 pt-4 border-t border-cloud-200">
             <h3 className="text-xs font-semibold text-cloud-500 uppercase tracking-wide mb-3">
               Events
             </h3>
-            {customDaysForYear.map((cd) => (
-              <div key={cd.id} className="flex items-start gap-2 py-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0 mt-0.5" />
-                <div className="min-w-0">
-                  <p className="text-xs font-medium text-cloud-800 truncate">{cd.name}</p>
-                  <p className="text-[10px] text-cloud-500">{formatShortDate(cd.resolvedDate)}</p>
+
+            {(eventsExpanded ? eventItems : eventItems.slice(0, EVENTS_DEFAULT)).map((item) => {
+              if (item.kind === 'trip') {
+                const label = getEventName(item.trip.notes) ?? item.trip.destination
+                return (
+                  <button
+                    key={item.trip.id}
+                    onClick={() => handleInventoryTripClick(item.trip)}
+                    className="w-full flex items-start gap-2 py-2 text-left hover:bg-cloud-50 rounded-lg px-1 -mx-1 transition-colors group"
+                  >
+                    <div className="w-2.5 h-2.5 rounded-full shrink-0 mt-0.5 bg-rose-400" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-cloud-800 truncate group-hover:text-indigo-700 transition-colors">
+                        {label}
+                      </p>
+                      <p className="text-[10px] text-cloud-500">
+                        {formatShortDate(item.trip.start_date)}
+                      </p>
+                    </div>
+                  </button>
+                )
+              }
+              // kind === 'custom'
+              return (
+                <div
+                  key={item.cd.id}
+                  className="relative flex items-start gap-2 py-1.5"
+                  tabIndex={0}
+                  onMouseEnter={() => setHoveredCustomId(item.cd.id)}
+                  onMouseLeave={() => setHoveredCustomId(null)}
+                  onFocus={() => setHoveredCustomId(item.cd.id)}
+                  onBlur={() => setHoveredCustomId(null)}
+                >
+                  <div className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-cloud-800 truncate">{item.cd.name}</p>
+                    <p className="text-[10px] text-cloud-500">{formatShortDate(item.cd.resolvedDate)}</p>
+                  </div>
+                  {hoveredCustomId === item.cd.id && (
+                    <div className="absolute bottom-full left-0 mb-1 px-2.5 py-2 bg-cloud-900 text-white text-[11px] rounded-lg shadow-lg whitespace-nowrap z-50 pointer-events-none min-w-[120px]">
+                      <div className="font-semibold leading-tight">{item.cd.name}</div>
+                      <div className="opacity-70 mt-0.5">{formatShortDate(item.cd.resolvedDate)}</div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
+
+            {!eventsExpanded && eventItems.length > EVENTS_DEFAULT && (
+              <button
+                type="button"
+                onClick={() => setEventsExpanded(true)}
+                className="text-[10px] text-indigo-500 hover:text-indigo-700 py-1 text-left w-full"
+              >
+                + {eventItems.length - EVENTS_DEFAULT} more
+              </button>
+            )}
+            {eventsExpanded && eventItems.length > EVENTS_DEFAULT && (
+              <button
+                type="button"
+                onClick={() => setEventsExpanded(false)}
+                className="text-[10px] text-indigo-500 hover:text-indigo-700 py-1 text-left w-full"
+              >
+                Show less
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Holidays section — collapsed by default */}
+        {holidaysForYear.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-cloud-200">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-semibold text-cloud-500 uppercase tracking-wide">
+                Holidays
+              </h3>
+              {!holidaysExpanded && (
+                <button
+                  type="button"
+                  onClick={() => setHolidaysExpanded(true)}
+                  className="text-[10px] text-indigo-500 hover:text-indigo-700"
+                >
+                  Show {holidaysForYear.length}
+                </button>
+              )}
+            </div>
+
+            {holidaysExpanded && (
+              <>
+                {holidaysForYear.map((h) => {
+                  const itemContent = (
+                    <>
+                      <div className="w-2.5 h-2.5 rounded-full bg-red-400 shrink-0 mt-0.5" aria-hidden="true" />
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-cloud-800 truncate group-hover:text-indigo-700 transition-colors">
+                          {h.name}
+                        </p>
+                        <p className="text-[10px] text-cloud-500">
+                          {formatShortDate(h.date)} · {h.country_code}
+                        </p>
+                      </div>
+                    </>
+                  )
+                  return onHolidayClick ? (
+                    <button
+                      key={`${h.country_code}-${h.date}`}
+                      type="button"
+                      onClick={() => onHolidayClick(h.date)}
+                      className="w-full flex items-start gap-2 py-1.5 text-left hover:bg-cloud-50 rounded-lg px-1 -mx-1 transition-colors group"
+                    >
+                      {itemContent}
+                    </button>
+                  ) : (
+                    <div
+                      key={`${h.country_code}-${h.date}`}
+                      className="flex items-start gap-2 py-1.5"
+                    >
+                      {itemContent}
+                    </div>
+                  )
+                })}
+                <button
+                  type="button"
+                  onClick={() => setHolidaysExpanded(false)}
+                  className="text-[10px] text-indigo-500 hover:text-indigo-700 py-1 text-left w-full"
+                >
+                  Show less
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>

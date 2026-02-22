@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi } from 'vitest'
 import { YearView } from '../components/planning/YearView'
@@ -133,10 +133,63 @@ describe('YearView trip inventory panel', () => {
     expect(screen.getByText('Annual Review')).toBeInTheDocument()
   })
 
+  it('event-type trip appears in Events section, not Trips section', () => {
+    const trips = [
+      makeTripSummary({
+        type: 'event',
+        destination: 'Austin, TX',
+        notes: '3M Half Marathon — local race',
+      }),
+    ]
+    render(<YearView {...baseProps} trips={trips} />)
+    // Event name (from notes) appears in Events section
+    expect(screen.getByText('3M Half Marathon')).toBeInTheDocument()
+    // Trips section shows no trips (only non-event trips go there)
+    expect(screen.getByText(/no trips planned/i)).toBeInTheDocument()
+  })
+
+  it('non-event trip stays in Trips section, not Events section', () => {
+    const trips = [makeTripSummary({ type: 'vacation', destination: 'Paris' })]
+    render(<YearView {...baseProps} trips={trips} />)
+    // Paris appears in trips inventory
+    expect(screen.getAllByText('Paris').length).toBeGreaterThanOrEqual(1)
+    // Events section does not appear (no event trips or custom days)
+    expect(screen.queryByText(/^events$/i)).not.toBeInTheDocument()
+  })
+
+  it('shows "+ N more" button when there are more than 5 trips', () => {
+    const trips = Array.from({ length: 6 }, (_, i) =>
+      makeTripSummary({
+        id: `trip-${i}`,
+        destination: `City ${i}`,
+        start_date: `2026-01-${String(i * 5 + 1).padStart(2, '0')}`,
+        end_date: `2026-01-${String(i * 5 + 3).padStart(2, '0')}`,
+      }),
+    )
+    render(<YearView {...baseProps} trips={trips} />)
+    expect(screen.getByText(/\+ \d+ more/i)).toBeInTheDocument()
+  })
+
+  it('expands trips section when "+ N more" is clicked', async () => {
+    const user = userEvent.setup()
+    const trips = Array.from({ length: 6 }, (_, i) =>
+      makeTripSummary({
+        id: `trip-${i}`,
+        destination: `City ${i}`,
+        start_date: `2026-01-${String(i * 5 + 1).padStart(2, '0')}`,
+        end_date: `2026-01-${String(i * 5 + 3).padStart(2, '0')}`,
+      }),
+    )
+    render(<YearView {...baseProps} trips={trips} />)
+    await user.click(screen.getByText(/\+ \d+ more/i))
+    // After expanding, the "N more" button disappears
+    expect(screen.queryByText(/\+ \d+ more/i)).not.toBeInTheDocument()
+  })
+
 })
 
 describe('YearView inventory highlight', () => {
-  it('does NOT call onTripClick when inventory panel trip is clicked', async () => {
+  it('calls onTripClick when inventory panel trip is clicked', async () => {
     const user = userEvent.setup()
     const onTripClick = vi.fn()
     const trips = [makeTripSummary({ destination: 'Rome' })]
@@ -144,8 +197,37 @@ describe('YearView inventory highlight', () => {
     const romeButtons = screen.getAllByRole('button', { name: /rome/i })
     // Inventory button is last in DOM order (after all grid bars)
     await user.click(romeButtons[romeButtons.length - 1])
-    // Inventory click should NOT open sidebar — no onTripClick call
-    expect(onTripClick).not.toHaveBeenCalled()
+    expect(onTripClick).toHaveBeenCalledWith(expect.objectContaining({ destination: 'Rome' }))
+  })
+
+  it('renders holidays section heading when holidays exist but items are collapsed by default', () => {
+    const holidays = [
+      { date: '2026-01-01', name: "New Year's Day", country_code: 'US' },
+      { date: '2026-07-04', name: 'Independence Day', country_code: 'US' },
+    ]
+    render(<YearView {...baseProps} holidays={holidays} />)
+    expect(screen.getByText(/holidays/i)).toBeInTheDocument()
+    // Items are collapsed by default
+    expect(screen.queryByText("New Year's Day")).not.toBeInTheDocument()
+    expect(screen.queryByText('Independence Day')).not.toBeInTheDocument()
+    // Show button is present
+    expect(screen.getByRole('button', { name: /show 2/i })).toBeInTheDocument()
+  })
+
+  it('does not render holidays section when holidays list is empty', () => {
+    render(<YearView {...baseProps} holidays={[]} />)
+    expect(screen.queryByText(/^holidays$/i)).not.toBeInTheDocument()
+  })
+
+  it('calls onHolidayClick when a holiday in the panel is clicked (after expanding)', async () => {
+    const user = userEvent.setup()
+    const onHolidayClick = vi.fn()
+    const holidays = [{ date: '2026-01-01', name: "New Year's Day", country_code: 'US' }]
+    render(<YearView {...baseProps} holidays={holidays} onHolidayClick={onHolidayClick} />)
+    // Expand holidays first
+    await user.click(screen.getByRole('button', { name: /show 1/i }))
+    await user.click(screen.getByText("New Year's Day"))
+    expect(onHolidayClick).toHaveBeenCalledWith('2026-01-01')
   })
 
   it('grid bar click still calls onTripClick', async () => {
@@ -205,5 +287,48 @@ describe('YearView event badges', () => {
     const { container } = render(<YearView {...baseProps} customDays={[]} />)
     const dots = container.querySelectorAll('span.bg-amber-400.w-2.h-2.rounded-full')
     expect(dots.length).toBe(0)
+  })
+})
+
+describe('YearView custom day hover popover', () => {
+  it('shows custom day name in popover on hover', () => {
+    const customDays: CustomDay[] = [
+      {
+        id: 'cd-1',
+        user_id: 'u-1',
+        name: 'Race Day',
+        date: '2026-07-14',
+        recurring: false,
+        created_at: '2026-01-01T00:00:00Z',
+      },
+    ]
+    render(<YearView {...baseProps} customDays={customDays} />)
+    // Initially: 'Race Day' appears once (in the item label)
+    expect(screen.getAllByText('Race Day').length).toBe(1)
+    // Hover the custom day item row (it has a relative wrapper with onMouseEnter)
+    const nameEl = screen.getByText('Race Day')
+    fireEvent.mouseEnter(nameEl.closest('.relative') ?? nameEl)
+    // After hover: 'Race Day' appears twice (item label + popover)
+    expect(screen.getAllByText('Race Day').length).toBe(2)
+  })
+
+  it('hides custom day popover on mouse leave', () => {
+    const customDays: CustomDay[] = [
+      {
+        id: 'cd-1',
+        user_id: 'u-1',
+        name: 'Race Day',
+        date: '2026-07-14',
+        recurring: false,
+        created_at: '2026-01-01T00:00:00Z',
+      },
+    ]
+    render(<YearView {...baseProps} customDays={customDays} />)
+    const nameEl = screen.getByText('Race Day')
+    const wrapper = nameEl.closest('.relative') ?? nameEl
+    fireEvent.mouseEnter(wrapper)
+    expect(screen.getAllByText('Race Day').length).toBe(2)
+    fireEvent.mouseLeave(wrapper)
+    expect(screen.getAllByText('Race Day').length).toBe(1)
   })
 })
