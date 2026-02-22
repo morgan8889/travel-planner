@@ -79,6 +79,13 @@ export const itineraryApi = {
     api.get<Activity[]>(`/itinerary/trips/${tripId}/activities`, {
       params: hasLocation ? { has_location: true } : undefined,
     }),
+
+  listTripPendingImports: (tripId: string) =>
+    api
+      .get<Activity[]>(`/itinerary/trips/${tripId}/activities`, {
+        params: { import_status: 'pending_review' },
+      })
+      .then((r) => r.data),
 }
 
 export const checklistApi = {
@@ -124,4 +131,27 @@ export const calendarApi = {
 
   deleteCustomDay: (id: string) =>
     api.delete(`/calendar/custom-days/${id}`),
+}
+
+export const gmailApi = {
+  getStatus: () =>
+    api
+      .get<{ connected: boolean; last_sync_at: string | null }>('/gmail/status')
+      .then((r) => r.data),
+
+  getAuthUrl: (tripId?: string) =>
+    api
+      .get<{ url: string }>('/gmail/auth-url', {
+        params: tripId ? { trip_id: tripId } : undefined,
+      })
+      .then((r) => r.data),
+
+  disconnect: () => api.delete('/gmail/disconnect'),
+
+  scan: (tripId: string) =>
+    api
+      .post<{ imported_count: number; skipped_count: number }>('/gmail/scan', {
+        trip_id: tripId,
+      })
+      .then((r) => r.data),
 }
