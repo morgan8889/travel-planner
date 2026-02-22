@@ -58,3 +58,35 @@ def test_gmail_disconnect_when_not_connected(client, auth_headers, override_get_
 
     response = client.delete("/gmail/disconnect", headers=auth_headers)
     assert response.status_code == 404
+
+
+def test_scan_requires_gmail_connected(client, auth_headers, override_get_db, mock_db_session):
+    """Scan returns 400 when Gmail is not connected."""
+    from unittest.mock import MagicMock
+
+    from tests.conftest import make_member, make_trip, make_user
+
+    # Trip creation query
+    owner_user = make_user()
+    owner_member = make_member(user=owner_user)
+    trip = make_trip(members=[owner_member])
+    trip.start_date = datetime(2026, 6, 1).date()
+    trip.end_date = datetime(2026, 6, 7).date()
+
+    # First call: gmail_status check → not connected
+    gmail_mock = MagicMock()
+    gmail_mock.scalar_one_or_none.return_value = None
+
+    # Second call: verify_trip_member → return trip
+    trip_mock = MagicMock()
+    trip_mock.scalar_one_or_none.return_value = trip
+
+    mock_db_session.execute.side_effect = [gmail_mock, trip_mock]
+
+    response = client.post(
+        "/gmail/scan",
+        json={"trip_id": "00000000-0000-0000-0000-000000000001"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 400
+    assert "Gmail not connected" in response.json()["detail"]
