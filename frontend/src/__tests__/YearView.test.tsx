@@ -136,7 +136,7 @@ describe('YearView trip inventory panel', () => {
 })
 
 describe('YearView inventory highlight', () => {
-  it('does NOT call onTripClick when inventory panel trip is clicked', async () => {
+  it('calls onTripClick when inventory panel trip is clicked', async () => {
     const user = userEvent.setup()
     const onTripClick = vi.fn()
     const trips = [makeTripSummary({ destination: 'Rome' })]
@@ -144,8 +144,32 @@ describe('YearView inventory highlight', () => {
     const romeButtons = screen.getAllByRole('button', { name: /rome/i })
     // Inventory button is last in DOM order (after all grid bars)
     await user.click(romeButtons[romeButtons.length - 1])
-    // Inventory click should NOT open sidebar — no onTripClick call
-    expect(onTripClick).not.toHaveBeenCalled()
+    expect(onTripClick).toHaveBeenCalledWith(expect.objectContaining({ destination: 'Rome' }))
+  })
+
+  it('renders holidays section when holidays exist', () => {
+    const holidays = [
+      { date: '2026-01-01', name: "New Year's Day", country_code: 'US' },
+      { date: '2026-07-04', name: 'Independence Day', country_code: 'US' },
+    ]
+    render(<YearView {...baseProps} holidays={holidays} />)
+    expect(screen.getByText(/holidays/i)).toBeInTheDocument()
+    expect(screen.getByText("New Year's Day")).toBeInTheDocument()
+    expect(screen.getByText('Independence Day')).toBeInTheDocument()
+  })
+
+  it('does not render holidays section when holidays list is empty', () => {
+    render(<YearView {...baseProps} holidays={[]} />)
+    expect(screen.queryByText(/^holidays$/i)).not.toBeInTheDocument()
+  })
+
+  it('calls onHolidayClick when a holiday in the panel is clicked', async () => {
+    const user = userEvent.setup()
+    const onHolidayClick = vi.fn()
+    const holidays = [{ date: '2026-01-01', name: "New Year's Day", country_code: 'US' }]
+    render(<YearView {...baseProps} holidays={holidays} onHolidayClick={onHolidayClick} />)
+    await user.click(screen.getByText("New Year's Day"))
+    expect(onHolidayClick).toHaveBeenCalledWith('2026-01-01')
   })
 
   it('grid bar click still calls onTripClick', async () => {

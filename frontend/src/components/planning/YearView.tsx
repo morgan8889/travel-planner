@@ -129,6 +129,7 @@ export function YearView({
         el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
       }
     }
+    onTripClick(trip)
   }
 
   return (
@@ -229,6 +230,7 @@ export function YearView({
                             size="medium"
                             startDate={trip.start_date}
                             endDate={trip.end_date}
+                            notes={trip.notes}
                             isHighlighted={trip.id === highlightedTripId}
                             onClick={() => onTripClick(trip)}
                           />
@@ -244,7 +246,7 @@ export function YearView({
       </div>
 
       {/* Trip inventory panel */}
-      <div className="w-60 shrink-0 border-l border-cloud-200 p-4 overflow-y-auto">
+      <div className="w-60 shrink-0 border-l border-cloud-200 p-4 overflow-y-auto max-h-[calc(100vh-12rem)]">
         <h3 className="text-xs font-semibold text-cloud-500 uppercase tracking-wide mb-3">
           Trips {year}
         </h3>
@@ -302,6 +304,36 @@ export function YearView({
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Holidays section */}
+        {holidays.filter((h) => h.date >= `${year}-01-01` && h.date <= `${year}-12-31`).length > 0 && (
+          <div className="mt-4 pt-4 border-t border-cloud-200">
+            <h3 className="text-xs font-semibold text-cloud-500 uppercase tracking-wide mb-3">
+              Holidays
+            </h3>
+            {holidays
+              .filter((h) => h.date >= `${year}-01-01` && h.date <= `${year}-12-31`)
+              .sort((a, b) => a.date.localeCompare(b.date))
+              .map((h) => (
+                <button
+                  key={`${h.country_code}-${h.date}`}
+                  type="button"
+                  onClick={() => onHolidayClick?.(h.date)}
+                  className="w-full flex items-start gap-2 py-1.5 text-left hover:bg-cloud-50 rounded-lg px-1 -mx-1 transition-colors group"
+                >
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-400 shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-cloud-800 truncate group-hover:text-indigo-700 transition-colors">
+                      {h.name}
+                    </p>
+                    <p className="text-[10px] text-cloud-500">
+                      {formatShortDate(h.date)} · {h.country_code}
+                    </p>
+                  </div>
+                </button>
+              ))}
           </div>
         )}
       </div>
