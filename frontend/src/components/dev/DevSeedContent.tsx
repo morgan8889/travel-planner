@@ -13,6 +13,8 @@ const TRIPS: TripCreate[] = [
     end_date: '2026-01-18',
     status: 'booked',
     notes: '3M Half Marathon — local Austin race',
+    destination_latitude: 30.2672,
+    destination_longitude: -97.7431,
   },
   // 1 — Come and Grind It (Austin local)
   {
@@ -22,6 +24,8 @@ const TRIPS: TripCreate[] = [
     end_date: '2026-03-07',
     status: 'planning',
     notes: 'Come and Grind It race — local Austin event',
+    destination_latitude: 30.2672,
+    destination_longitude: -97.7431,
   },
   // 2 — Nick: Florida
   {
@@ -31,6 +35,8 @@ const TRIPS: TripCreate[] = [
     end_date: '2026-03-15',
     status: 'booked',
     notes: 'Confirmation: KML3TW (Spirit)',
+    destination_latitude: 27.9944,
+    destination_longitude: -81.7603,
   },
   // 3 — Victoria: Florida
   {
@@ -40,6 +46,8 @@ const TRIPS: TripCreate[] = [
     end_date: '2026-03-22',
     status: 'booked',
     notes: 'SW + Delta bookings',
+    destination_latitude: 27.9944,
+    destination_longitude: -81.7603,
   },
   // 4 — Remote #1: South Padre
   {
@@ -49,6 +57,8 @@ const TRIPS: TripCreate[] = [
     end_date: '2026-04-04',
     status: 'planning',
     notes: 'Remote work week — South Padre Island',
+    destination_latitude: 26.1173,
+    destination_longitude: -97.1686,
   },
   // 5 — Cap10k (Austin local)
   {
@@ -58,6 +68,8 @@ const TRIPS: TripCreate[] = [
     end_date: '2026-04-12',
     status: 'booked',
     notes: 'Cap10k — local Austin race',
+    destination_latitude: 30.2672,
+    destination_longitude: -97.7431,
   },
   // 6 — Jailbreak 100
   {
@@ -67,6 +79,8 @@ const TRIPS: TripCreate[] = [
     end_date: '2026-04-19',
     status: 'booked',
     notes: 'Jailbreak 100 gravel race',
+    destination_latitude: 30.6744,
+    destination_longitude: -96.3698,
   },
   // 7 — Garner State Park
   {
@@ -76,6 +90,8 @@ const TRIPS: TripCreate[] = [
     end_date: '2026-04-26',
     status: 'planning',
     notes: 'CONFLICT: Wire Donkey is same weekend — pick one',
+    destination_latitude: 29.5957,
+    destination_longitude: -99.7468,
   },
   // 8 — Wire Donkey
   {
@@ -85,6 +101,8 @@ const TRIPS: TripCreate[] = [
     end_date: '2026-04-26',
     status: 'planning',
     notes: 'CONFLICT: Garner State Park is same weekend — pick one',
+    destination_latitude: 29.7274,
+    destination_longitude: -99.0742,
   },
   // 9 — Remote #2: San Diego
   {
@@ -94,6 +112,8 @@ const TRIPS: TripCreate[] = [
     end_date: '2026-05-10',
     status: 'planning',
     notes: 'Remote work week + BWR race',
+    destination_latitude: 32.7157,
+    destination_longitude: -117.1611,
   },
   // 10 — BWR San Diego
   {
@@ -103,6 +123,8 @@ const TRIPS: TripCreate[] = [
     end_date: '2026-05-02',
     status: 'planning',
     notes: 'Belgian Waffle Ride San Diego',
+    destination_latitude: 33.1959,
+    destination_longitude: -117.3795,
   },
   // 11 — Unbound 200
   {
@@ -112,6 +134,8 @@ const TRIPS: TripCreate[] = [
     end_date: '2026-05-31',
     status: 'booked',
     notes: 'Unbound Gravel 200',
+    destination_latitude: 38.4036,
+    destination_longitude: -96.1817,
   },
   // 12 — World Cup: Houston
   {
@@ -121,6 +145,8 @@ const TRIPS: TripCreate[] = [
     end_date: '2026-06-20',
     status: 'booked',
     notes: 'FIFA World Cup match',
+    destination_latitude: 29.7604,
+    destination_longitude: -95.3698,
   },
   // 13 — Remote #3: Colorado
   {
@@ -130,6 +156,8 @@ const TRIPS: TripCreate[] = [
     end_date: '2026-07-03',
     status: 'planning',
     notes: 'Remote work week — Colorado',
+    destination_latitude: 39.5501,
+    destination_longitude: -105.7821,
   },
   // 14 — Hotter n Hell
   {
@@ -139,6 +167,8 @@ const TRIPS: TripCreate[] = [
     end_date: '2026-08-30',
     status: 'planning',
     notes: 'Hotter n Hell Hundred ride',
+    destination_latitude: 33.9137,
+    destination_longitude: -98.4934,
   },
   // 15 — Tor Sabbatical (PARENT of Berlin + Sardinia)
   {
@@ -148,6 +178,8 @@ const TRIPS: TripCreate[] = [
     end_date: '2026-10-02',
     status: 'planning',
     notes: 'Tor des Geants + sabbatical travel. Sub-trips: Berlin, Sardinia.',
+    destination_latitude: 45.7503,
+    destination_longitude: 7.3357,
   },
   // 16 — Berlin (sub of Tor Sabbatical, idx 15)
   {
@@ -157,6 +189,8 @@ const TRIPS: TripCreate[] = [
     end_date: '2026-09-28',
     status: 'booked',
     notes: 'Sub-trip of Tor Sabbatical',
+    destination_latitude: 52.52,
+    destination_longitude: 13.405,
   },
   // 17 — Sardinia (sub of Tor Sabbatical, idx 15)
   {
@@ -166,6 +200,8 @@ const TRIPS: TripCreate[] = [
     end_date: '2026-10-02',
     status: 'planning',
     notes: 'Sub-trip of Tor Sabbatical — Tor des Geants finish area',
+    destination_latitude: 40.1209,
+    destination_longitude: 9.0129,
   },
   // 18 — Remote #4: TBD
   {
@@ -184,6 +220,8 @@ const TRIPS: TripCreate[] = [
     end_date: '2026-12-06',
     status: 'dreaming',
     notes: 'Asia trip — Hong Kong and Taiwan',
+    destination_latitude: 22.3193,
+    destination_longitude: 114.1694,
   },
 ]
 
