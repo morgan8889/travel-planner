@@ -155,3 +155,7 @@ export const gmailApi = {
       })
       .then((r) => r.data),
 }
+
+export const authApi = {
+  deleteAccount: () => api.delete('/auth/me'),
+}
