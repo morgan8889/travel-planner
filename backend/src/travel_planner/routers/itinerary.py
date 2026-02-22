@@ -127,6 +127,7 @@ async def list_trip_activities(
     user_id: CurrentUserId,
     db: AsyncSession = Depends(get_db),
     has_location: bool = Query(default=False),
+    import_status: str | None = Query(default=None),
 ):
     """List all activities for a trip, optionally filtered to those with coordinates."""
     await verify_trip_member(trip_id, db, user_id)
@@ -140,6 +141,10 @@ async def list_trip_activities(
         stmt = stmt.where(
             Activity.latitude.is_not(None), Activity.longitude.is_not(None)
         )
+    if import_status is not None:
+        from travel_planner.models.itinerary import ImportStatus
+
+        stmt = stmt.where(Activity.import_status == ImportStatus(import_status))
     result = await db.execute(stmt)
     return [ActivityResponse.model_validate(a) for a in result.scalars().all()]
 

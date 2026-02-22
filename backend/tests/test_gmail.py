@@ -90,3 +90,34 @@ def test_scan_requires_gmail_connected(client, auth_headers, override_get_db, mo
     )
     assert response.status_code == 400
     assert "Gmail not connected" in response.json()["detail"]
+
+
+def test_list_trip_activities_filters_by_import_status(
+    client, auth_headers, override_get_db, mock_db_session
+):
+    """import_status query param filters activities correctly."""
+    from unittest.mock import MagicMock
+
+    from tests.conftest import make_member, make_trip, make_user
+
+    owner_user = make_user()
+    owner_member = make_member(user=owner_user)
+    trip = make_trip(members=[owner_member])
+
+    # verify_trip_member call
+    trip_mock = MagicMock()
+    trip_mock.scalar_one_or_none.return_value = trip
+
+    # activities query returns empty list (no pending activities)
+    activities_mock = MagicMock()
+    activities_mock.scalars.return_value.all.return_value = []
+
+    mock_db_session.execute.side_effect = [trip_mock, activities_mock]
+
+    response = client.get(
+        "/itinerary/trips/00000000-0000-0000-0000-000000000001/activities",
+        params={"import_status": "pending_review"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    assert len(response.json()) == 0
