@@ -23,6 +23,7 @@ class TripType(enum.StrEnum):
     vacation = "vacation"
     remote_week = "remote_week"
     sabbatical = "sabbatical"
+    event = "event"
 
 
 class TripStatus(enum.StrEnum):

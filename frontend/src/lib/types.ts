@@ -1,4 +1,4 @@
-export type TripType = 'vacation' | 'remote_week' | 'sabbatical'
+export type TripType = 'vacation' | 'remote_week' | 'sabbatical' | 'event'
 export type TripStatus = 'dreaming' | 'planning' | 'booked' | 'active' | 'completed'
 export type MemberRole = 'owner' | 'member'
 

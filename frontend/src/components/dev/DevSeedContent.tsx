@@ -8,7 +8,7 @@ const TRIPS: TripCreate[] = [
   // 0 — 3M Half Marathon (Austin local)
   {
     destination: 'Austin, TX',
-    type: 'vacation',
+    type: 'event',
     start_date: '2026-01-18',
     end_date: '2026-01-18',
     status: 'booked',
@@ -17,7 +17,7 @@ const TRIPS: TripCreate[] = [
   // 1 — Come and Grind It (Austin local)
   {
     destination: 'Austin, TX',
-    type: 'vacation',
+    type: 'event',
     start_date: '2026-03-07',
     end_date: '2026-03-07',
     status: 'planning',
@@ -53,7 +53,7 @@ const TRIPS: TripCreate[] = [
   // 5 — Cap10k (Austin local)
   {
     destination: 'Austin, TX',
-    type: 'vacation',
+    type: 'event',
     start_date: '2026-04-12',
     end_date: '2026-04-12',
     status: 'booked',
@@ -62,7 +62,7 @@ const TRIPS: TripCreate[] = [
   // 6 — Jailbreak 100
   {
     destination: 'Bryan, TX',
-    type: 'vacation',
+    type: 'event',
     start_date: '2026-04-17',
     end_date: '2026-04-19',
     status: 'booked',
@@ -80,7 +80,7 @@ const TRIPS: TripCreate[] = [
   // 8 — Wire Donkey
   {
     destination: 'Bandera, TX',
-    type: 'vacation',
+    type: 'event',
     start_date: '2026-04-24',
     end_date: '2026-04-26',
     status: 'planning',
@@ -98,7 +98,7 @@ const TRIPS: TripCreate[] = [
   // 10 — BWR San Diego
   {
     destination: 'Oceanside, CA',
-    type: 'vacation',
+    type: 'event',
     start_date: '2026-05-02',
     end_date: '2026-05-02',
     status: 'planning',
@@ -107,7 +107,7 @@ const TRIPS: TripCreate[] = [
   // 11 — Unbound 200
   {
     destination: 'Emporia, KS',
-    type: 'vacation',
+    type: 'event',
     start_date: '2026-05-28',
     end_date: '2026-05-31',
     status: 'booked',
@@ -116,7 +116,7 @@ const TRIPS: TripCreate[] = [
   // 12 — World Cup: Houston
   {
     destination: 'Houston, TX',
-    type: 'vacation',
+    type: 'event',
     start_date: '2026-06-20',
     end_date: '2026-06-20',
     status: 'booked',
@@ -134,7 +134,7 @@ const TRIPS: TripCreate[] = [
   // 14 — Hotter n Hell
   {
     destination: 'Wichita Falls, TX',
-    type: 'vacation',
+    type: 'event',
     start_date: '2026-08-28',
     end_date: '2026-08-30',
     status: 'planning',
