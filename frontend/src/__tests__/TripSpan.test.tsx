@@ -41,8 +41,8 @@ describe('TripSpan popover card', () => {
       />,
     )
     fireEvent.mouseEnter(screen.getByRole('button'))
-    // inline label + popover both show event name — at least one match required
-    expect(screen.getAllByText('3M Half Marathon').length).toBeGreaterThanOrEqual(1)
+    // inline bar label + popover both show the event name
+    expect(screen.getAllByText('3M Half Marathon').length).toBeGreaterThanOrEqual(2)
   })
 
   it('shows destination for non-event trips on hover (size=medium)', () => {
@@ -156,5 +156,19 @@ describe('TripSpan event bar inline label', () => {
     )
     const button = screen.getByRole('button')
     expect(button.textContent).toContain('Unbound 200')
+  })
+
+  it('falls back to destination when event trip has no notes (size=medium)', () => {
+    const { container } = render(
+      <TripSpan
+        {...base}
+        size="medium"
+        colorBy="type"
+        tripType="event"
+        notes={null}
+      />,
+    )
+    const span = container.querySelector('span')
+    expect(span?.textContent).toBe('Austin, TX')
   })
 })
