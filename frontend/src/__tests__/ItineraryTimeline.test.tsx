@@ -34,7 +34,6 @@ const makeActivity = (id: string, sort_order: number): Activity => ({
   confirmation_number: null,
   sort_order,
   check_out_date: null,
-  source: 'manual',
 })
 
 describe('ItineraryTimeline drag indicator', () => {
