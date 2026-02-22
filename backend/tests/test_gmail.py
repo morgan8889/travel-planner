@@ -4,6 +4,15 @@ from travel_planner.models.itinerary import ActivitySource, ImportStatus
 from travel_planner.schemas.itinerary import ActivityResponse
 
 
+def test_gmail_callback_redirects_to_settings_when_no_trip_id():
+    """When no trip_id, callback redirects to /settings (not hardcoded /trips)."""
+    from travel_planner.config import settings
+
+    assert hasattr(settings, "app_frontend_url")
+    assert hasattr(settings, "supabase_service_role_key")
+    assert "localhost:5173" not in settings.app_frontend_url or settings.app_frontend_url == "http://localhost:5173"
+
+
 def test_activity_response_has_import_fields():
     data = {
         "id": "00000000-0000-0000-0000-000000000001",

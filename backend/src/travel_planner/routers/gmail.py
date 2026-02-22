@@ -106,9 +106,9 @@ async def gmail_callback(
     await db.commit()
 
     redirect = (
-        f"http://localhost:5173/trips/{trip_id}"
+        f"{settings.app_frontend_url}/trips/{trip_id}"
         if trip_id
-        else "http://localhost:5173/trips"
+        else f"{settings.app_frontend_url}/settings"
     )
     return RedirectResponse(url=redirect)
 
