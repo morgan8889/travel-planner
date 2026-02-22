@@ -5,107 +5,185 @@ import type { TripCreate, TripSummary, CreateActivity } from '../../lib/types'
 // ─── Trip Definitions ────────────────────────────────────────────────
 
 const TRIPS: TripCreate[] = [
+  // 0 — 3M Half Marathon (Austin local)
   {
-    destination: 'Tokyo, Japan',
+    destination: 'Austin, TX',
     type: 'vacation',
-    start_date: '2026-04-10',
-    end_date: '2026-04-18',
-    status: 'planning',
-    destination_latitude: 35.68,
-    destination_longitude: 139.65,
-    notes: 'First trip to Japan! Focus on food and temples. Check cherry blossom forecast.',
-  },
-  {
-    destination: 'Lisbon, Portugal',
-    type: 'remote_week',
-    start_date: '2026-05-04',
-    end_date: '2026-05-10',
+    start_date: '2026-01-18',
+    end_date: '2026-01-18',
     status: 'booked',
-    destination_latitude: 38.72,
-    destination_longitude: -9.14,
+    notes: '3M Half Marathon — local Austin race',
   },
+  // 1 — Come and Grind It (Austin local)
   {
-    destination: 'Southeast Asia',
-    type: 'sabbatical',
-    start_date: '2026-09-01',
-    end_date: '2026-11-30',
-    status: 'dreaming',
-    destination_latitude: 13.76,
-    destination_longitude: 100.5,
-    notes: 'Three month sabbatical. Sub-trips for Bangkok and Bali. Need to research visa requirements.',
-  },
-  {
-    destination: 'Bangkok, Thailand',
+    destination: 'Austin, TX',
     type: 'vacation',
-    start_date: '2026-09-01',
-    end_date: '2026-09-14',
-    status: 'dreaming',
-    destination_latitude: 13.76,
-    destination_longitude: 100.5,
+    start_date: '2026-03-07',
+    end_date: '2026-03-07',
+    status: 'planning',
+    notes: 'Come and Grind It race — local Austin event',
   },
+  // 2 — Nick: Florida
   {
-    destination: 'Ubud, Bali',
+    destination: 'Florida',
+    type: 'vacation',
+    start_date: '2026-03-12',
+    end_date: '2026-03-15',
+    status: 'booked',
+    notes: 'Confirmation: KML3TW (Spirit)',
+  },
+  // 3 — Victoria: Florida
+  {
+    destination: 'Florida',
+    type: 'vacation',
+    start_date: '2026-03-11',
+    end_date: '2026-03-22',
+    status: 'booked',
+    notes: 'SW + Delta bookings',
+  },
+  // 4 — Remote #1: South Padre
+  {
+    destination: 'South Padre Island, TX',
     type: 'remote_week',
-    start_date: '2026-10-15',
-    end_date: '2026-10-28',
-    status: 'dreaming',
-    destination_latitude: -8.51,
-    destination_longitude: 115.26,
+    start_date: '2026-03-29',
+    end_date: '2026-04-04',
+    status: 'planning',
+    notes: 'Remote work week — South Padre Island',
   },
+  // 5 — Cap10k (Austin local)
   {
-    destination: 'Reykjavik, Iceland',
+    destination: 'Austin, TX',
+    type: 'vacation',
+    start_date: '2026-04-12',
+    end_date: '2026-04-12',
+    status: 'booked',
+    notes: 'Cap10k — local Austin race',
+  },
+  // 6 — Jailbreak 100
+  {
+    destination: 'Bryan, TX',
+    type: 'vacation',
+    start_date: '2026-04-17',
+    end_date: '2026-04-19',
+    status: 'booked',
+    notes: 'Jailbreak 100 gravel race',
+  },
+  // 7 — Garner State Park
+  {
+    destination: 'Garner State Park, TX',
+    type: 'vacation',
+    start_date: '2026-04-24',
+    end_date: '2026-04-26',
+    status: 'planning',
+    notes: 'CONFLICT: Wire Donkey is same weekend — pick one',
+  },
+  // 8 — Wire Donkey
+  {
+    destination: 'Bandera, TX',
+    type: 'vacation',
+    start_date: '2026-04-24',
+    end_date: '2026-04-26',
+    status: 'planning',
+    notes: 'CONFLICT: Garner State Park is same weekend — pick one',
+  },
+  // 9 — Remote #2: San Diego
+  {
+    destination: 'San Diego, CA',
+    type: 'remote_week',
+    start_date: '2026-04-30',
+    end_date: '2026-05-10',
+    status: 'planning',
+    notes: 'Remote work week + BWR race',
+  },
+  // 10 — BWR San Diego
+  {
+    destination: 'Oceanside, CA',
+    type: 'vacation',
+    start_date: '2026-05-02',
+    end_date: '2026-05-02',
+    status: 'planning',
+    notes: 'Belgian Waffle Ride San Diego',
+  },
+  // 11 — Unbound 200
+  {
+    destination: 'Emporia, KS',
+    type: 'vacation',
+    start_date: '2026-05-28',
+    end_date: '2026-05-31',
+    status: 'booked',
+    notes: 'Unbound Gravel 200',
+  },
+  // 12 — World Cup: Houston
+  {
+    destination: 'Houston, TX',
     type: 'vacation',
     start_date: '2026-06-20',
-    end_date: '2026-06-27',
+    end_date: '2026-06-20',
     status: 'booked',
-    destination_latitude: 64.15,
-    destination_longitude: -21.94,
+    notes: 'FIFA World Cup match',
   },
+  // 13 — Remote #3: Colorado
   {
-    destination: 'New York, USA',
-    type: 'vacation',
-    start_date: '2025-12-28',
-    end_date: '2026-01-03',
-    status: 'completed',
-    destination_latitude: 40.71,
-    destination_longitude: -74.01,
-  },
-  {
-    destination: 'Patagonia, Argentina',
-    type: 'sabbatical',
-    start_date: '2027-02-01',
-    end_date: '2027-02-28',
-    status: 'dreaming',
-    destination_latitude: -50.34,
-    destination_longitude: -72.26,
-  },
-  {
-    destination: 'Barcelona, Spain',
-    type: 'vacation',
-    start_date: '2026-02-15',
-    end_date: '2026-02-22',
-    status: 'active',
-    destination_latitude: 41.39,
-    destination_longitude: 2.17,
-    notes: 'Currently on this trip! Testing inline editing and map markers.',
-  },
-  {
-    destination: 'Copenhagen, Denmark',
-    type: 'vacation',
-    start_date: '2026-06-18',
-    end_date: '2026-06-25',
+    destination: 'Colorado',
+    type: 'remote_week',
+    start_date: '2026-06-26',
+    end_date: '2026-07-03',
     status: 'planning',
-    destination_latitude: 55.68,
-    destination_longitude: 12.57,
+    notes: 'Remote work week — Colorado',
   },
+  // 14 — Hotter n Hell
   {
-    destination: 'Oslo, Norway',
+    destination: 'Wichita Falls, TX',
     type: 'vacation',
-    start_date: '2026-06-22',
-    end_date: '2026-06-29',
+    start_date: '2026-08-28',
+    end_date: '2026-08-30',
+    status: 'planning',
+    notes: 'Hotter n Hell Hundred ride',
+  },
+  // 15 — Tor Sabbatical (PARENT of Berlin + Sardinia)
+  {
+    destination: 'Europe',
+    type: 'sabbatical',
+    start_date: '2026-08-27',
+    end_date: '2026-10-02',
+    status: 'planning',
+    notes: 'Tor des Geants + sabbatical travel. Sub-trips: Berlin, Sardinia.',
+  },
+  // 16 — Berlin (sub of Tor Sabbatical, idx 15)
+  {
+    destination: 'Berlin, Germany',
+    type: 'vacation',
+    start_date: '2026-09-24',
+    end_date: '2026-09-28',
+    status: 'booked',
+    notes: 'Sub-trip of Tor Sabbatical',
+  },
+  // 17 — Sardinia (sub of Tor Sabbatical, idx 15)
+  {
+    destination: 'Sardinia, Italy',
+    type: 'vacation',
+    start_date: '2026-09-28',
+    end_date: '2026-10-02',
+    status: 'planning',
+    notes: 'Sub-trip of Tor Sabbatical — Tor des Geants finish area',
+  },
+  // 18 — Remote #4: TBD
+  {
+    destination: 'TBD',
+    type: 'remote_week',
+    start_date: '2026-10-05',
+    end_date: '2026-10-09',
     status: 'dreaming',
-    destination_latitude: null,
-    destination_longitude: null,
+    notes: 'Remote work week — location TBD',
+  },
+  // 19 — Hong Kong / Taiwan
+  {
+    destination: 'Hong Kong / Taiwan',
+    type: 'vacation',
+    start_date: '2026-11-20',
+    end_date: '2026-12-06',
+    status: 'dreaming',
+    notes: 'Asia trip — Hong Kong and Taiwan',
   },
 ]
 
@@ -114,45 +192,71 @@ interface ActivityDef extends CreateActivity {
 }
 
 const ACTIVITIES: Record<number, ActivityDef[]> = {
-  0: [
-    { dayOffset: 0, title: 'Flight to NRT', category: 'transport', confirmation_number: 'JAL-8472-XK', notes: 'Narita Terminal 2' },
-    { dayOffset: 0, title: 'Hotel Shinjuku Check-in', category: 'lodging', location: 'Shinjuku, Tokyo', latitude: 35.6938, longitude: 139.7034 },
-    { dayOffset: 1, title: 'Tsukiji Market Breakfast', category: 'food', start_time: '06:00', end_time: '07:30', location: 'Tsukiji Outer Market', latitude: 35.6654, longitude: 139.7707 },
-    { dayOffset: 2, title: 'Meiji Shrine Visit', category: 'activity', location: 'Meiji Shrine', latitude: 35.6764, longitude: 139.6993 },
-    { dayOffset: 3, title: 'Shibuya Crossing', category: 'activity', location: 'Shibuya, Tokyo' },
-    { dayOffset: 4, title: 'Ramen Dinner at Fuunji', category: 'food', start_time: '20:00', end_time: '21:00', location: 'Shinjuku, Tokyo', latitude: 35.6896, longitude: 139.6982 },
-    { dayOffset: 5, title: 'Shinkansen to Kyoto', category: 'transport', confirmation_number: 'JR-PASS-2026-1847', start_time: '10:00', end_time: '12:15' },
+  // 2 — Nick: Florida
+  2: [
+    { dayOffset: 0, title: 'Fly to Florida', category: 'transport', confirmation_number: 'KML3TW', notes: 'Spirit Airlines' },
+    { dayOffset: 3, title: 'Fly home', category: 'transport', notes: 'Spirit Airlines return' },
   ],
-  1: [
-    { dayOffset: 0, title: 'Co-working at Second Home', category: 'activity', start_time: '09:00', end_time: '17:00', location: 'Second Home Lisboa', latitude: 38.7069, longitude: -9.1427 },
-    { dayOffset: 1, title: 'Pasteis de Belem', category: 'food', location: 'Belem, Lisbon', latitude: 38.6976, longitude: -9.2033 },
-    { dayOffset: 2, title: 'Tram 28 Ride', category: 'transport', notes: 'Historic tram through Alfama' },
-    { dayOffset: 3, title: 'Fado Show', category: 'activity', start_time: '21:00', end_time: '23:30', location: 'Alfama, Lisbon', latitude: 38.7114, longitude: -9.1302 },
+  // 3 — Victoria: Florida
+  3: [
+    { dayOffset: 0, title: 'Fly to Florida', category: 'transport', notes: 'Southwest outbound' },
+    { dayOffset: 11, title: 'Fly home', category: 'transport', notes: 'Delta return' },
   ],
-  5: [
-    { dayOffset: 0, title: 'Blue Lagoon', category: 'activity', location: 'Blue Lagoon', latitude: 63.8803, longitude: -22.4495 },
-    { dayOffset: 1, title: 'Golden Circle Tour', category: 'activity', start_time: '08:00', notes: 'Full day tour - no fixed end time' },
-    { dayOffset: 3, title: 'Northern Lights Excursion', category: 'activity', start_time: '22:00', notes: 'Overnight activity - no end time since it crosses midnight' },
-  ],
+  // 6 — Jailbreak 100
   6: [
-    { dayOffset: 3, title: 'Times Square NYE', category: 'activity', start_time: '20:00', end_time: '23:59', location: 'Times Square', latitude: 40.758, longitude: -73.9855, notes: 'NYE celebration until midnight' },
-    { dayOffset: 4, title: 'Brooklyn Bridge Walk', category: 'activity', location: 'Brooklyn Bridge', latitude: 40.7061, longitude: -73.9969 },
-    { dayOffset: 5, title: 'Brunch at Balthazar', category: 'food', start_time: '11:00', end_time: '13:00', location: 'Balthazar, SoHo', latitude: 40.7231, longitude: -73.9985 },
+    { dayOffset: 0, title: 'Drive to Bryan', category: 'transport' },
+    { dayOffset: 1, title: 'Jailbreak 100 race day', category: 'activity', notes: '100-mile gravel race' },
+    { dayOffset: 2, title: 'Drive home', category: 'transport' },
   ],
-  8: [
-    { dayOffset: 0, title: 'Sagrada Familia Tour', category: 'activity', start_time: '10:00', end_time: '12:00', location: 'Sagrada Familia', latitude: 41.4036, longitude: 2.1744, confirmation_number: 'SGF-2026-0215' },
-    { dayOffset: 0, title: 'Hotel Arts Check-in', category: 'lodging', location: 'Hotel Arts Barcelona', latitude: 41.3875, longitude: 2.1924 },
-    { dayOffset: 1, title: 'La Boqueria Market', category: 'food', start_time: '09:00', end_time: '10:30', location: 'La Boqueria', latitude: 41.3816, longitude: 2.1719 },
-    { dayOffset: 2, title: 'Park Guell', category: 'activity', location: 'Park Guell, Barcelona', latitude: 41.4145, longitude: 2.1527 },
-    { dayOffset: 3, title: 'Gothic Quarter Walking Tour', category: 'activity', start_time: '14:00', location: 'Gothic Quarter' },
-    { dayOffset: 4, title: 'Beach Day at Barceloneta', category: 'activity', location: 'Barceloneta Beach' },
-    { dayOffset: 5, title: 'Flamenco Show', category: 'activity', start_time: '21:00', end_time: '23:00', notes: 'Tablao Cordobes - tickets booked' },
-    { dayOffset: 6, title: 'Flight Home', category: 'transport', start_time: '14:00', confirmation_number: 'VY-3847-BCN' },
-  ],
+  // 9 — Remote #2: San Diego
   9: [
-    { dayOffset: 0, title: 'Tivoli Gardens', category: 'activity', location: 'Tivoli Gardens', latitude: 55.6737, longitude: 12.5681 },
-    { dayOffset: 1, title: 'Nyhavn Canal Tour', category: 'activity', start_time: '11:00', end_time: '12:30', location: 'Nyhavn', latitude: 55.6797, longitude: 12.5907 },
-    { dayOffset: 2, title: 'Smorrebrod Lunch', category: 'food', start_time: '12:00', end_time: '13:30', location: 'Aamanns, Copenhagen', latitude: 55.6838, longitude: 12.5717 },
+    { dayOffset: 0, title: 'Fly to San Diego', category: 'transport' },
+    { dayOffset: 10, title: 'Fly home', category: 'transport' },
+  ],
+  // 10 — BWR San Diego
+  10: [
+    { dayOffset: 0, title: 'Belgian Waffle Ride San Diego', category: 'activity', notes: 'BWR race day — Oceanside start' },
+  ],
+  // 11 — Unbound 200
+  11: [
+    { dayOffset: 0, title: 'Fly to Kansas City', category: 'transport' },
+    { dayOffset: 1, title: 'Arrive Emporia, bike check-in', category: 'activity' },
+    { dayOffset: 2, title: 'Unbound 200 race day', category: 'activity', notes: '200-mile gravel race' },
+    { dayOffset: 3, title: 'Fly home', category: 'transport' },
+  ],
+  // 12 — World Cup: Houston
+  12: [
+    { dayOffset: 0, title: 'Drive to Houston', category: 'transport' },
+    { dayOffset: 0, title: 'FIFA World Cup match', category: 'activity' },
+  ],
+  // 14 — Hotter n Hell
+  14: [
+    { dayOffset: 0, title: 'Drive to Wichita Falls', category: 'transport' },
+    { dayOffset: 1, title: 'Hotter n Hell Hundred', category: 'activity', notes: '100-mile ride in August heat' },
+    { dayOffset: 2, title: 'Drive home', category: 'transport' },
+  ],
+  // 16 — Berlin
+  16: [
+    { dayOffset: 0, title: 'Fly to Berlin', category: 'transport', notes: 'Booked' },
+    { dayOffset: 1, title: 'Explore Berlin', category: 'activity' },
+    { dayOffset: 2, title: 'Explore Berlin', category: 'activity' },
+    { dayOffset: 3, title: 'Explore Berlin', category: 'activity' },
+    { dayOffset: 4, title: 'Train to Sardinia connection', category: 'transport' },
+  ],
+  // 17 — Sardinia
+  17: [
+    { dayOffset: 0, title: 'Arrive Sardinia', category: 'transport' },
+    { dayOffset: 1, title: 'Tor des Geants area — explore Courmayeur', category: 'activity' },
+    { dayOffset: 2, title: 'Rest day', category: 'activity' },
+    { dayOffset: 3, title: 'Explore Sardinia', category: 'activity' },
+    { dayOffset: 4, title: 'Fly home', category: 'transport' },
+  ],
+  // 19 — Hong Kong / Taiwan
+  19: [
+    { dayOffset: 0, title: 'Fly to Hong Kong', category: 'transport' },
+    { dayOffset: 5, title: 'Travel to Taiwan', category: 'transport' },
+    { dayOffset: 11, title: 'Explore Taiwan', category: 'activity' },
+    { dayOffset: 16, title: 'Fly home from Taipei', category: 'transport' },
   ],
 }
 
@@ -163,63 +267,76 @@ interface ChecklistDef {
 }
 
 const CHECKLISTS: Record<number, ChecklistDef[]> = {
-  0: [
-    {
-      title: 'Packing',
-      items: ['Passport', 'Power adaptor (Type A)', 'Umbrella', 'JR Pass', 'Yen cash', 'Pocket WiFi', 'Comfortable shoes', 'Medication'],
-      checkedIndices: [0, 1, 3],
-    },
-    {
-      title: 'Pre-departure',
-      items: ['Travel insurance', 'Notify bank', 'Airport transfer', 'Pet sitter', 'Mail hold'],
-    },
-  ],
-  1: [
-    {
-      title: 'Work Setup',
-      items: ['VPN configured', 'Timezone notification sent', 'Backup charger', 'Noise-cancelling headphones'],
-      checkedIndices: [0, 1, 2],
-    },
-  ],
+  // 2 — Nick: Florida
   2: [
     {
-      title: 'Visa Requirements',
-      items: ['Thailand visa', 'Indonesia visa', 'Vaccinations', 'Travel insurance', 'Document copies', 'Emergency contacts'],
+      title: 'Packing',
+      items: ['Passport / ID', 'Sunscreen', 'Swimsuit', 'Bike kit', 'Casual clothes'],
     },
   ],
-  5: [
-    {
-      title: 'Gear',
-      items: ['Thermal base layers', 'Waterproof jacket', 'Hiking boots', 'Camera gear', 'Swimsuit for hot springs'],
-      checkedIndices: [0, 2],
-    },
-  ],
+  // 6 — Jailbreak 100
   6: [
     {
-      title: 'NYE Prep',
-      items: ['Restaurant reservation', 'Warm layers', 'Times Square tickets'],
-      checkedIndices: [0, 1, 2],
+      title: 'Race Prep',
+      items: ['Register', 'Pack nutrition (gels, bars)', 'Load bike on car', 'Chamois cream', 'Emergency contact info'],
+      checkedIndices: [0],
     },
   ],
-  8: [
+  // 11 — Unbound 200
+  11: [
     {
-      title: 'Packing',
-      items: ['Passport', 'Euros', 'Sunscreen', 'Guidebook', 'Camera', 'Comfortable walking shoes'],
-      checkedIndices: [0, 1, 5],
+      title: 'Race Prep',
+      items: [
+        'Register',
+        'Book flights',
+        'Book hotel Emporia',
+        'Ship bike or rent',
+        'Pack 200-mile nutrition',
+        'Gravel-specific gear check',
+        'Crew plan',
+      ],
+      checkedIndices: [0, 1],
     },
+  ],
+  // 15 — Tor Sabbatical
+  15: [
     {
-      title: 'Bookings',
-      items: ['Sagrada Familia tickets', 'Hotel confirmation', 'Flamenco show tickets', 'Airport transfer'],
-      checkedIndices: [0, 1, 2],
+      title: 'Planning',
+      items: [
+        'Book flights outbound',
+        'Book flights home',
+        'Tor accommodation Courmayeur',
+        'Berlin accommodation',
+        'Sardinia accommodation',
+        'Travel insurance',
+        'Notify bank',
+      ],
+    },
+  ],
+  // 19 — Hong Kong / Taiwan
+  19: [
+    {
+      title: 'Pre-Trip',
+      items: [
+        'Book flights',
+        'Check visa requirements',
+        'Travel insurance',
+        'Accommodation HK',
+        'Accommodation Taiwan',
+        'Notify bank',
+        'Pack',
+      ],
     },
   ],
 }
 
-const CUSTOM_DAYS = [
-  { name: "Mom's Birthday", date: '2026-05-15', recurring: true },
-  { name: 'Company Retreat', date: '2026-09-20', recurring: false },
-  { name: 'Wedding Anniversary', date: '2026-08-01', recurring: true },
-  { name: 'Vet Appointment', date: '2026-03-10', recurring: false },
+const CUSTOM_DAYS: Array<{ name: string; date: string; recurring: boolean }> = [
+  { name: 'New Year', date: '2026-01-01', recurring: true },
+  { name: 'Birthday', date: '2026-02-14', recurring: true },
+  { name: "Victoria's Birthday", date: '2026-03-20', recurring: true },
+  { name: 'Anniversary', date: '2026-05-15', recurring: true },
+  { name: 'Christmas Eve', date: '2026-12-24', recurring: true },
+  { name: 'New Year Eve', date: '2026-12-31', recurring: true },
 ]
 
 function addDays(dateStr: string, days: number): string {
@@ -251,8 +368,8 @@ export function DevSeedContent() {
     for (let i = 0; i < TRIPS.length; i++) {
       const tripDef = { ...TRIPS[i] }
 
-      if (i === 3 || i === 4) {
-        const parentId = tripIdsRef.current.get(2)
+      if (i === 16 || i === 17) {
+        const parentId = tripIdsRef.current.get(15)
         if (parentId) {
           tripDef.parent_trip_id = parentId
         }
@@ -447,7 +564,8 @@ export function DevSeedContent() {
     <>
       <h1 className="text-xl font-semibold text-cloud-900 mb-1">Test Data Generator</h1>
       <p className="text-sm text-cloud-500 mb-6">
-        Seeds comprehensive test data: {TRIPS.length} trips (all statuses/types),{' '}
+        Seeds 20 real 2026 trips: races, remote work weeks, Unbound 200, World Cup,
+        Tor Sabbatical (Berlin + Sardinia sub-trips), and Hong Kong/Taiwan. Includes{' '}
         {Object.values(ACTIVITIES).flat().length} activities,{' '}
         {Object.values(CHECKLISTS).flat().reduce((sum, cl) => sum + cl.items.length, 0)} checklist
         items, and calendar data.
