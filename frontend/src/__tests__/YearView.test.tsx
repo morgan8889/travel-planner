@@ -160,3 +160,26 @@ describe('YearView inventory highlight', () => {
     expect(onTripClick).toHaveBeenCalledWith(expect.objectContaining({ destination: 'Paris' }))
   })
 })
+
+describe('YearView event badges', () => {
+  it('renders an event count badge on the month heading when custom days exist in that month', () => {
+    const customDays: CustomDay[] = [
+      { id: 'cd-1', user_id: 'u-1', name: 'Race Day', date: '2026-07-14', recurring: false, created_at: '2026-01-01T00:00:00Z' },
+      { id: 'cd-2', user_id: 'u-1', name: 'Fun Run', date: '2026-07-20', recurring: false, created_at: '2026-01-01T00:00:00Z' },
+    ]
+    const { container } = render(<YearView {...baseProps} customDays={customDays} />)
+    const badges = container.querySelectorAll('.bg-amber-100')
+    expect(badges.length).toBeGreaterThan(0)
+    const badge = Array.from(badges).find((el) => el.textContent === '2')
+    expect(badge).toBeInTheDocument()
+  })
+
+  it('does not render a badge for months with no events', () => {
+    const customDays: CustomDay[] = [
+      { id: 'cd-1', user_id: 'u-1', name: 'Race Day', date: '2026-07-14', recurring: false, created_at: '2026-01-01T00:00:00Z' },
+    ]
+    const { container } = render(<YearView {...baseProps} customDays={customDays} />)
+    const badges = container.querySelectorAll('.bg-amber-100')
+    expect(badges.length).toBe(1)
+  })
+})

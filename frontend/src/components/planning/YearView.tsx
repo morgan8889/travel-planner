@@ -146,14 +146,26 @@ export function YearView({
             weeks.push(days.slice(i, i + 7))
           }
 
+          const eventCount = customDaysForYear.filter((cd) => {
+            const m = new Date(cd.resolvedDate + 'T00:00:00').getMonth()
+            return m === month
+          }).length
+
           return (
             <div key={month} ref={(el) => { monthRefs.current[month] = el }}>
-              <button
-                onClick={() => onMonthClick(month)}
-                className="text-sm font-semibold text-cloud-800 hover:text-indigo-600 transition-colors mb-2"
-              >
-                {name}
-              </button>
+              <div className="flex items-center gap-1 mb-2">
+                <button
+                  onClick={() => onMonthClick(month)}
+                  className="text-sm font-semibold text-cloud-800 hover:text-indigo-600 transition-colors"
+                >
+                  {name}
+                </button>
+                {eventCount > 0 && (
+                  <span className="bg-amber-100 text-amber-600 text-[10px] font-medium px-1.5 py-0.5 rounded-full">
+                    {eventCount}
+                  </span>
+                )}
+              </div>
               {weeks.map((week, weekIdx) => {
                 const weekStart = week.find((d) => d.isCurrentMonth)?.date ?? monthStart
                 const weekEnd = [...week].reverse().find((d) => d.isCurrentMonth)?.date ?? monthEnd
