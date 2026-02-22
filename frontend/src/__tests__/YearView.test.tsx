@@ -133,6 +133,59 @@ describe('YearView trip inventory panel', () => {
     expect(screen.getByText('Annual Review')).toBeInTheDocument()
   })
 
+  it('event-type trip appears in Events section, not Trips section', () => {
+    const trips = [
+      makeTripSummary({
+        type: 'event',
+        destination: 'Austin, TX',
+        notes: '3M Half Marathon — local race',
+      }),
+    ]
+    render(<YearView {...baseProps} trips={trips} />)
+    // Event name (from notes) appears in Events section
+    expect(screen.getByText('3M Half Marathon')).toBeInTheDocument()
+    // Trips section shows no trips (only non-event trips go there)
+    expect(screen.getByText(/no trips planned/i)).toBeInTheDocument()
+  })
+
+  it('non-event trip stays in Trips section, not Events section', () => {
+    const trips = [makeTripSummary({ type: 'vacation', destination: 'Paris' })]
+    render(<YearView {...baseProps} trips={trips} />)
+    // Paris appears in trips inventory
+    expect(screen.getAllByText('Paris').length).toBeGreaterThanOrEqual(1)
+    // Events section does not appear (no event trips or custom days)
+    expect(screen.queryByText(/^events$/i)).not.toBeInTheDocument()
+  })
+
+  it('shows "+ N more" button when there are more than 5 trips', () => {
+    const trips = Array.from({ length: 6 }, (_, i) =>
+      makeTripSummary({
+        id: `trip-${i}`,
+        destination: `City ${i}`,
+        start_date: `2026-01-${String(i * 5 + 1).padStart(2, '0')}`,
+        end_date: `2026-01-${String(i * 5 + 3).padStart(2, '0')}`,
+      }),
+    )
+    render(<YearView {...baseProps} trips={trips} />)
+    expect(screen.getByText(/\+ \d+ more/i)).toBeInTheDocument()
+  })
+
+  it('expands trips section when "+ N more" is clicked', async () => {
+    const user = userEvent.setup()
+    const trips = Array.from({ length: 6 }, (_, i) =>
+      makeTripSummary({
+        id: `trip-${i}`,
+        destination: `City ${i}`,
+        start_date: `2026-01-${String(i * 5 + 1).padStart(2, '0')}`,
+        end_date: `2026-01-${String(i * 5 + 3).padStart(2, '0')}`,
+      }),
+    )
+    render(<YearView {...baseProps} trips={trips} />)
+    await user.click(screen.getByText(/\+ \d+ more/i))
+    // After expanding, the "N more" button disappears
+    expect(screen.queryByText(/\+ \d+ more/i)).not.toBeInTheDocument()
+  })
+
 })
 
 describe('YearView inventory highlight', () => {
@@ -147,15 +200,18 @@ describe('YearView inventory highlight', () => {
     expect(onTripClick).toHaveBeenCalledWith(expect.objectContaining({ destination: 'Rome' }))
   })
 
-  it('renders holidays section when holidays exist', () => {
+  it('renders holidays section heading when holidays exist but items are collapsed by default', () => {
     const holidays = [
       { date: '2026-01-01', name: "New Year's Day", country_code: 'US' },
       { date: '2026-07-04', name: 'Independence Day', country_code: 'US' },
     ]
     render(<YearView {...baseProps} holidays={holidays} />)
     expect(screen.getByText(/holidays/i)).toBeInTheDocument()
-    expect(screen.getByText("New Year's Day")).toBeInTheDocument()
-    expect(screen.getByText('Independence Day')).toBeInTheDocument()
+    // Items are collapsed by default
+    expect(screen.queryByText("New Year's Day")).not.toBeInTheDocument()
+    expect(screen.queryByText('Independence Day')).not.toBeInTheDocument()
+    // Show button is present
+    expect(screen.getByRole('button', { name: /show 2/i })).toBeInTheDocument()
   })
 
   it('does not render holidays section when holidays list is empty', () => {
@@ -163,11 +219,13 @@ describe('YearView inventory highlight', () => {
     expect(screen.queryByText(/^holidays$/i)).not.toBeInTheDocument()
   })
 
-  it('calls onHolidayClick when a holiday in the panel is clicked', async () => {
+  it('calls onHolidayClick when a holiday in the panel is clicked (after expanding)', async () => {
     const user = userEvent.setup()
     const onHolidayClick = vi.fn()
     const holidays = [{ date: '2026-01-01', name: "New Year's Day", country_code: 'US' }]
     render(<YearView {...baseProps} holidays={holidays} onHolidayClick={onHolidayClick} />)
+    // Expand holidays first
+    await user.click(screen.getByRole('button', { name: /show 1/i }))
     await user.click(screen.getByText("New Year's Day"))
     expect(onHolidayClick).toHaveBeenCalledWith('2026-01-01')
   })
