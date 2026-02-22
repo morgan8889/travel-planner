@@ -142,9 +142,12 @@ describe('TripsPage', () => {
     mockGet.mockResolvedValue({ data: mockTrips })
     renderWithProviders(<TripsPage />)
 
-    // Both trips visible initially
+    // Both trips visible initially (dreaming + planning are pre-selected)
     expect(await screen.findByText('Paris, France')).toBeInTheDocument()
     expect(screen.getByText('Lisbon, Portugal')).toBeInTheDocument()
+
+    // Click "All" first to clear all pre-selected filters
+    await user.click(screen.getByRole('button', { name: 'All' }))
 
     // Click "Planning" filter — only Paris (planning) shown
     const filterPills = screen.getAllByTestId('status-filter')
@@ -161,6 +164,9 @@ describe('TripsPage', () => {
     renderWithProviders(<TripsPage />)
 
     await screen.findByText('Paris, France')
+
+    // Click "All" first to clear all pre-selected filters
+    await user.click(screen.getByRole('button', { name: 'All' }))
 
     // Select "Planning"
     const filterPillsMulti = screen.getAllByTestId('status-filter')
@@ -179,22 +185,42 @@ describe('TripsPage', () => {
     expect(screen.getByText('Lisbon, Portugal')).toBeInTheDocument()
   })
 
-  it('clicking All clears active status filters', async () => {
+  it('clicking All shows all trips regardless of default filters', async () => {
     const user = userEvent.setup()
-    mockGet.mockResolvedValue({ data: mockTrips })
+    const tripsWithCompleted = [
+      ...mockTrips,
+      {
+        ...mockTrips[0],
+        id: 'trip-3',
+        destination: 'Tokyo, Japan',
+        status: 'completed' as const,
+      },
+    ]
+    mockGet.mockResolvedValue({ data: tripsWithCompleted })
     renderWithProviders(<TripsPage />)
 
     await screen.findByText('Paris, France')
+    expect(screen.queryByText('Tokyo, Japan')).not.toBeInTheDocument()
 
-    // Select "Planning" to filter
-    const filterPillsClear = screen.getAllByTestId('status-filter')
-    const planningPillClear = filterPillsClear.find((el) => el.textContent === 'Planning')!
-    await user.click(planningPillClear)
-    expect(screen.queryByText('Lisbon, Portugal')).not.toBeInTheDocument()
-
-    // Click All to clear
     await user.click(screen.getByRole('button', { name: 'All' }))
-    expect(screen.getByText('Lisbon, Portugal')).toBeInTheDocument()
+    expect(screen.getByText('Tokyo, Japan')).toBeInTheDocument()
+  })
+
+  it('hides completed and active trips by default', async () => {
+    const tripsWithCompleted = [
+      ...mockTrips,
+      {
+        ...mockTrips[0],
+        id: 'trip-3',
+        destination: 'Tokyo, Japan',
+        status: 'completed' as const,
+      },
+    ]
+    mockGet.mockResolvedValue({ data: tripsWithCompleted })
+    renderWithProviders(<TripsPage />)
+
+    await screen.findByText('Paris, France')
+    expect(screen.queryByText('Tokyo, Japan')).not.toBeInTheDocument()
   })
 
   it('renders error state with retry button on fetch failure', async () => {

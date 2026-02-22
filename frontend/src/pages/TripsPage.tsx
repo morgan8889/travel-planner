@@ -35,7 +35,7 @@ function SkeletonCard() {
 }
 
 export function TripsPage() {
-  const [activeStatuses, setActiveStatuses] = useState<TripStatus[]>([])
+  const [activeStatuses, setActiveStatuses] = useState<TripStatus[]>(['dreaming', 'planning', 'booked'])
   const { data: allTrips, isLoading, error, refetch } = useTrips()
 
   function toggleStatus(value: TripStatus | undefined) {
