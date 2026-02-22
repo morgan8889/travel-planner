@@ -11,6 +11,7 @@ import {
   useDroppable,
   type DragEndEvent,
   type DragStartEvent,
+  type DragOverEvent,
 } from '@dnd-kit/core'
 import {
   SortableContext,
@@ -67,6 +68,10 @@ function DroppableDay({ dayId, hasActivities, children }: { dayId: string; hasAc
 
 export function ItineraryTimeline({ days, allActivities, tripId }: ItineraryTimelineProps) {
   const [activeId, setActiveId] = useState<string | null>(null)
+  const [insertionPoint, setInsertionPoint] = useState<{
+    dayId: string
+    beforeActivityId: string | null
+  } | null>(null)
   const [expandedDayId, setExpandedDayId] = useState<string | null>(null)
   const [deletingDayId, setDeletingDayId] = useState<string | null>(null)
 
@@ -103,9 +108,53 @@ export function ItineraryTimeline({ days, allActivities, tripId }: ItineraryTime
     setActiveId(String(event.active.id))
   }
 
+  function handleDragOver(event: DragOverEvent) {
+    const { active, over } = event
+    if (!over) {
+      setInsertionPoint(null)
+      return
+    }
+
+    const overId = String(over.id)
+
+    if (overId.startsWith('empty-')) {
+      setInsertionPoint({ dayId: overId.replace('empty-', ''), beforeActivityId: null })
+      return
+    }
+    if (overId.startsWith('day-')) {
+      setInsertionPoint({ dayId: overId.replace('day-', ''), beforeActivityId: null })
+      return
+    }
+
+    // Hovered over another activity — use top/bottom half to decide insert position
+    const overActivity = allActivities.find((a) => a.id === overId)
+    if (!overActivity) return
+
+    const activeCenterY =
+      (active.rect.current.translated?.top ?? 0) +
+      (active.rect.current.translated?.height ?? 0) / 2
+    const overMidY = over.rect.top + over.rect.height / 2
+
+    if (activeCenterY < overMidY) {
+      // Top half — insert before this activity
+      setInsertionPoint({ dayId: overActivity.itinerary_day_id, beforeActivityId: overActivity.id })
+    } else {
+      // Bottom half — insert after this activity (= before the next one)
+      const dayActs = activitiesByDay.get(overActivity.itinerary_day_id) ?? []
+      const overIdx = dayActs.findIndex((a) => a.id === overActivity.id)
+      const nextActivity = dayActs[overIdx + 1]
+      setInsertionPoint({
+        dayId: overActivity.itinerary_day_id,
+        beforeActivityId: nextActivity ? nextActivity.id : null,
+      })
+    }
+  }
+
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
+    const savedInsertionPoint = insertionPoint
     setActiveId(null)
+    setInsertionPoint(null)
     if (!over) return
 
     const draggedActivity = allActivities.find((a) => a.id === active.id)
@@ -115,7 +164,6 @@ export function ItineraryTimeline({ days, allActivities, tripId }: ItineraryTime
     const overId = String(over.id)
 
     let targetDayId: string
-
     if (overId.startsWith('empty-')) {
       targetDayId = overId.replace('empty-', '')
     } else if (overId.startsWith('day-')) {
@@ -127,9 +175,18 @@ export function ItineraryTimeline({ days, allActivities, tripId }: ItineraryTime
     }
 
     if (sourceDayId === targetDayId) {
-      // Dropping on the day container itself (not a specific activity) is a no-op — no reorder needed
-      if (!overId.startsWith('day-') && !overId.startsWith('empty-')) {
-        const dayActs = activitiesByDay.get(sourceDayId) ?? []
+      const dayActs = activitiesByDay.get(sourceDayId) ?? []
+      if (savedInsertionPoint && savedInsertionPoint.dayId === sourceDayId) {
+        // Precise within-day reorder using insertion point
+        const withoutDragged = dayActs.filter((a) => a.id !== String(active.id))
+        const insertIdx = savedInsertionPoint.beforeActivityId
+          ? withoutDragged.findIndex((a) => a.id === savedInsertionPoint.beforeActivityId)
+          : withoutDragged.length
+        const newOrder = [...withoutDragged]
+        newOrder.splice(insertIdx === -1 ? newOrder.length : insertIdx, 0, draggedActivity)
+        reorderActivities.mutate({ dayId: sourceDayId, activityIds: newOrder.map((a) => a.id) })
+      } else {
+        // Fallback: closestCenter index swap
         const oldIndex = dayActs.findIndex((a) => a.id === active.id)
         const newIndex = dayActs.findIndex((a) => a.id === over.id)
         if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return
@@ -139,7 +196,25 @@ export function ItineraryTimeline({ days, allActivities, tripId }: ItineraryTime
         reorderActivities.mutate({ dayId: sourceDayId, activityIds: reordered.map((a) => a.id) })
       }
     } else {
-      moveActivity.mutate({ activityId: String(active.id), targetDayId })
+      // Cross-day move with computed sort_order
+      const targetActs = activitiesByDay.get(targetDayId) ?? []
+      let sort_order: number
+      if (savedInsertionPoint && savedInsertionPoint.dayId === targetDayId) {
+        if (savedInsertionPoint.beforeActivityId === null) {
+          sort_order = targetActs.length > 0 ? targetActs[targetActs.length - 1].sort_order + 1 : 0
+        } else {
+          const targetIdx = targetActs.findIndex((a) => a.id === savedInsertionPoint.beforeActivityId)
+          if (targetIdx >= 0) {
+            const prev = targetIdx > 0 ? targetActs[targetIdx - 1].sort_order : targetActs[targetIdx].sort_order - 1
+            sort_order = (prev + targetActs[targetIdx].sort_order) / 2
+          } else {
+            sort_order = targetActs.length
+          }
+        }
+      } else {
+        sort_order = targetActs.length > 0 ? targetActs[targetActs.length - 1].sort_order + 1 : 0
+      }
+      moveActivity.mutate({ activityId: String(active.id), targetDayId, sort_order })
     }
   }
 
@@ -148,7 +223,9 @@ export function ItineraryTimeline({ days, allActivities, tripId }: ItineraryTime
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
+      onDragCancel={() => { setActiveId(null); setInsertionPoint(null) }}
     >
       <div className="relative ml-4" data-testid="itinerary-timeline">
         {/* Spine line */}
@@ -202,9 +279,37 @@ export function ItineraryTimeline({ days, allActivities, tripId }: ItineraryTime
                     items={dayActs.map((a) => a.id)}
                     strategy={verticalListSortingStrategy}
                   >
-                    {dayActs.map((activity) => (
-                      <ActivityItem key={activity.id} activity={activity} tripId={tripId} />
-                    ))}
+                    {dayActs.map((act, idx) => {
+                      // Only needed for the first activity — inserting before any activity
+                      // at idx > 0 is handled by showLineBetween on the preceding activity.
+                      const showLineBefore =
+                        insertionPoint?.dayId === day.id &&
+                        insertionPoint.beforeActivityId === act.id &&
+                        idx === 0
+                      const nextActivity = dayActs[idx + 1]
+                      const showLineBetween =
+                        insertionPoint?.dayId === day.id &&
+                        nextActivity !== undefined &&
+                        insertionPoint.beforeActivityId === nextActivity.id
+                      const showLineAfter =
+                        insertionPoint?.dayId === day.id &&
+                        insertionPoint.beforeActivityId === null &&
+                        idx === dayActs.length - 1
+                      return (
+                        <div key={act.id}>
+                          {showLineBefore && (
+                            <div className="h-0.5 bg-indigo-400 rounded mx-1 my-0.5" />
+                          )}
+                          <ActivityItem activity={act} tripId={tripId} />
+                          {showLineBetween && (
+                            <div className="h-0.5 bg-indigo-400 rounded mx-1 my-0.5" />
+                          )}
+                          {showLineAfter && (
+                            <div className="h-0.5 bg-indigo-400 rounded mx-1 my-0.5" />
+                          )}
+                        </div>
+                      )
+                    })}
                   </SortableContext>
                   {dayActs.length === 0 && !isAdding && (
                     <EmptyDayDropZone dayId={day.id} />

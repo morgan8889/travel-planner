@@ -141,15 +141,21 @@ export function useMoveActivity(tripId: string) {
   const tripActivitiesKey = itineraryKeys.tripActivities(tripId)
 
   return useMutation({
-    mutationFn: async ({ activityId, targetDayId }: { activityId: string; targetDayId: string }) => {
-      const { data: activity } = await itineraryApi.updateActivity(activityId, { itinerary_day_id: targetDayId })
+    mutationFn: async ({ activityId, targetDayId, sort_order }: { activityId: string; targetDayId: string; sort_order?: number }) => {
+      const payload: { itinerary_day_id: string; sort_order?: number } = { itinerary_day_id: targetDayId }
+      if (sort_order !== undefined) payload.sort_order = sort_order
+      const { data: activity } = await itineraryApi.updateActivity(activityId, payload)
       return activity
     },
-    onMutate: async ({ activityId, targetDayId }) => {
+    onMutate: async ({ activityId, targetDayId, sort_order }) => {
       await queryClient.cancelQueries({ queryKey: tripActivitiesKey })
       const previous = queryClient.getQueryData(tripActivitiesKey)
       queryClient.setQueryData<Activity[]>(tripActivitiesKey, (old) =>
-        old?.map((a) => a.id === activityId ? { ...a, itinerary_day_id: targetDayId } : a) ?? []
+        old?.map((a) =>
+          a.id === activityId
+            ? { ...a, itinerary_day_id: targetDayId, ...(sort_order !== undefined && { sort_order }) }
+            : a
+        ) ?? []
       )
       return { previous }
     },

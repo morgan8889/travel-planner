@@ -88,3 +88,53 @@ describe('DayCell compact mode', () => {
     expect(cell.className).not.toContain('h-full')
   })
 })
+
+describe('DayCell full mode custom day icon', () => {
+  it('renders Star icon when customDayLabel is present in full mode', () => {
+    const { container } = render(
+      <DayCell
+        date="2026-07-14"
+        dayNumber={14}
+        isToday={false}
+        isCurrentMonth={true}
+        isSelected={false}
+        customDayLabel="Ironman"
+      />
+    )
+    // lucide-react Star renders as an SVG
+    const svg = container.querySelector('svg')
+    expect(svg).toBeInTheDocument()
+  })
+
+  it('does NOT render Star icon when holidayLabel takes precedence', () => {
+    const { container } = render(
+      <DayCell
+        date="2026-12-25"
+        dayNumber={25}
+        isToday={false}
+        isCurrentMonth={true}
+        isSelected={false}
+        holidayLabel="Christmas"
+        customDayLabel="My Event"
+      />
+    )
+    // holiday text renders, no star
+    expect(screen.getByText('Christmas')).toBeInTheDocument()
+    expect(container.querySelector('svg')).not.toBeInTheDocument()
+  })
+
+  it('does NOT render Star icon in compact mode', () => {
+    const { container } = render(
+      <DayCell
+        date="2026-07-14"
+        dayNumber={14}
+        isToday={false}
+        isCurrentMonth={true}
+        isSelected={false}
+        customDayLabel="Ironman"
+        compact={true}
+      />
+    )
+    expect(container.querySelector('svg')).not.toBeInTheDocument()
+  })
+})

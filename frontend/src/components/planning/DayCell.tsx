@@ -1,4 +1,5 @@
 import { memo } from 'react'
+import { Star } from 'lucide-react'
 
 interface DayCellProps {
   date: string  // YYYY-MM-DD
@@ -94,10 +95,13 @@ export const DayCell = memo(function DayCell({
         >
           {dayNumber}
         </span>
-        {label && (
-          <span className={`text-[10px] leading-tight mt-1 truncate max-w-[calc(100%-2rem)] text-right ${holidayLabel ? 'text-red-500' : 'text-amber-500'}`}>
-            {label}
+        {holidayLabel && (
+          <span className="text-[10px] leading-tight mt-1 truncate max-w-[calc(100%-2rem)] text-right text-red-500">
+            {holidayLabel}
           </span>
+        )}
+        {customDayLabel && !holidayLabel && (
+          <Star className="w-3 h-3 text-amber-500 shrink-0 mt-1" />
         )}
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useRef } from 'react'
 import { DayCell } from './DayCell'
 import { TripSpan } from './TripSpan'
 import type { TripSummary, HolidayEntry, CustomDay } from '../../lib/types'
@@ -115,6 +115,22 @@ export function YearView({
       .sort((a, b) => a.resolvedDate.localeCompare(b.resolvedDate))
   }, [customDays, year])
 
+  const [highlightedTripId, setHighlightedTripId] = useState<string | null>(null)
+  const monthRefs = useRef<(HTMLDivElement | null)[]>(Array(12).fill(null))
+
+  function handleInventoryTripClick(trip: TripSummary) {
+    if (highlightedTripId === trip.id) {
+      setHighlightedTripId(null)
+    } else {
+      setHighlightedTripId(trip.id)
+      const month = new Date(trip.start_date + 'T00:00:00').getMonth()
+      const el = monthRefs.current[month]
+      if (el && typeof el.scrollIntoView === 'function') {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      }
+    }
+  }
+
   return (
     <div className="flex">
       {/* Mini calendar grid — 3 columns */}
@@ -131,7 +147,7 @@ export function YearView({
           }
 
           return (
-            <div key={month}>
+            <div key={month} ref={(el) => { monthRefs.current[month] = el }}>
               <button
                 onClick={() => onMonthClick(month)}
                 className="text-sm font-semibold text-cloud-800 hover:text-indigo-600 transition-colors mb-2"
@@ -194,6 +210,7 @@ export function YearView({
                             size="medium"
                             startDate={trip.start_date}
                             endDate={trip.end_date}
+                            isHighlighted={trip.id === highlightedTripId}
                             onClick={() => onTripClick(trip)}
                           />
                         )
@@ -235,7 +252,7 @@ export function YearView({
           return (
             <button
               key={trip.id}
-              onClick={() => onTripClick(trip)}
+              onClick={() => handleInventoryTripClick(trip)}
               className="w-full flex items-start gap-2 py-2 text-left hover:bg-cloud-50 rounded-lg px-1 -mx-1 transition-colors group"
             >
               <div className={`w-2.5 h-2.5 rounded-full shrink-0 mt-0.5 ${dotColor}`} />
