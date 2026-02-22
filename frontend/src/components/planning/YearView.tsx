@@ -161,9 +161,16 @@ export function YearView({
                   {name}
                 </button>
                 {eventCount > 0 && (
-                  <span className="bg-amber-100 text-amber-600 text-[10px] font-medium px-1.5 py-0.5 rounded-full">
-                    {eventCount}
-                  </span>
+                  <span
+                    className="w-2 h-2 rounded-full bg-amber-400 shrink-0"
+                    title={customDaysForYear
+                      .filter(
+                        (cd) =>
+                          new Date(cd.resolvedDate + 'T00:00:00').getMonth() === month,
+                      )
+                      .map((cd) => cd.name)
+                      .join(', ')}
+                  />
                 )}
               </div>
               {weeks.map((week, weekIdx) => {
