@@ -12,11 +12,11 @@ const base = {
 }
 
 describe('TripSpan event color', () => {
-  it('applies emerald classes for event trip type', () => {
+  it('applies rose classes for event trip type', () => {
     const { container } = render(
       <TripSpan {...base} colorBy="type" tripType="event" size="medium" />,
     )
-    expect(container.querySelector('button')?.className).toMatch(/emerald/)
+    expect(container.querySelector('button')?.className).toMatch(/rose/)
   })
 
   it('applies blue classes for vacation trip type', () => {

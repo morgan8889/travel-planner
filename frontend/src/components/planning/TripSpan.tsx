@@ -13,7 +13,7 @@ const TYPE_COLORS: Record<string, string> = {
   vacation: 'bg-blue-200 text-blue-800 hover:bg-blue-300',
   remote_week: 'bg-teal-200 text-teal-800 hover:bg-teal-300',
   sabbatical: 'bg-amber-200 text-amber-800 hover:bg-amber-300',
-  event: 'bg-emerald-200 text-emerald-800 hover:bg-emerald-300',
+  event: 'bg-rose-300 text-rose-900 hover:bg-rose-400',
 }
 
 interface TripSpanProps {
