@@ -160,17 +160,18 @@ export function YearView({
   const eventsExpanded = expanded.year === year && expanded.events
   const holidaysExpanded = expanded.year === year && expanded.holidays
 
+  const [hoveredCustomId, setHoveredCustomId] = useState<string | null>(null)
+
   function setTripsExpanded(value: boolean) {
     setExpanded((prev) => ({ ...prev, year, trips: value }))
   }
   function setEventsExpanded(value: boolean) {
+    if (!value) setHoveredCustomId(null)
     setExpanded((prev) => ({ ...prev, year, events: value }))
   }
   function setHolidaysExpanded(value: boolean) {
     setExpanded((prev) => ({ ...prev, year, holidays: value }))
   }
-
-  const [hoveredCustomId, setHoveredCustomId] = useState<string | null>(null)
 
   const monthRefs = useRef<(HTMLDivElement | null)[]>(Array(12).fill(null))
 
@@ -399,8 +400,11 @@ export function YearView({
                 <div
                   key={item.cd.id}
                   className="relative flex items-start gap-2 py-1.5"
+                  tabIndex={0}
                   onMouseEnter={() => setHoveredCustomId(item.cd.id)}
                   onMouseLeave={() => setHoveredCustomId(null)}
+                  onFocus={() => setHoveredCustomId(item.cd.id)}
+                  onBlur={() => setHoveredCustomId(null)}
                 >
                   <div className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0 mt-0.5" />
                   <div className="min-w-0">
