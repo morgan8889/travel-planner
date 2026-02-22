@@ -36,7 +36,8 @@ async def _sync_itinerary_days(
     """
     if not start_date or not end_date:
         return
-    if (end_date - start_date).days > 365:
+    delta = (end_date - start_date).days
+    if delta < 0 or delta > 365:
         return
 
     # Fetch existing days with activity counts in a single query

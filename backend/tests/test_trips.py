@@ -947,6 +947,24 @@ async def test_sync_no_op_when_range_exceeds_365_days():
 
 
 @pytest.mark.asyncio
+async def test_sync_no_op_when_range_is_inverted():
+    """_sync_itinerary_days returns immediately when start_date > end_date.
+
+    A PATCH that supplies only one date field can leave the stored range inverted
+    (e.g. start_date=2027-01-01 on a trip whose end_date=2026-06-07).  Without
+    the delta < 0 guard the orphan-deletion logic would treat every existing date
+    as out-of-range and bulk-delete all empty itinerary days.
+    """
+    db = AsyncMock()
+
+    # start_date is after end_date — inverted range
+    await _sync_itinerary_days(TRIP_ID, date(2027, 1, 1), date(2026, 6, 7), db)
+
+    db.execute.assert_not_called()
+    db.commit.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_sync_deletes_empty_orphan_days():
     """_sync_itinerary_days bulk-deletes empty days outside the new range."""
     db = AsyncMock()
