@@ -166,7 +166,8 @@ export function YearView({
   const holidaysExpanded = expanded.year === year && expanded.holidays
 
   const [hoveredCustomId, setHoveredCustomId] = useState<string | null>(null)
-  const [hoveredMonthDot, setHoveredMonthDot] = useState<number | null>(null)
+  const [hoveredMonthDotState, setHoveredMonthDot] = useState<{ year: number; month: number } | null>(null)
+  const hoveredMonthDot = hoveredMonthDotState?.year === year ? hoveredMonthDotState.month : null
 
   function setTripsExpanded(value: boolean) {
     setExpanded((prev) => ({ ...prev, year, trips: value }))
@@ -228,11 +229,11 @@ export function YearView({
                   <div className="relative">
                     <span
                       className="w-2 h-2 rounded-full bg-amber-400 shrink-0 block cursor-default"
-                      onMouseEnter={() => setHoveredMonthDot(month)}
+                      onMouseEnter={() => setHoveredMonthDot({ year, month })}
                       onMouseLeave={() => setHoveredMonthDot(null)}
                     />
                     {hoveredMonthDot === month && (
-                      <div className="absolute top-full left-0 mt-1 px-2.5 py-2 bg-cloud-900 text-white text-[11px] rounded-lg shadow-lg z-50 pointer-events-none min-w-[120px]">
+                      <div className="absolute top-full left-0 mt-1 px-2.5 py-2 bg-cloud-900 text-white text-[11px] rounded-lg shadow-lg whitespace-nowrap z-50 pointer-events-none min-w-[120px]">
                         {customDaysForYear
                           .filter((cd) => new Date(cd.resolvedDate + 'T00:00:00').getMonth() === month)
                           .map((cd) => (

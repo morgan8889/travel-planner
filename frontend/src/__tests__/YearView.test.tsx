@@ -294,14 +294,18 @@ describe('YearView event badges', () => {
       { id: 'cd-2', user_id: 'u-1', name: 'Fun Run', date: '2026-07-20', recurring: false, created_at: '2026-01-01T00:00:00Z' },
     ]
     const { container } = render(<YearView {...baseProps} customDays={customDays} />)
-    const dots = container.querySelectorAll('span.bg-amber-400.w-2.h-2.rounded-full')
+    // The calendar grid is the flex-1 child, sidebar is the w-60 child
+    // Month header dots are inside buttons in the grid area
+    const monthHeaderDots = container.querySelectorAll(
+      '.flex-1 span.bg-amber-400.w-2.h-2.rounded-full'
+    )
     // Before hover: 'Race Day' visible once in Events panel
     expect(screen.getAllByText('Race Day').length).toBe(1)
-    fireEvent.mouseEnter(dots[0])
+    fireEvent.mouseEnter(monthHeaderDots[0])
     // After hover: 'Race Day' appears again in popover (twice total)
     expect(screen.getAllByText('Race Day').length).toBe(2)
     expect(screen.getAllByText('Fun Run').length).toBe(2)
-    fireEvent.mouseLeave(dots[0])
+    fireEvent.mouseLeave(monthHeaderDots[0])
     // After leave: back to once
     expect(screen.getAllByText('Race Day').length).toBe(1)
   })
