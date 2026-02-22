@@ -106,6 +106,7 @@ vi.mock('../lib/api', () => ({
     deleteDay: vi.fn(),
     generateDays: vi.fn(),
     moveActivity: vi.fn(),
+    listTripPendingImports: vi.fn().mockResolvedValue([]),
   },
   checklistApi: {
     list: (tripId: string) => mockChecklistList(tripId),
@@ -116,6 +117,12 @@ vi.mock('../lib/api', () => ({
     updateItem: vi.fn(),
     deleteItem: vi.fn(),
     toggleItem: vi.fn(),
+  },
+  gmailApi: {
+    getStatus: vi.fn().mockResolvedValue({ connected: false, last_sync_at: null }),
+    getAuthUrl: vi.fn().mockResolvedValue({ url: 'https://accounts.google.com' }),
+    disconnect: vi.fn().mockResolvedValue({}),
+    scan: vi.fn().mockResolvedValue({ imported_count: 0, skipped_count: 0 }),
   },
 }))
 

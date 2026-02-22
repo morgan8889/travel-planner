@@ -1,5 +1,5 @@
 import { Outlet, Link } from '@tanstack/react-router'
-import { Plane } from 'lucide-react'
+import { Plane, Settings } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
 export function RootLayout() {
@@ -39,8 +39,16 @@ export function RootLayout() {
               Calendar
             </Link>
           </nav>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <span className="text-sm text-cloud-500 hidden sm:inline">{user?.email}</span>
+            <Link
+              to="/settings"
+              className="p-1.5 text-cloud-400 rounded-lg hover:bg-cloud-100 hover:text-cloud-700 transition-colors"
+              activeProps={{ className: 'text-indigo-600' }}
+              aria-label="Settings"
+            >
+              <Settings className="w-4 h-4" />
+            </Link>
             <button
               onClick={() => signOut()}
               className="px-3 py-1.5 text-sm font-medium text-cloud-500 bg-white border border-cloud-200 rounded-lg hover:bg-cloud-50 hover:text-cloud-900 transition-colors"

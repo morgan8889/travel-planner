@@ -1,14 +1,15 @@
-from datetime import timedelta
+from datetime import date, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from sqlalchemy import delete as sa_delete
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from travel_planner.auth import CurrentUserId
 from travel_planner.db import get_db
 from travel_planner.deps import verify_trip_member
-from travel_planner.models.itinerary import Activity, ItineraryDay
+from travel_planner.models.itinerary import Activity, ImportStatus, ItineraryDay
 from travel_planner.schemas.itinerary import (
     ActivityCreate,
     ActivityReorderUpdate,
@@ -19,6 +20,53 @@ from travel_planner.schemas.itinerary import (
 )
 
 router = APIRouter(prefix="/itinerary", tags=["itinerary"])
+
+
+async def _sync_itinerary_days(
+    trip_id: UUID,
+    start_date: date | None,
+    end_date: date | None,
+    db: AsyncSession,
+) -> None:
+    """Sync itinerary days with the trip's date range.
+
+    Creates one ItineraryDay per date in [start_date, end_date] that doesn't
+    already exist, and deletes any existing days outside the range that have
+    zero activities.  No-op when dates are absent or span exceeds 365 days.
+    """
+    if not start_date or not end_date:
+        return
+    delta = (end_date - start_date).days
+    if delta < 0 or delta > 365:
+        return
+
+    # Fetch existing days with activity counts in a single query
+    result = await db.execute(
+        select(ItineraryDay.id, ItineraryDay.date, func.count(Activity.id).label("cnt"))
+        .outerjoin(Activity, Activity.itinerary_day_id == ItineraryDay.id)
+        .where(ItineraryDay.trip_id == trip_id)
+        .group_by(ItineraryDay.id, ItineraryDay.date)
+    )
+    rows = result.all()
+    existing_dates = {row.date for row in rows}
+
+    # Add missing days within the range
+    current = start_date
+    while current <= end_date:
+        if current not in existing_dates:
+            db.add(ItineraryDay(trip_id=trip_id, date=current))
+        current += timedelta(days=1)
+
+    # Bulk-delete empty orphan days outside the range
+    orphan_ids = [
+        row.id
+        for row in rows
+        if (row.date < start_date or row.date > end_date) and row.cnt == 0
+    ]
+    if orphan_ids:
+        await db.execute(sa_delete(ItineraryDay).where(ItineraryDay.id.in_(orphan_ids)))
+
+    # Intentionally no db.commit() here — callers own the transaction boundary
 
 
 async def verify_day_access(
@@ -75,6 +123,7 @@ async def list_trip_activities(
     user_id: CurrentUserId,
     db: AsyncSession = Depends(get_db),
     has_location: bool = Query(default=False),
+    import_status: ImportStatus | None = Query(default=None),
 ):
     """List all activities for a trip, optionally filtered to those with coordinates."""
     await verify_trip_member(trip_id, db, user_id)
@@ -88,6 +137,8 @@ async def list_trip_activities(
         stmt = stmt.where(
             Activity.latitude.is_not(None), Activity.longitude.is_not(None)
         )
+    if import_status is not None:
+        stmt = stmt.where(Activity.import_status == import_status)
     result = await db.execute(stmt)
     return [ActivityResponse.model_validate(a) for a in result.scalars().all()]
 

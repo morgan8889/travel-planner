@@ -43,10 +43,10 @@ export function TripCard({ trip }: TripCardProps) {
   } = trip
 
   const bookingChips = [
-    { icon: Plane, total: transport_total, confirmed: transport_confirmed, label: 'flight' },
-    { icon: Hotel, total: lodging_total, confirmed: lodging_confirmed, label: 'hotel' },
-    { icon: MapPin, total: activity_total, confirmed: activity_confirmed, label: 'activity' },
-  ].filter((c) => c.total > 0)
+    { icon: Plane, total: transport_total ?? 0, confirmed: transport_confirmed ?? 0, label: 'flight' },
+    { icon: Hotel, total: lodging_total ?? 0, confirmed: lodging_confirmed ?? 0, label: 'hotel' },
+    { icon: MapPin, total: activity_total ?? 0, confirmed: activity_confirmed ?? 0, label: 'activity' },
+  ]
 
   const progressLabel =
     days_with_activities >= itinerary_day_count
@@ -86,23 +86,25 @@ export function TripCard({ trip }: TripCardProps) {
           </div>
         )}
 
-        {bookingChips.length > 0 && (
-          <div className="flex items-center gap-2 mb-3">
-            {bookingChips.map(({ icon: Icon, total, confirmed, label }) => (
+        <div className="flex items-center gap-2 mb-3" data-testid="booking-chips">
+          {bookingChips.map(({ icon: Icon, total, confirmed, label }) => {
+            const chipClass =
+              total === 0
+                ? 'bg-cloud-50 text-cloud-300'
+                : confirmed === total
+                  ? 'bg-emerald-50 text-emerald-700'
+                  : 'bg-amber-50 text-amber-700'
+            return (
               <div
                 key={label}
-                className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                  confirmed === total
-                    ? 'bg-emerald-50 text-emerald-700'
-                    : 'bg-cloud-100 text-cloud-600'
-                }`}
+                className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${chipClass}`}
               >
                 <Icon className="w-3 h-3" />
-                <span>{confirmed}/{total}</span>
+                {total > 0 && <span>{confirmed}/{total}</span>}
               </div>
-            ))}
-          </div>
-        )}
+            )
+          })}
+        </div>
 
         <div className="flex items-center justify-between">
           <TripStatusBadge status={trip.status} />

@@ -107,26 +107,23 @@ describe('PlanningCenterPage', () => {
     })
   })
 
-  it('shows day headers in month view', async () => {
+  it('renders year view by default', async () => {
     renderWithRouter()
-    await waitFor(() => {
-      expect(screen.getByText('Sun')).toBeInTheDocument()
-      expect(screen.getByText('Mon')).toBeInTheDocument()
-    })
-  })
-
-  it('switches to year view on Year click', async () => {
-    renderWithRouter()
-    await waitFor(() => {
-      expect(screen.getByText('Month')).toBeInTheDocument()
-    })
-
-    await userEvent.click(screen.getByText('Year'))
-
-    // Year view shows all 12 month names
     await waitFor(() => {
       expect(screen.getByText('January')).toBeInTheDocument()
       expect(screen.getByText('December')).toBeInTheDocument()
+    })
+  })
+
+  it('switches to month view on Month click', async () => {
+    renderWithRouter()
+    await waitFor(() => {
+      expect(screen.getByText('January')).toBeInTheDocument()
+    })
+    await userEvent.click(screen.getByText('Month'))
+    await waitFor(() => {
+      expect(screen.getByText('Sun')).toBeInTheDocument()
+      expect(screen.getByText('Mon')).toBeInTheDocument()
     })
   })
 

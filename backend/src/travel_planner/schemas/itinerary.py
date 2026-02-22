@@ -1,9 +1,13 @@
-from datetime import date, time
+from datetime import date, datetime, time
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from travel_planner.models.itinerary import ActivityCategory
+from travel_planner.models.itinerary import (
+    ActivityCategory,
+    ActivitySource,
+    ImportStatus,
+)
 
 
 class ItineraryDayCreate(BaseModel):
@@ -57,6 +61,7 @@ class ActivityUpdate(BaseModel):
     sort_order: int | None = None
     itinerary_day_id: UUID | None = None
     check_out_date: date | None = None
+    import_status: ImportStatus | None = None
 
     @model_validator(mode="after")
     def end_time_after_start_time(self) -> "ActivityUpdate":
@@ -85,6 +90,10 @@ class ActivityResponse(BaseModel):
     confirmation_number: str | None
     sort_order: int
     check_out_date: date | None
+    source: ActivitySource = ActivitySource.manual
+    source_ref: str | None = None
+    import_status: ImportStatus | None = None
+    created_at: datetime | None = None
 
 
 class ActivityReorderUpdate(BaseModel):

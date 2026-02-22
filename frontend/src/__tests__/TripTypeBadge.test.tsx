@@ -23,4 +23,11 @@ describe('TripTypeBadge', () => {
     expect(badge).toHaveTextContent('Sabbatical')
     expect(badge.querySelector('svg')).toBeInTheDocument()
   })
+
+  it('renders event with trophy icon', () => {
+    render(<TripTypeBadge type="event" />)
+    const badge = screen.getByTestId('trip-type-badge')
+    expect(badge).toHaveTextContent('Event')
+    expect(badge.querySelector('svg')).toBeInTheDocument()
+  })
 })

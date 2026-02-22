@@ -1,5 +1,5 @@
 from datetime import datetime
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import UUID
 
 import pytest
@@ -177,3 +177,54 @@ def test_create_profile_validation(
     invalid_data3 = {"display_name": "x" * 101, "preferences": {}}
     response3 = client.post("/auth/profile", json=invalid_data3, headers=auth_headers)
     assert response3.status_code == 422
+
+
+def test_delete_account_requires_auth(client: TestClient):
+    """DELETE /auth/me returns 401 without auth headers."""
+    response = client.delete("/auth/me")
+    assert response.status_code == 401
+
+
+def test_delete_account_no_service_key(
+    client: TestClient, auth_headers: dict[str, str], override_get_db, mock_db_session
+):
+    """DELETE /auth/me returns 503 when service role key is not configured."""
+    with patch("travel_planner.routers.auth.settings") as mock_settings:
+        mock_settings.supabase_service_role_key = ""
+
+        response = client.delete("/auth/me", headers=auth_headers)
+
+    assert response.status_code == 503
+    assert not mock_db_session.commit.called
+
+
+def test_delete_account_calls_supabase_admin_when_key_set(
+    client: TestClient, auth_headers: dict[str, str], override_get_db, mock_db_session
+):
+    """DELETE /auth/me calls Supabase Admin API when service role key is configured."""
+    owned_trips_mock = MagicMock()
+    owned_trips_mock.all.return_value = []
+    mock_db_session.execute.side_effect = [
+        owned_trips_mock,
+        MagicMock(),  # delete TripMembers
+        MagicMock(),  # delete GmailConnections
+        MagicMock(),  # delete ImportRecords
+        MagicMock(),  # delete HolidayCalendars
+        MagicMock(),  # delete CustomDays
+        MagicMock(),  # delete UserProfile
+    ]
+
+    with patch("travel_planner.routers.auth.settings") as mock_settings:
+        mock_settings.supabase_service_role_key = "test-service-key"
+        mock_settings.supabase_url = "http://test.supabase.co"
+
+        with patch("travel_planner.routers.auth.httpx.AsyncClient") as mock_cls:
+            mock_http = AsyncMock()
+            mock_cls.return_value.__aenter__ = AsyncMock(return_value=mock_http)
+            mock_cls.return_value.__aexit__ = AsyncMock(return_value=False)
+            mock_http.delete = AsyncMock(return_value=MagicMock(status_code=204))
+
+            response = client.delete("/auth/me", headers=auth_headers)
+
+    assert response.status_code == 204
+    mock_http.delete.assert_called_once()

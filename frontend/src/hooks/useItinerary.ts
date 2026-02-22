@@ -6,6 +6,7 @@ export const itineraryKeys = {
   all: ['itinerary'] as const,
   days: (tripId: string) => [...itineraryKeys.all, 'days', tripId] as const,
   activities: (dayId: string) => [...itineraryKeys.all, 'activities', dayId] as const,
+  pendingImports: (tripId: string) => [...itineraryKeys.all, tripId, 'pending-imports'] as const,
   tripActivities: (tripId: string, hasLocation = false) =>
     [...itineraryKeys.all, 'trip-activities', tripId, { hasLocation }] as const,
 }

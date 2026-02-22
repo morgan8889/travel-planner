@@ -11,6 +11,7 @@ from travel_planner.db import get_db
 from travel_planner.models.itinerary import Activity, ItineraryDay
 from travel_planner.models.trip import MemberRole, Trip, TripMember, TripStatus
 from travel_planner.models.user import UserProfile
+from travel_planner.routers.itinerary import _sync_itinerary_days
 from travel_planner.schemas.trip import (
     AddMemberRequest,
     MemberPreview,
@@ -139,6 +140,10 @@ async def create_trip(
         role=MemberRole.owner,
     )
     db.add(member)
+    await db.flush()
+
+    # Auto-generate itinerary days for the trip's date range (same transaction)
+    await _sync_itinerary_days(trip.id, trip.start_date, trip.end_date, db)
     await db.commit()
 
     # Re-query with relationships loaded
@@ -302,11 +307,17 @@ async def update_trip(
     trip, _ = await get_trip_with_membership(trip_id, user_id, db)
 
     update_fields = trip_data.model_dump(exclude_unset=True)
+    date_changed = bool({"start_date", "end_date"} & set(update_fields.keys()))
     for field, value in update_fields.items():
         setattr(trip, field, value)
 
-    await db.commit()
+    await db.flush()
     await db.refresh(trip)
+
+    # Sync itinerary days whenever the date range changes (same transaction)
+    if date_changed:
+        await _sync_itinerary_days(trip.id, trip.start_date, trip.end_date, db)
+    await db.commit()
 
     # Re-query with relationships
     stmt = (

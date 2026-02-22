@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, Suspense, lazy } from 'react'
+import { useState, useMemo, Suspense, lazy } from 'react'
 import { TriangleAlert, ArrowLeft, ChevronRight, SquarePen, Calendar, Trash2, MapPinOff, Plus } from 'lucide-react'
 
 const MapView = lazy(() => import('../components/map/MapView').then((m) => ({ default: m.MapView })))
@@ -24,6 +24,7 @@ import { ItineraryTimeline } from '../components/itinerary/ItineraryTimeline'
 import { AddDayModal } from '../components/itinerary/AddDayModal'
 import { ChecklistCard } from '../components/checklist/ChecklistCard'
 import { AddChecklistModal } from '../components/checklist/AddChecklistModal'
+import { GmailImportSection } from '../components/trips/GmailImportSection'
 import type { TripCreate, TripStatus, TripUpdate } from '../lib/types'
 
 function formatDateRange(startDate: string, endDate: string): string {
@@ -112,33 +113,6 @@ export function TripDetailPage() {
   const [showAddDayModal, setShowAddDayModal] = useState(false)
   // Track which orphaned day IDs the user has already confirmed/dismissed
   const [confirmedOrphanIds, setConfirmedOrphanIds] = useState<string[]>([])
-
-  // Auto-generate days on first visit when trip has dates but no days
-  const hasGeneratedRef = useRef(false)
-  useEffect(() => {
-    if (
-      itineraryDays &&
-      itineraryDays.length === 0 &&
-      trip?.start_date &&
-      trip?.end_date &&
-      !generateDays.isPending &&
-      !hasGeneratedRef.current
-    ) {
-      hasGeneratedRef.current = true
-      generateDays.mutate()
-    }
-  }, [itineraryDays, trip?.start_date, trip?.end_date, generateDays])
-
-  // Delete silently empty orphaned days when trip dates change (mutation only, no setState)
-  useEffect(() => {
-    if (!itineraryDays || !trip?.start_date || !trip?.end_date) return
-    const tripStart = trip.start_date
-    const tripEnd = trip.end_date
-    const emptyOrphans = itineraryDays.filter(
-      (d) => (d.date < tripStart || d.date > tripEnd) && (d.activity_count ?? 0) === 0,
-    )
-    emptyOrphans.forEach((d) => deleteDay.mutate(d.id))
-  }, [trip?.start_date, trip?.end_date]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Derived: orphaned days with activities that the user hasn't dismissed yet
   const pendingOrphans = itineraryDays && trip?.start_date && trip?.end_date
@@ -508,10 +482,7 @@ export function TripDetailPage() {
                 <p className="text-cloud-600 mb-4">No itinerary days yet.</p>
                 <div className="flex items-center justify-center gap-3">
                   <button
-                    onClick={() => {
-                      hasGeneratedRef.current = false
-                      generateDays.mutate()
-                    }}
+                    onClick={() => generateDays.mutate()}
                     disabled={generateDays.isPending}
                     className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
                   >
@@ -587,6 +558,8 @@ export function TripDetailPage() {
               </div>
             )}
           </div>
+
+          <GmailImportSection tripId={trip.id} />
 
           {/* Danger Zone */}
           {isOwner && (

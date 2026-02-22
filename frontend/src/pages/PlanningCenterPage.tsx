@@ -30,7 +30,7 @@ type SidebarContent =
 
 export function PlanningCenterPage() {
   const now = new Date()
-  const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('month')
+  const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('year')
   const [currentMonth, setCurrentMonth] = useState(now.getMonth())
   const [currentYear, setCurrentYear] = useState(now.getFullYear())
   const [sidebarContent, setSidebarContent] = useState<SidebarContent | null>(null)

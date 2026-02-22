@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { CircleCheck, Sun, Laptop, Compass, type LucideIcon } from 'lucide-react'
+import { CircleCheck, Sun, Laptop, Compass, Trophy, type LucideIcon } from 'lucide-react'
 import type { TripCreate, TripStatus, TripType, TripUpdate, GeocodeSuggestion } from '../../lib/types'
 import { useTrips } from '../../hooks/useTrips'
 import { LoadingSpinner } from '../ui/LoadingSpinner'
@@ -32,6 +32,12 @@ const tripTypes: { value: TripType; label: string; description: string; Icon: Lu
     description: 'Extended time for personal growth',
     Icon: Compass,
   },
+  {
+    value: 'event',
+    label: 'Event',
+    description: 'Race, competition, or one-day event',
+    Icon: Trophy,
+  },
 ]
 
 const statusOptions: { value: TripStatus; label: string }[] = [
@@ -62,7 +68,7 @@ export function TripForm({
 
   const { data: allTrips } = useTrips()
   const sabbaticals = allTrips?.filter((t) => t.type === 'sabbatical') ?? []
-  const showParentTrip = type === 'vacation' && sabbaticals.length > 0
+  const showParentTrip = (type === 'vacation' || type === 'event') && sabbaticals.length > 0
 
   function validate(): boolean {
     const newErrors: Record<string, string> = {}

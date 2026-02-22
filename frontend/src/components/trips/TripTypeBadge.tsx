@@ -1,4 +1,4 @@
-import { Sun, Laptop, Compass, type LucideIcon } from 'lucide-react'
+import { Sun, Laptop, Compass, Trophy, type LucideIcon } from 'lucide-react'
 import type { TripType } from '../../lib/types'
 
 interface TripTypeBadgeProps {
@@ -20,6 +20,11 @@ const typeConfig: Record<TripType, { label: string; Icon: LucideIcon; classes: s
     label: 'Sabbatical',
     Icon: Compass,
     classes: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200',
+  },
+  event: {
+    label: 'Event',
+    Icon: Trophy,
+    classes: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
   },
 }
 

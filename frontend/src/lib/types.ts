@@ -1,4 +1,4 @@
-export type TripType = 'vacation' | 'remote_week' | 'sabbatical'
+export type TripType = 'vacation' | 'remote_week' | 'sabbatical' | 'event'
 export type TripStatus = 'dreaming' | 'planning' | 'booked' | 'active' | 'completed'
 export type MemberRole = 'owner' | 'member'
 
@@ -100,6 +100,10 @@ export interface Activity {
   confirmation_number: string | null
   sort_order: number
   check_out_date: string | null
+  source: 'manual' | 'gmail_import'
+  source_ref: string | null
+  import_status: 'pending_review' | 'confirmed' | 'rejected' | null
+  created_at: string | null
 }
 
 export interface CreateItineraryDay {
@@ -133,6 +137,7 @@ export interface UpdateActivity {
   sort_order?: number
   itinerary_day_id?: string
   check_out_date?: string | null
+  import_status?: 'pending_review' | 'confirmed' | 'rejected' | null
 }
 
 export interface ChecklistItem {
