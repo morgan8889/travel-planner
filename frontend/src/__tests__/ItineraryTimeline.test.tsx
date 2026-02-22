@@ -1,8 +1,30 @@
 import { render, screen } from '@testing-library/react'
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ItineraryTimeline } from '../components/itinerary/ItineraryTimeline'
 import type { ItineraryDay, Activity } from '../lib/types'
+
+vi.mock('../lib/api', () => ({
+  api: {
+    get: vi.fn(),
+    post: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
+    interceptors: { request: { use: vi.fn() }, response: { use: vi.fn() } },
+  },
+  itineraryApi: {
+    getDays: vi.fn(),
+    getActivities: vi.fn(),
+    createDay: vi.fn(),
+    updateDay: vi.fn(),
+    deleteDay: vi.fn(),
+    createActivity: vi.fn(),
+    updateActivity: vi.fn(),
+    deleteActivity: vi.fn(),
+    reorderActivities: vi.fn(),
+    generateDays: vi.fn(),
+  },
+}))
 
 function makeQC() {
   return new QueryClient({ defaultOptions: { queries: { retry: false } } })
