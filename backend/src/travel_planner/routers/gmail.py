@@ -1,6 +1,6 @@
 import base64
 import json as _json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 import anthropic as _anthropic
@@ -102,11 +102,13 @@ async def gmail_callback(
     if creds.refresh_token:
         conn.refresh_token = creds.refresh_token
     if creds.expiry is not None:
-        conn.token_expiry = datetime.fromtimestamp(creds.expiry.timestamp(), tz=timezone.utc)
+        conn.token_expiry = datetime.fromtimestamp(creds.expiry.timestamp(), tz=UTC)
     await db.commit()
 
     redirect = (
-        f"http://localhost:5173/trips/{trip_id}" if trip_id else "http://localhost:5173/trips"
+        f"http://localhost:5173/trips/{trip_id}"
+        if trip_id
+        else "http://localhost:5173/trips"
     )
     return RedirectResponse(url=redirect)
 
@@ -179,7 +181,8 @@ def _extract_text(msg: dict) -> str:
         if part.get("mimeType") == "text/plain":
             data = part.get("body", {}).get("data", "")
             if data:
-                return base64.urlsafe_b64decode(data + "==").decode("utf-8", errors="replace")
+                decoded = base64.urlsafe_b64decode(data + "==")
+                return decoded.decode("utf-8", errors="replace")
         for sub in part.get("parts", []):
             result = _walk(sub)
             if result:
@@ -193,7 +196,8 @@ def _extract_text(msg: dict) -> str:
 
         data = payload.get("body", {}).get("data", "")
         if data:
-            text = base64.urlsafe_b64decode(data + "==").decode("utf-8", errors="replace")
+            decoded = base64.urlsafe_b64decode(data + "==")
+            text = decoded.decode("utf-8", errors="replace")
     return text
 
 
@@ -203,7 +207,9 @@ async def _parse_with_claude(content: str) -> dict | None:
     msg = await client.messages.create(
         model="claude-haiku-4-5-20251001",
         max_tokens=512,
-        messages=[{"role": "user", "content": PARSE_PROMPT.format(content=content[:3000])}],
+        messages=[
+            {"role": "user", "content": PARSE_PROMPT.format(content=content[:3000])}
+        ],
     )
     block = msg.content[0]
     if not isinstance(block, _anthropic.types.TextBlock):
@@ -247,7 +253,9 @@ async def scan_gmail(
 
     trip = await verify_trip_member(body.trip_id, db, user_id)
     if not trip.start_date or not trip.end_date:
-        raise HTTPException(status_code=400, detail="Trip must have start and end dates")
+        raise HTTPException(
+            status_code=400, detail="Trip must have start and end dates"
+        )
 
     # Map date → ItineraryDay for fast lookup
     day_result = await db.execute(
@@ -265,7 +273,9 @@ async def scan_gmail(
     after = trip.start_date.strftime("%Y/%m/%d")
     before = trip.end_date.strftime("%Y/%m/%d")
     query = f"{TRAVEL_SEARCH} after:{after} before:{before}"
-    msgs_result = service.users().messages().list(userId="me", q=query, maxResults=50).execute()
+    msgs_result = (
+        service.users().messages().list(userId="me", q=query, maxResults=50).execute()
+    )
     messages = msgs_result.get("messages", [])
 
     imported_count = 0
@@ -277,7 +287,8 @@ async def scan_gmail(
             skipped_count += 1
             continue
 
-        msg = service.users().messages().get(userId="me", id=email_id, format="full").execute()
+        svc_msg = service.users().messages()
+        msg = svc_msg.get(userId="me", id=email_id, format="full").execute()
         content = _extract_text(msg)
         if not content:
             skipped_count += 1
@@ -321,6 +332,6 @@ async def scan_gmail(
         )
         imported_count += 1
 
-    conn.last_sync_at = datetime.now(tz=timezone.utc)
+    conn.last_sync_at = datetime.now(tz=UTC)
     await db.commit()
     return {"imported_count": imported_count, "skipped_count": skipped_count}

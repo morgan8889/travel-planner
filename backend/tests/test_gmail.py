@@ -1,6 +1,4 @@
-from datetime import datetime, timezone
-
-import pytest
+from datetime import datetime
 
 from travel_planner.models.itinerary import ActivitySource, ImportStatus
 from travel_planner.schemas.itinerary import ActivityResponse
@@ -31,7 +29,9 @@ def test_activity_response_has_import_fields():
     assert resp.import_status == ImportStatus.pending_review
 
 
-def test_gmail_status_not_connected(client, auth_headers, override_get_db, mock_db_session):
+def test_gmail_status_not_connected(
+    client, auth_headers, override_get_db, mock_db_session
+):
     from unittest.mock import MagicMock
 
     result_mock = MagicMock()
@@ -49,7 +49,9 @@ def test_gmail_auth_url_not_configured(client, auth_headers):
     assert response.status_code == 503
 
 
-def test_gmail_disconnect_when_not_connected(client, auth_headers, override_get_db, mock_db_session):
+def test_gmail_disconnect_when_not_connected(
+    client, auth_headers, override_get_db, mock_db_session
+):
     from unittest.mock import MagicMock
 
     result_mock = MagicMock()
@@ -60,7 +62,9 @@ def test_gmail_disconnect_when_not_connected(client, auth_headers, override_get_
     assert response.status_code == 404
 
 
-def test_scan_requires_gmail_connected(client, auth_headers, override_get_db, mock_db_session):
+def test_scan_requires_gmail_connected(
+    client, auth_headers, override_get_db, mock_db_session
+):
     """Scan returns 400 when Gmail is not connected."""
     from unittest.mock import MagicMock
 

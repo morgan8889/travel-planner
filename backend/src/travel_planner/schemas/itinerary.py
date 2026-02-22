@@ -3,7 +3,11 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from travel_planner.models.itinerary import ActivityCategory, ActivitySource, ImportStatus
+from travel_planner.models.itinerary import (
+    ActivityCategory,
+    ActivitySource,
+    ImportStatus,
+)
 
 
 class ItineraryDayCreate(BaseModel):

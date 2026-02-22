@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from unittest.mock import AsyncMock, MagicMock
 from uuid import UUID
 
@@ -14,9 +14,14 @@ from tests.conftest import (
     make_trip,
     make_user,
 )
-from travel_planner.models.itinerary import Activity, ActivityCategory, ActivitySource, ItineraryDay
+from travel_planner.models.itinerary import (
+    Activity,
+    ActivityCategory,
+    ActivitySource,
+    ItineraryDay,
+)
 
-_ACTIVITY_CREATED_AT = datetime(2026, 1, 1, tzinfo=timezone.utc)
+_ACTIVITY_CREATED_AT = datetime(2026, 1, 1, tzinfo=UTC)
 
 # Local aliases matching the previous private naming convention
 _make_user = make_user
