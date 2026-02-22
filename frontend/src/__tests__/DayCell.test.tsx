@@ -126,7 +126,7 @@ describe('DayCell full mode custom day dot', () => {
   })
 
   it('shows hover popover with name and date in full mode', () => {
-    render(
+    const { container } = render(
       <DayCell
         date="2026-07-14"
         dayNumber={14}
@@ -136,7 +136,7 @@ describe('DayCell full mode custom day dot', () => {
         customDayName="Ironman"
       />
     )
-    const dot = document.querySelector('.rounded-full.bg-amber-400') as HTMLElement
+    const dot = container.querySelector('.rounded-full.bg-amber-400') as HTMLElement
     fireEvent.mouseEnter(dot)
     expect(screen.getByText('Ironman')).toBeInTheDocument()
     expect(screen.getByText('Jul 14')).toBeInTheDocument()
@@ -163,7 +163,7 @@ describe('DayCell full mode custom day dot', () => {
   })
 
   it('shows hover popover from corner dot in compact mode', () => {
-    render(
+    const { container } = render(
       <DayCell
         date="2026-07-14"
         dayNumber={14}
@@ -174,7 +174,7 @@ describe('DayCell full mode custom day dot', () => {
         compact={true}
       />
     )
-    const cornerDot = document.querySelector('.w-1\\.5.h-1\\.5.rounded-full.bg-amber-400') as HTMLElement
+    const cornerDot = container.querySelector('.w-1\\.5.h-1\\.5.rounded-full.bg-amber-400') as HTMLElement
     fireEvent.mouseEnter(cornerDot)
     expect(screen.getByText('Ironman')).toBeInTheDocument()
     fireEvent.mouseLeave(cornerDot)

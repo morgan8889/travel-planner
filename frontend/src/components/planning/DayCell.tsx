@@ -24,6 +24,19 @@ function formatShortDate(dateStr: string): string {
   })
 }
 
+function CustomDayPopover({ customDayName, date, align }: {
+  customDayName: string
+  date: string
+  align: 'left' | 'right'
+}) {
+  return (
+    <div className={`absolute bottom-full ${align === 'left' ? 'left-0' : 'right-0'} mb-1 px-2.5 py-2 bg-cloud-900 text-white text-[11px] rounded-lg shadow-lg whitespace-nowrap z-50 pointer-events-none min-w-[100px]`}>
+      <div className="font-semibold leading-tight">{customDayName}</div>
+      <div className="opacity-70 mt-0.5">{formatShortDate(date)}</div>
+    </div>
+  )
+}
+
 export const DayCell = memo(function DayCell({
   date,
   dayNumber,
@@ -61,6 +74,7 @@ export const DayCell = memo(function DayCell({
           }
         }}
         title={holidayLabel}
+        onMouseLeave={() => setShowCustomPopover(false)}
       >
         {dayNumber}
         {showLabel && label && (
@@ -71,15 +85,12 @@ export const DayCell = memo(function DayCell({
         {customDayName && (
           <>
             <div
-              className="absolute bottom-0.5 left-0.5 w-1.5 h-1.5 rounded-full bg-amber-400"
+              className="absolute bottom-0.5 left-0.5 w-1.5 h-1.5 rounded-full bg-amber-400 cursor-default"
               onMouseEnter={() => setShowCustomPopover(true)}
               onMouseLeave={() => setShowCustomPopover(false)}
             />
             {showCustomPopover && (
-              <div className="absolute bottom-full left-0 mb-1 px-2.5 py-2 bg-cloud-900 text-white text-[11px] rounded-lg shadow-lg whitespace-nowrap z-50 pointer-events-none min-w-[100px]">
-                <div className="font-semibold leading-tight">{customDayName}</div>
-                <div className="opacity-70 mt-0.5">{formatShortDate(date)}</div>
-              </div>
+              <CustomDayPopover customDayName={customDayName} date={date} align="left" />
             )}
           </>
         )}
@@ -129,10 +140,7 @@ export const DayCell = memo(function DayCell({
               onMouseLeave={() => setShowCustomPopover(false)}
             />
             {showCustomPopover && (
-              <div className="absolute bottom-full right-0 mb-1 px-2.5 py-2 bg-cloud-900 text-white text-[11px] rounded-lg shadow-lg whitespace-nowrap z-50 pointer-events-none min-w-[100px]">
-                <div className="font-semibold leading-tight">{customDayName}</div>
-                <div className="opacity-70 mt-0.5">{formatShortDate(date)}</div>
-              </div>
+              <CustomDayPopover customDayName={customDayName} date={date} align="right" />
             )}
           </div>
         )}
