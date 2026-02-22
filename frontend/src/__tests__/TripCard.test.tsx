@@ -141,3 +141,46 @@ describe('TripCard', () => {
     expect(bar).toHaveTextContent('All days planned')
   })
 })
+
+describe('TripCard booking chips', () => {
+  it('always renders all 3 booking chips even when totals are 0', async () => {
+    renderWithProviders(<TripCard trip={mockTrip} />)
+    const chipRow = await screen.findByTestId('booking-chips')
+    expect(chipRow).toBeInTheDocument()
+    expect(chipRow.children.length).toBe(3)
+  })
+
+  it('renders amber chip for partially confirmed bookings', async () => {
+    const trip = {
+      ...mockTrip,
+      transport_total: 2,
+      transport_confirmed: 1,
+    }
+    renderWithProviders(<TripCard trip={trip} />)
+    const chipRow = await screen.findByTestId('booking-chips')
+    const flightChip = chipRow.children[0]
+    expect(flightChip.className).toContain('bg-amber-50')
+    expect(flightChip.textContent).toContain('1/2')
+  })
+
+  it('renders green chip for fully confirmed bookings', async () => {
+    const trip = {
+      ...mockTrip,
+      lodging_total: 3,
+      lodging_confirmed: 3,
+    }
+    renderWithProviders(<TripCard trip={trip} />)
+    const chipRow = await screen.findByTestId('booking-chips')
+    const hotelChip = chipRow.children[1]
+    expect(hotelChip.className).toContain('bg-emerald-50')
+    expect(hotelChip.textContent).toContain('3/3')
+  })
+
+  it('renders muted chip for empty bookings (total 0)', async () => {
+    renderWithProviders(<TripCard trip={mockTrip} />)
+    const chipRow = await screen.findByTestId('booking-chips')
+    const activityChip = chipRow.children[2]
+    expect(activityChip.className).toContain('bg-cloud-50')
+    expect(activityChip.textContent).not.toContain('/')
+  })
+})
