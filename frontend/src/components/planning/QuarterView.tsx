@@ -155,8 +155,11 @@ export function QuarterView({
                         colSpan={colSpan}
                         stackIndex={tripIdx}
                         size="medium"
+                        colorBy="type"
+                        tripType={trip.type}
                         startDate={trip.start_date}
                         endDate={trip.end_date}
+                        notes={trip.notes}
                         onClick={() => onTripClick(trip)}
                       />
                     )
