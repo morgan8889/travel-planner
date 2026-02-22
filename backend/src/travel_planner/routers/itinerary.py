@@ -51,12 +51,10 @@ async def _sync_itinerary_days(
     existing_dates = {row.date for row in rows}
 
     # Add missing days within the range
-    changed = False
     current = start_date
     while current <= end_date:
         if current not in existing_dates:
             db.add(ItineraryDay(trip_id=trip_id, date=current))
-            changed = True
         current += timedelta(days=1)
 
     # Bulk-delete empty orphan days outside the range
@@ -67,10 +65,8 @@ async def _sync_itinerary_days(
     ]
     if orphan_ids:
         await db.execute(sa_delete(ItineraryDay).where(ItineraryDay.id.in_(orphan_ids)))
-        changed = True
 
-    if changed:
-        await db.commit()
+    # Intentionally no db.commit() here — callers own the transaction boundary
 
 
 async def verify_day_access(

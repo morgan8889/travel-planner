@@ -902,9 +902,9 @@ async def test_sync_creates_days_for_full_range():
 
     await _sync_itinerary_days(TRIP_ID, date(2026, 6, 1), date(2026, 6, 3), db)
 
-    # Expect 3 db.add calls and one commit
+    # Expect 3 db.add calls; commit is owned by callers, not the helper
     assert db.add.call_count == 3
-    db.commit.assert_called_once()
+    db.commit.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -919,9 +919,9 @@ async def test_sync_skips_existing_dates():
 
     await _sync_itinerary_days(TRIP_ID, date(2026, 6, 1), date(2026, 6, 3), db)
 
-    # Only 2 new days (June 2 and June 3)
+    # Only 2 new days (June 2 and June 3); commit owned by callers
     assert db.add.call_count == 2
-    db.commit.assert_called_once()
+    db.commit.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -984,7 +984,7 @@ async def test_sync_deletes_empty_orphan_days():
     assert db.execute.call_count == 2
     # One add call for June 2 (June 1 already exists)
     assert db.add.call_count == 1
-    db.commit.assert_called_once()
+    db.commit.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -1002,7 +1002,7 @@ async def test_sync_preserves_orphan_days_with_activities():
 
     # Only one execute call (the initial fetch); no sa_delete
     assert db.execute.call_count == 1
-    db.commit.assert_called_once()
+    db.commit.assert_not_called()
 
 
 @pytest.mark.asyncio
