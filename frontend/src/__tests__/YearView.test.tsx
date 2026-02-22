@@ -142,8 +142,8 @@ describe('YearView trip inventory panel', () => {
       }),
     ]
     render(<YearView {...baseProps} trips={trips} />)
-    // Event name (from notes) appears in Events section
-    expect(screen.getByText('3M Half Marathon')).toBeInTheDocument()
+    // Event name (from notes) appears in Events section (may also appear in bar label)
+    expect(screen.getAllByText('3M Half Marathon').length).toBeGreaterThanOrEqual(1)
     // Trips section shows no trips (only non-event trips go there)
     expect(screen.getByText(/no trips planned/i)).toBeInTheDocument()
   })
