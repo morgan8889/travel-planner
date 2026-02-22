@@ -69,6 +69,8 @@ type InventoryItem =
   | { type: 'trip'; trip: TripSummary }
   | { type: 'gap'; weeks: number }
 
+type ExpandedState = { year: number; trips: boolean; events: boolean; holidays: boolean }
+
 function buildInventory(trips: TripSummary[], year: number): InventoryItem[] {
   const yearStart = `${year}-01-01`
   const yearEnd = `${year}-12-31`
@@ -153,20 +155,19 @@ export function YearView({
 
   const [highlightedTripId, setHighlightedTripId] = useState<string | null>(null)
 
-  type ExpandedState = { year: number; trips: boolean; events: boolean; holidays: boolean }
   const [expanded, setExpanded] = useState<ExpandedState>({ year, trips: false, events: false, holidays: false })
   const tripsExpanded = expanded.year === year && expanded.trips
   const eventsExpanded = expanded.year === year && expanded.events
   const holidaysExpanded = expanded.year === year && expanded.holidays
 
   function setTripsExpanded(value: boolean) {
-    setExpanded({ year, trips: value, events: false, holidays: false })
+    setExpanded((prev) => ({ ...prev, year, trips: value }))
   }
   function setEventsExpanded(value: boolean) {
-    setExpanded({ year, trips: false, events: value, holidays: false })
+    setExpanded((prev) => ({ ...prev, year, events: value }))
   }
   function setHolidaysExpanded(value: boolean) {
-    setExpanded({ year, trips: false, events: false, holidays: value })
+    setExpanded((prev) => ({ ...prev, year, holidays: value }))
   }
 
   const monthRefs = useRef<(HTMLDivElement | null)[]>(Array(12).fill(null))
