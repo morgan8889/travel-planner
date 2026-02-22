@@ -188,22 +188,14 @@ def test_delete_account_requires_auth(client: TestClient):
 def test_delete_account_no_service_key(
     client: TestClient, auth_headers: dict[str, str], override_get_db, mock_db_session
 ):
-    """DELETE /auth/me returns 204 with empty service key — skips Supabase call."""
-    owned_trips_mock = MagicMock()
-    owned_trips_mock.all.return_value = []
+    """DELETE /auth/me returns 503 when service role key is not configured."""
+    with patch("travel_planner.routers.auth.settings") as mock_settings:
+        mock_settings.supabase_service_role_key = ""
 
-    mock_db_session.execute.side_effect = [
-        owned_trips_mock,  # select owned trip IDs
-        MagicMock(),  # delete TripMembers
-        MagicMock(),  # delete GmailConnections
-        MagicMock(),  # delete ImportRecords
-        MagicMock(),  # delete HolidayCalendars
-        MagicMock(),  # delete CustomDays
-    ]
+        response = client.delete("/auth/me", headers=auth_headers)
 
-    response = client.delete("/auth/me", headers=auth_headers)
-    assert response.status_code == 204
-    assert mock_db_session.commit.called
+    assert response.status_code == 503
+    assert not mock_db_session.commit.called
 
 
 def test_delete_account_calls_supabase_admin_when_key_set(
@@ -214,11 +206,12 @@ def test_delete_account_calls_supabase_admin_when_key_set(
     owned_trips_mock.all.return_value = []
     mock_db_session.execute.side_effect = [
         owned_trips_mock,
-        MagicMock(),
-        MagicMock(),
-        MagicMock(),
+        MagicMock(),  # delete TripMembers
+        MagicMock(),  # delete GmailConnections
+        MagicMock(),  # delete ImportRecords
         MagicMock(),  # delete HolidayCalendars
         MagicMock(),  # delete CustomDays
+        MagicMock(),  # delete UserProfile
     ]
 
     with patch("travel_planner.routers.auth.settings") as mock_settings:

@@ -62,6 +62,12 @@ async def delete_account(
     db: AsyncSession = Depends(get_db),
 ) -> Response:
     """Permanently delete the current user's account and all their data."""
+    if not settings.supabase_service_role_key:
+        raise HTTPException(
+            status_code=503,
+            detail="Account deletion not configured: SUPABASE_SERVICE_ROLE_KEY missing",
+        )
+
     # 1. Find trips this user owns
     result = await db.execute(
         select(Trip.id)
@@ -92,22 +98,24 @@ async def delete_account(
     )
     await db.execute(sa_delete(CustomDay).where(CustomDay.user_id == user_id))
 
-    # 6. Delete Supabase auth user first — if this fails, we abort before committing DB
+    # 6. Delete user profile
+    await db.execute(sa_delete(UserProfile).where(UserProfile.id == user_id))
+
+    # 7. Delete Supabase auth user first — if this fails, we abort before committing DB
     #    changes, so data is preserved and the user can retry.
-    if settings.supabase_service_role_key:
-        async with httpx.AsyncClient() as client:
-            resp = await client.delete(
-                f"{settings.supabase_url}/auth/v1/admin/users/{user_id}",
-                headers={
-                    "apikey": settings.supabase_service_role_key,
-                    "Authorization": f"Bearer {settings.supabase_service_role_key}",
-                },
+    async with httpx.AsyncClient() as client:
+        resp = await client.delete(
+            f"{settings.supabase_url}/auth/v1/admin/users/{user_id}",
+            headers={
+                "apikey": settings.supabase_service_role_key,
+                "Authorization": f"Bearer {settings.supabase_service_role_key}",
+            },
+        )
+        if resp.status_code not in (200, 204):
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to delete auth user from Supabase",
             )
-            if resp.status_code not in (200, 204):
-                raise HTTPException(
-                    status_code=500,
-                    detail="Failed to delete auth user from Supabase",
-                )
 
     # Commit only after Supabase deletion succeeded (or was skipped)
     await db.commit()

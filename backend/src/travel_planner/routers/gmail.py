@@ -84,12 +84,14 @@ def _verify_and_decode_state(state: str) -> dict:
 @router.get("/auth-url")
 async def gmail_auth_url(
     user_id: CurrentUserId,
-    trip_id: str | None = None,
+    trip_id: UUID | None = None,
 ) -> dict:
     if not settings.google_client_id or not settings.google_client_secret:
         raise HTTPException(status_code=503, detail="Google OAuth not configured")
     flow = _make_flow()
-    payload = _json.dumps({"user_id": str(user_id), "trip_id": trip_id})
+    payload = _json.dumps(
+        {"user_id": str(user_id), "trip_id": str(trip_id) if trip_id else None}
+    )
     state = _sign_state(payload)
     auth_url, _ = flow.authorization_url(
         access_type="offline",
@@ -194,6 +196,8 @@ async def _build_service(conn: GmailConnection):
     if creds.expired and creds.refresh_token:
         await asyncio.to_thread(creds.refresh, Request())
         conn.access_token = creds.token
+        if creds.expiry is not None:
+            conn.token_expiry = datetime.fromtimestamp(creds.expiry.timestamp(), tz=UTC)
     return build("gmail", "v1", credentials=creds)
 
 

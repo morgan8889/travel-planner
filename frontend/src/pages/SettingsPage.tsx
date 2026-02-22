@@ -1,17 +1,11 @@
-import { lazy, useState, Suspense } from 'react'
+import { useState } from 'react'
 import { Mail, User, Database } from 'lucide-react'
 import { useGmailStatus, useDisconnectGmail } from '../hooks/useGmail'
 import { useDeleteAccount } from '../hooks/useAuth'
 import { useAuth } from '../contexts/AuthContext'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { gmailApi } from '../lib/api'
-
-// Dynamic import gated on DEV — Vite excludes this chunk from production builds entirely
-const DevSeedContent = import.meta.env.DEV
-  ? lazy(() =>
-      import('../components/dev/DevSeedContent').then((m) => ({ default: m.DevSeedContent }))
-    )
-  : null
+import { DevSeedContent } from '../components/dev/DevSeedContent'
 
 export function SettingsPage() {
   const { user, signOut } = useAuth()
@@ -108,16 +102,14 @@ export function SettingsPage() {
         </div>
       </div>
 
-      {/* Dev Tools — only in development (excluded from production bundle) */}
-      {DevSeedContent && (
+      {/* Dev Tools — only in development */}
+      {import.meta.env.DEV && (
         <div className="bg-white rounded-xl shadow-sm border border-amber-200 p-6">
           <h2 className="text-lg font-semibold text-cloud-900 mb-4 flex items-center gap-2">
             <Database className="w-4 h-4" />
             Dev Tools
           </h2>
-          <Suspense fallback={null}>
-            <DevSeedContent />
-          </Suspense>
+          <DevSeedContent />
         </div>
       )}
 
