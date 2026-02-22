@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
 from uuid import UUID
 
@@ -14,7 +14,9 @@ from tests.conftest import (
     make_trip,
     make_user,
 )
-from travel_planner.models.itinerary import Activity, ActivityCategory, ItineraryDay
+from travel_planner.models.itinerary import Activity, ActivityCategory, ActivitySource, ItineraryDay
+
+_ACTIVITY_CREATED_AT = datetime(2026, 1, 1, tzinfo=timezone.utc)
 
 # Local aliases matching the previous private naming convention
 _make_user = make_user
@@ -226,6 +228,10 @@ def test_create_activity(
     # Mock refresh to set the ID on the activity object
     async def mock_refresh(obj):
         obj.id = UUID("888e4567-e89b-12d3-a456-426614174007")
+        obj.created_at = _ACTIVITY_CREATED_AT
+        obj.source = ActivitySource.manual
+        obj.source_ref = None
+        obj.import_status = None
 
     mock_db_session.refresh = AsyncMock(side_effect=mock_refresh)
 
@@ -281,10 +287,16 @@ def test_list_activities(
     activity1.start_time = None
     activity1.end_time = None
     activity1.location = None
+    activity1.latitude = None
+    activity1.longitude = None
     activity1.notes = None
     activity1.confirmation_number = None
     activity1.sort_order = 0
     activity1.check_out_date = None
+    activity1.source = ActivitySource.manual
+    activity1.source_ref = None
+    activity1.import_status = None
+    activity1.created_at = _ACTIVITY_CREATED_AT
 
     activity2 = MagicMock(spec=Activity)
     activity2.id = UUID("aaae4567-e89b-12d3-a456-426614174009")
@@ -294,10 +306,16 @@ def test_list_activities(
     activity2.start_time = None
     activity2.end_time = None
     activity2.location = "Champ de Mars"
+    activity2.latitude = None
+    activity2.longitude = None
     activity2.notes = "Book tickets in advance"
     activity2.confirmation_number = None
     activity2.sort_order = 1
     activity2.check_out_date = None
+    activity2.source = ActivitySource.manual
+    activity2.source_ref = None
+    activity2.import_status = None
+    activity2.created_at = _ACTIVITY_CREATED_AT
 
     # First call: verify_day_access - get day
     result_mock1 = MagicMock()
@@ -353,10 +371,16 @@ def test_update_activity(
     activity.start_time = None
     activity.end_time = None
     activity.location = None
+    activity.latitude = None
+    activity.longitude = None
     activity.notes = None
     activity.confirmation_number = None
     activity.sort_order = 0
     activity.check_out_date = None
+    activity.source = ActivitySource.manual
+    activity.source_ref = None
+    activity.import_status = None
+    activity.created_at = _ACTIVITY_CREATED_AT
 
     # First call: get activity
     result_mock1 = MagicMock()
@@ -462,10 +486,16 @@ def test_reorder_activities(
     activity1.start_time = None
     activity1.end_time = None
     activity1.location = None
+    activity1.latitude = None
+    activity1.longitude = None
     activity1.notes = None
     activity1.confirmation_number = None
     activity1.sort_order = 0
     activity1.check_out_date = None
+    activity1.source = ActivitySource.manual
+    activity1.source_ref = None
+    activity1.import_status = None
+    activity1.created_at = _ACTIVITY_CREATED_AT
 
     activity2 = MagicMock(spec=Activity)
     activity2.id = UUID("aaae4567-e89b-12d3-a456-426614174009")
@@ -475,10 +505,16 @@ def test_reorder_activities(
     activity2.start_time = None
     activity2.end_time = None
     activity2.location = "Champ de Mars"
+    activity2.latitude = None
+    activity2.longitude = None
     activity2.notes = None
     activity2.confirmation_number = None
     activity2.sort_order = 1
     activity2.check_out_date = None
+    activity2.source = ActivitySource.manual
+    activity2.source_ref = None
+    activity2.import_status = None
+    activity2.created_at = _ACTIVITY_CREATED_AT
 
     # verify_day_access: get day, then verify_trip_member
     result_mock1 = MagicMock()
@@ -776,6 +812,10 @@ def test_update_activity_moves_to_different_day(
     activity.confirmation_number = None
     activity.sort_order = 0
     activity.check_out_date = None
+    activity.source = ActivitySource.manual
+    activity.source_ref = None
+    activity.import_status = None
+    activity.created_at = _ACTIVITY_CREATED_AT
 
     # Mock source day
     source_day = MagicMock(spec=ItineraryDay)
@@ -904,6 +944,10 @@ def test_create_activity_with_check_out_date(
     async def mock_refresh(obj):
         obj.id = UUID("888e4567-e89b-12d3-a456-426614174007")
         obj.check_out_date = date(2026, 12, 18)
+        obj.created_at = _ACTIVITY_CREATED_AT
+        obj.source = ActivitySource.manual
+        obj.source_ref = None
+        obj.import_status = None
 
     mock_db_session.refresh = AsyncMock(side_effect=mock_refresh)
 

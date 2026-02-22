@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     mapbox_access_token: str = ""
     google_client_id: str = ""
     google_client_secret: str = ""
+    google_oauth_redirect_uri: str = "http://localhost:8000/gmail/callback"
     cors_origins: list[str] = ["http://localhost:5173"]
 
     model_config = {"env_file": ".env"}
