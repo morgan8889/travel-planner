@@ -170,6 +170,8 @@ export function YearView({
     setExpanded((prev) => ({ ...prev, year, holidays: value }))
   }
 
+  const [hoveredCustomId, setHoveredCustomId] = useState<string | null>(null)
+
   const monthRefs = useRef<(HTMLDivElement | null)[]>(Array(12).fill(null))
 
   function handleInventoryTripClick(trip: TripSummary) {
@@ -392,14 +394,25 @@ export function YearView({
                   </button>
                 )
               }
-              // kind === 'custom' — hover popover added in Task 3
+              // kind === 'custom'
               return (
-                <div key={item.cd.id} className="flex items-start gap-2 py-1.5">
+                <div
+                  key={item.cd.id}
+                  className="relative flex items-start gap-2 py-1.5"
+                  onMouseEnter={() => setHoveredCustomId(item.cd.id)}
+                  onMouseLeave={() => setHoveredCustomId(null)}
+                >
                   <div className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0 mt-0.5" />
                   <div className="min-w-0">
                     <p className="text-xs font-medium text-cloud-800 truncate">{item.cd.name}</p>
                     <p className="text-[10px] text-cloud-500">{formatShortDate(item.cd.resolvedDate)}</p>
                   </div>
+                  {hoveredCustomId === item.cd.id && (
+                    <div className="absolute bottom-full left-0 mb-1 px-2.5 py-2 bg-cloud-900 text-white text-[11px] rounded-lg shadow-lg whitespace-nowrap z-50 pointer-events-none min-w-[120px]">
+                      <div className="font-semibold leading-tight">{item.cd.name}</div>
+                      <div className="opacity-70 mt-0.5">{formatShortDate(item.cd.resolvedDate)}</div>
+                    </div>
+                  )}
                 </div>
               )
             })}

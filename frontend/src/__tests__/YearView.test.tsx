@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi } from 'vitest'
 import { YearView } from '../components/planning/YearView'
@@ -287,5 +287,48 @@ describe('YearView event badges', () => {
     const { container } = render(<YearView {...baseProps} customDays={[]} />)
     const dots = container.querySelectorAll('span.bg-amber-400.w-2.h-2.rounded-full')
     expect(dots.length).toBe(0)
+  })
+})
+
+describe('YearView custom day hover popover', () => {
+  it('shows custom day name in popover on hover', () => {
+    const customDays: CustomDay[] = [
+      {
+        id: 'cd-1',
+        user_id: 'u-1',
+        name: 'Race Day',
+        date: '2026-07-14',
+        recurring: false,
+        created_at: '2026-01-01T00:00:00Z',
+      },
+    ]
+    render(<YearView {...baseProps} customDays={customDays} />)
+    // Initially: 'Race Day' appears once (in the item label)
+    expect(screen.getAllByText('Race Day').length).toBe(1)
+    // Hover the custom day item row (it has a relative wrapper with onMouseEnter)
+    const nameEl = screen.getByText('Race Day')
+    fireEvent.mouseEnter(nameEl.closest('.relative') ?? nameEl)
+    // After hover: 'Race Day' appears twice (item label + popover)
+    expect(screen.getAllByText('Race Day').length).toBe(2)
+  })
+
+  it('hides custom day popover on mouse leave', () => {
+    const customDays: CustomDay[] = [
+      {
+        id: 'cd-1',
+        user_id: 'u-1',
+        name: 'Race Day',
+        date: '2026-07-14',
+        recurring: false,
+        created_at: '2026-01-01T00:00:00Z',
+      },
+    ]
+    render(<YearView {...baseProps} customDays={customDays} />)
+    const nameEl = screen.getByText('Race Day')
+    const wrapper = nameEl.closest('.relative') ?? nameEl
+    fireEvent.mouseEnter(wrapper)
+    expect(screen.getAllByText('Race Day').length).toBe(2)
+    fireEvent.mouseLeave(wrapper)
+    expect(screen.getAllByText('Race Day').length).toBe(1)
   })
 })
