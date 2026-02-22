@@ -126,6 +126,22 @@ export function YearView({
     [trips, year],
   )
 
+  const tripOnlyCount = useMemo(
+    () => nonEventInventory.filter((i) => i.type === 'trip').length,
+    [nonEventInventory],
+  )
+
+  const nonEventInventoryCollapsed = useMemo(() => {
+    const result: InventoryItem[] = []
+    let tripCount = 0
+    for (const item of nonEventInventory) {
+      if (tripCount >= TRIPS_DEFAULT) break
+      result.push(item)
+      if (item.type === 'trip') tripCount++
+    }
+    return result
+  }, [nonEventInventory])
+
   const customDaysForYear = useMemo(() => {
     return customDays
       .map((cd) => ({ ...cd, resolvedDate: cd.recurring ? `${year}-${cd.date.slice(5)}` : cd.date }))
@@ -313,7 +329,7 @@ export function YearView({
           <p className="text-xs text-cloud-400 italic">No trips planned</p>
         )}
 
-        {(tripsExpanded ? nonEventInventory : nonEventInventory.slice(0, TRIPS_DEFAULT)).map(
+        {(tripsExpanded ? nonEventInventory : nonEventInventoryCollapsed).map(
           (item, idx) => {
             if (item.type === 'gap') {
               return (
@@ -348,16 +364,16 @@ export function YearView({
           },
         )}
 
-        {!tripsExpanded && nonEventInventory.length > TRIPS_DEFAULT && (
+        {!tripsExpanded && tripOnlyCount > TRIPS_DEFAULT && (
           <button
             type="button"
             onClick={() => setTripsExpanded(true)}
             className="text-[10px] text-indigo-500 hover:text-indigo-700 py-1 text-left w-full"
           >
-            + {nonEventInventory.length - TRIPS_DEFAULT} more
+            + {tripOnlyCount - TRIPS_DEFAULT} more
           </button>
         )}
-        {tripsExpanded && nonEventInventory.length > TRIPS_DEFAULT && (
+        {tripsExpanded && tripOnlyCount > TRIPS_DEFAULT && (
           <button
             type="button"
             onClick={() => setTripsExpanded(false)}
