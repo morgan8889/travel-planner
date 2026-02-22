@@ -2,9 +2,9 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
 import { DayCell } from '../components/planning/DayCell'
 
-describe('DayCell full mode holiday label', () => {
-  it('renders holiday label on same row as date number', () => {
-    render(
+describe('DayCell full mode holiday', () => {
+  it('renders rose dot for holiday in full mode', () => {
+    const { container } = render(
       <DayCell
         date="2026-12-25"
         dayNumber={25}
@@ -14,10 +14,28 @@ describe('DayCell full mode holiday label', () => {
         holidayLabel="Christmas"
       />
     )
-    const label = screen.getByText('Christmas')
-    const dateNumber = screen.getByText('25')
-    expect(label.parentElement).toBe(dateNumber.parentElement)
-    expect(label.tagName).not.toBe('P')
+    const dot = container.querySelector('.rounded-full.bg-rose-400')
+    expect(dot).toBeInTheDocument()
+    expect(container.querySelector('svg')).not.toBeInTheDocument()
+  })
+
+  it('shows hover popover with holiday name and date in full mode', () => {
+    const { container } = render(
+      <DayCell
+        date="2026-12-25"
+        dayNumber={25}
+        isToday={false}
+        isCurrentMonth={true}
+        isSelected={false}
+        holidayLabel="Christmas"
+      />
+    )
+    const dot = container.querySelector('.rounded-full.bg-rose-400') as HTMLElement
+    fireEvent.mouseEnter(dot)
+    expect(screen.getByText('Christmas')).toBeInTheDocument()
+    expect(screen.getByText('Dec 25')).toBeInTheDocument()
+    fireEvent.mouseLeave(dot)
+    expect(screen.queryByText('Christmas')).not.toBeInTheDocument()
   })
 })
 
@@ -87,6 +105,41 @@ describe('DayCell compact mode', () => {
     expect(cell.className).toContain('aspect-square')
     expect(cell.className).not.toContain('h-full')
   })
+
+  it('renders rose corner dot for holiday in compact mode', () => {
+    const { container } = render(
+      <DayCell
+        date="2026-12-25"
+        dayNumber={25}
+        isToday={false}
+        isCurrentMonth={true}
+        isSelected={false}
+        holidayLabel="Christmas"
+        compact={true}
+      />
+    )
+    const dot = container.querySelector('.w-1\\.5.h-1\\.5.rounded-full.bg-rose-400')
+    expect(dot).toBeInTheDocument()
+  })
+
+  it('shows hover popover from rose dot in compact mode', () => {
+    const { container } = render(
+      <DayCell
+        date="2026-12-25"
+        dayNumber={25}
+        isToday={false}
+        isCurrentMonth={true}
+        isSelected={false}
+        holidayLabel="Christmas"
+        compact={true}
+      />
+    )
+    const dot = container.querySelector('.w-1\\.5.h-1\\.5.rounded-full.bg-rose-400') as HTMLElement
+    fireEvent.mouseEnter(dot)
+    expect(screen.getByText('Christmas')).toBeInTheDocument()
+    fireEvent.mouseLeave(dot)
+    expect(screen.queryByText('Christmas')).not.toBeInTheDocument()
+  })
 })
 
 describe('DayCell full mode custom day dot', () => {
@@ -108,7 +161,7 @@ describe('DayCell full mode custom day dot', () => {
     expect(dot).toBeInTheDocument()
   })
 
-  it('does NOT render amber dot when holidayLabel takes precedence in full mode', () => {
+  it('renders rose dot (not amber) when both holiday and customDayName present in full mode', () => {
     const { container } = render(
       <DayCell
         date="2026-12-25"
@@ -120,7 +173,7 @@ describe('DayCell full mode custom day dot', () => {
         customDayName="My Event"
       />
     )
-    expect(screen.getByText('Christmas')).toBeInTheDocument()
+    expect(container.querySelector('.rounded-full.bg-rose-400')).toBeInTheDocument()
     expect(container.querySelector('svg')).not.toBeInTheDocument()
     expect(container.querySelector('.rounded-full.bg-amber-400')).not.toBeInTheDocument()
   })

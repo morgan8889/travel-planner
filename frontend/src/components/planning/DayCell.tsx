@@ -24,14 +24,14 @@ function formatShortDate(dateStr: string): string {
   })
 }
 
-function CustomDayPopover({ customDayName, date, align }: {
-  customDayName: string
+function DayPopover({ name, date, align }: {
+  name: string
   date: string
   align: 'left' | 'right'
 }) {
   return (
     <div className={`absolute bottom-full ${align === 'left' ? 'left-0' : 'right-0'} mb-1 px-2.5 py-2 bg-cloud-900 text-white text-[11px] rounded-lg shadow-lg whitespace-nowrap z-50 pointer-events-none min-w-[100px]`}>
-      <div className="font-semibold leading-tight">{customDayName}</div>
+      <div className="font-semibold leading-tight">{name}</div>
       <div className="opacity-70 mt-0.5">{formatShortDate(date)}</div>
     </div>
   )
@@ -54,6 +54,7 @@ export const DayCell = memo(function DayCell({
   onHolidayClick,
 }: DayCellProps) {
   const [showCustomPopover, setShowCustomPopover] = useState(false)
+  const [showHolidayPopover, setShowHolidayPopover] = useState(false)
   const label = holidayLabel || customDayName
 
   if (compact) {
@@ -64,7 +65,6 @@ export const DayCell = memo(function DayCell({
           ${isToday ? 'ring-2 ring-indigo-500 ring-inset font-bold' : ''}
           ${!isToday && isSelectedForCreate ? 'ring-2 ring-indigo-500 bg-indigo-50' : ''}
           ${isSelected ? 'bg-indigo-100' : ''}
-          ${holidayLabel ? 'font-semibold text-red-600' : ''}
         `}
         onClick={() => {
           if (holidayLabel && onHolidayClick) {
@@ -73,14 +73,28 @@ export const DayCell = memo(function DayCell({
             onClick?.(date)
           }
         }}
-        title={holidayLabel}
-        onMouseLeave={() => setShowCustomPopover(false)}
+        onMouseLeave={() => {
+          setShowCustomPopover(false)
+          setShowHolidayPopover(false)
+        }}
       >
         {dayNumber}
         {showLabel && label && (
-          <span className={`text-[10px] leading-tight truncate max-w-full ${holidayLabel ? 'text-red-500' : 'text-amber-500'}`}>
+          <span className={`text-[10px] leading-tight truncate max-w-full ${holidayLabel ? 'text-rose-500' : 'text-amber-500'}`}>
             {label}
           </span>
+        )}
+        {holidayLabel && (
+          <>
+            <div
+              className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-rose-400 cursor-default"
+              onMouseEnter={() => setShowHolidayPopover(true)}
+              onMouseLeave={() => setShowHolidayPopover(false)}
+            />
+            {showHolidayPopover && (
+              <DayPopover name={holidayLabel} date={date} align="right" />
+            )}
+          </>
         )}
         {customDayName && (
           <>
@@ -90,7 +104,7 @@ export const DayCell = memo(function DayCell({
               onMouseLeave={() => setShowCustomPopover(false)}
             />
             {showCustomPopover && (
-              <CustomDayPopover customDayName={customDayName} date={date} align="left" />
+              <DayPopover name={customDayName} date={date} align="left" />
             )}
           </>
         )}
@@ -128,9 +142,16 @@ export const DayCell = memo(function DayCell({
           {dayNumber}
         </span>
         {holidayLabel && (
-          <span className="text-[10px] leading-tight mt-1 truncate max-w-[calc(100%-2rem)] text-right text-red-500">
-            {holidayLabel}
-          </span>
+          <div className="relative">
+            <div
+              className="w-2 h-2 rounded-full bg-rose-400 shrink-0 mt-1 cursor-default"
+              onMouseEnter={() => setShowHolidayPopover(true)}
+              onMouseLeave={() => setShowHolidayPopover(false)}
+            />
+            {showHolidayPopover && (
+              <DayPopover name={holidayLabel} date={date} align="right" />
+            )}
+          </div>
         )}
         {customDayName && !holidayLabel && (
           <div className="relative">
@@ -140,7 +161,7 @@ export const DayCell = memo(function DayCell({
               onMouseLeave={() => setShowCustomPopover(false)}
             />
             {showCustomPopover && (
-              <CustomDayPopover customDayName={customDayName} date={date} align="right" />
+              <DayPopover name={customDayName} date={date} align="right" />
             )}
           </div>
         )}
