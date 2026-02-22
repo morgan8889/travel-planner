@@ -1,12 +1,8 @@
 import { useState, useRef, useCallback } from 'react'
-import { api, itineraryApi, checklistApi, calendarApi } from '../lib/api'
-import type { TripCreate, TripSummary, CreateActivity } from '../lib/types'
+import { api, itineraryApi, checklistApi, calendarApi } from '../../lib/api'
+import type { TripCreate, TripSummary, CreateActivity } from '../../lib/types'
 
 // ─── Trip Definitions ────────────────────────────────────────────────
-// Covers all 5 statuses (dreaming, planning, booked, active, completed),
-// all 3 types (vacation, remote_week, sabbatical), parent/child trips,
-// trips with/without coordinates, trips with notes, overlapping trips
-// for 3-bar quarter view testing, and cross-year date ranges.
 
 const TRIPS: TripCreate[] = [
   {
@@ -46,7 +42,6 @@ const TRIPS: TripCreate[] = [
     status: 'dreaming',
     destination_latitude: 13.76,
     destination_longitude: 100.5,
-    // parent_trip_id set dynamically
   },
   {
     destination: 'Ubud, Bali',
@@ -56,7 +51,6 @@ const TRIPS: TripCreate[] = [
     status: 'dreaming',
     destination_latitude: -8.51,
     destination_longitude: 115.26,
-    // parent_trip_id set dynamically
   },
   {
     destination: 'Reykjavik, Iceland',
@@ -85,7 +79,6 @@ const TRIPS: TripCreate[] = [
     destination_latitude: -50.34,
     destination_longitude: -72.26,
   },
-  // #8 — Active trip (tests active status color, status transitions, current-trip UX)
   {
     destination: 'Barcelona, Spain',
     type: 'vacation',
@@ -96,7 +89,6 @@ const TRIPS: TripCreate[] = [
     destination_longitude: 2.17,
     notes: 'Currently on this trip! Testing inline editing and map markers.',
   },
-  // #9 — Overlaps with Reykjavik (#5) for 3-bar quarter view testing
   {
     destination: 'Copenhagen, Denmark',
     type: 'vacation',
@@ -106,7 +98,6 @@ const TRIPS: TripCreate[] = [
     destination_latitude: 55.68,
     destination_longitude: 12.57,
   },
-  // #10 — Overlaps with Reykjavik (#5) and Copenhagen (#9), NO coordinates (tests no-map state)
   {
     destination: 'Oslo, Norway',
     type: 'vacation',
@@ -118,19 +109,11 @@ const TRIPS: TripCreate[] = [
   },
 ]
 
-// ─── Activity Definitions (keyed by trip index) ──────────────────────
-// Covers all 4 categories (transport, food, activity, lodging),
-// activities with/without coordinates, with/without times,
-// with/without confirmation numbers, with/without notes,
-// location text without coordinates (tests autocomplete edit),
-// and multiple activities per day (tests drag reorder).
-
 interface ActivityDef extends CreateActivity {
-  dayOffset: number // 0-indexed offset from trip start_date
+  dayOffset: number
 }
 
 const ACTIVITIES: Record<number, ActivityDef[]> = {
-  // Tokyo (#0) — 7 activities across 6 days, all 4 categories
   0: [
     { dayOffset: 0, title: 'Flight to NRT', category: 'transport', confirmation_number: 'JAL-8472-XK', notes: 'Narita Terminal 2' },
     { dayOffset: 0, title: 'Hotel Shinjuku Check-in', category: 'lodging', location: 'Shinjuku, Tokyo', latitude: 35.6938, longitude: 139.7034 },
@@ -140,26 +123,22 @@ const ACTIVITIES: Record<number, ActivityDef[]> = {
     { dayOffset: 4, title: 'Ramen Dinner at Fuunji', category: 'food', start_time: '20:00', end_time: '21:00', location: 'Shinjuku, Tokyo', latitude: 35.6896, longitude: 139.6982 },
     { dayOffset: 5, title: 'Shinkansen to Kyoto', category: 'transport', confirmation_number: 'JR-PASS-2026-1847', start_time: '10:00', end_time: '12:15' },
   ],
-  // Lisbon (#1) — 4 activities, remote work + sightseeing mix
   1: [
     { dayOffset: 0, title: 'Co-working at Second Home', category: 'activity', start_time: '09:00', end_time: '17:00', location: 'Second Home Lisboa', latitude: 38.7069, longitude: -9.1427 },
     { dayOffset: 1, title: 'Pasteis de Belem', category: 'food', location: 'Belem, Lisbon', latitude: 38.6976, longitude: -9.2033 },
     { dayOffset: 2, title: 'Tram 28 Ride', category: 'transport', notes: 'Historic tram through Alfama' },
     { dayOffset: 3, title: 'Fado Show', category: 'activity', start_time: '21:00', end_time: '23:30', location: 'Alfama, Lisbon', latitude: 38.7114, longitude: -9.1302 },
   ],
-  // Reykjavik (#5) — activities with start_time only (no end_time) for overnight/open-ended
   5: [
     { dayOffset: 0, title: 'Blue Lagoon', category: 'activity', location: 'Blue Lagoon', latitude: 63.8803, longitude: -22.4495 },
     { dayOffset: 1, title: 'Golden Circle Tour', category: 'activity', start_time: '08:00', notes: 'Full day tour - no fixed end time' },
     { dayOffset: 3, title: 'Northern Lights Excursion', category: 'activity', start_time: '22:00', notes: 'Overnight activity - no end time since it crosses midnight' },
   ],
-  // New York (#6) — completed trip activities
   6: [
     { dayOffset: 3, title: 'Times Square NYE', category: 'activity', start_time: '20:00', end_time: '23:59', location: 'Times Square', latitude: 40.758, longitude: -73.9855, notes: 'NYE celebration until midnight' },
     { dayOffset: 4, title: 'Brooklyn Bridge Walk', category: 'activity', location: 'Brooklyn Bridge', latitude: 40.7061, longitude: -73.9969 },
     { dayOffset: 5, title: 'Brunch at Balthazar', category: 'food', start_time: '11:00', end_time: '13:00', location: 'Balthazar, SoHo', latitude: 40.7231, longitude: -73.9985 },
   ],
-  // Barcelona (#8) — active trip, tests inline editing on live trip
   8: [
     { dayOffset: 0, title: 'Sagrada Familia Tour', category: 'activity', start_time: '10:00', end_time: '12:00', location: 'Sagrada Familia', latitude: 41.4036, longitude: 2.1744, confirmation_number: 'SGF-2026-0215' },
     { dayOffset: 0, title: 'Hotel Arts Check-in', category: 'lodging', location: 'Hotel Arts Barcelona', latitude: 41.3875, longitude: 2.1924 },
@@ -170,7 +149,6 @@ const ACTIVITIES: Record<number, ActivityDef[]> = {
     { dayOffset: 5, title: 'Flamenco Show', category: 'activity', start_time: '21:00', end_time: '23:00', notes: 'Tablao Cordobes - tickets booked' },
     { dayOffset: 6, title: 'Flight Home', category: 'transport', start_time: '14:00', confirmation_number: 'VY-3847-BCN' },
   ],
-  // Copenhagen (#9) — overlapping trip, tests quarter view with 3 bars
   9: [
     { dayOffset: 0, title: 'Tivoli Gardens', category: 'activity', location: 'Tivoli Gardens', latitude: 55.6737, longitude: 12.5681 },
     { dayOffset: 1, title: 'Nyhavn Canal Tour', category: 'activity', start_time: '11:00', end_time: '12:30', location: 'Nyhavn', latitude: 55.6797, longitude: 12.5907 },
@@ -178,18 +156,13 @@ const ACTIVITIES: Record<number, ActivityDef[]> = {
   ],
 }
 
-// ─── Checklist Definitions (keyed by trip index) ─────────────────────
-// Tests progress bar (partial completion), checklist delete, item delete,
-// toggle, and various item counts. checkedIndices marks items to pre-check.
-
 interface ChecklistDef {
   title: string
   items: string[]
-  checkedIndices?: number[] // item indices to pre-check for progress bar testing
+  checkedIndices?: number[]
 }
 
 const CHECKLISTS: Record<number, ChecklistDef[]> = {
-  // Tokyo (#0) — partial progress on packing, nothing checked on pre-departure
   0: [
     {
       title: 'Packing',
@@ -201,7 +174,6 @@ const CHECKLISTS: Record<number, ChecklistDef[]> = {
       items: ['Travel insurance', 'Notify bank', 'Airport transfer', 'Pet sitter', 'Mail hold'],
     },
   ],
-  // Lisbon (#1) — mostly done
   1: [
     {
       title: 'Work Setup',
@@ -209,14 +181,12 @@ const CHECKLISTS: Record<number, ChecklistDef[]> = {
       checkedIndices: [0, 1, 2],
     },
   ],
-  // SE Asia (#2) — early stage, nothing checked
   2: [
     {
       title: 'Visa Requirements',
       items: ['Thailand visa', 'Indonesia visa', 'Vaccinations', 'Travel insurance', 'Document copies', 'Emergency contacts'],
     },
   ],
-  // Reykjavik (#5) — half done
   5: [
     {
       title: 'Gear',
@@ -224,7 +194,6 @@ const CHECKLISTS: Record<number, ChecklistDef[]> = {
       checkedIndices: [0, 2],
     },
   ],
-  // New York (#6) — completed trip, all items checked
   6: [
     {
       title: 'NYE Prep',
@@ -232,7 +201,6 @@ const CHECKLISTS: Record<number, ChecklistDef[]> = {
       checkedIndices: [0, 1, 2],
     },
   ],
-  // Barcelona (#8) — active trip, in-progress checklist
   8: [
     {
       title: 'Packing',
@@ -247,16 +215,12 @@ const CHECKLISTS: Record<number, ChecklistDef[]> = {
   ],
 }
 
-// ─── Custom Day Definitions ──────────────────────────────────────────
-
 const CUSTOM_DAYS = [
   { name: "Mom's Birthday", date: '2026-05-15', recurring: true },
   { name: 'Company Retreat', date: '2026-09-20', recurring: false },
   { name: 'Wedding Anniversary', date: '2026-08-01', recurring: true },
   { name: 'Vet Appointment', date: '2026-03-10', recurring: false },
 ]
-
-// ─── Helper: add days to a date string ───────────────────────────────
 
 function addDays(dateStr: string, days: number): string {
   const d = new Date(dateStr + 'T00:00:00')
@@ -267,9 +231,7 @@ function addDays(dateStr: string, days: number): string {
   return `${year}-${month}-${day}`
 }
 
-// ─── Component ───────────────────────────────────────────────────────
-
-export function DevSeedPage() {
+export function DevSeedContent() {
   const [logs, setLogs] = useState<string[]>([])
   const [running, setRunning] = useState(false)
   const logRef = useRef<HTMLDivElement>(null)
@@ -282,8 +244,6 @@ export function DevSeedPage() {
     }, 50)
   }, [])
 
-  // ─── Seed Trips ──────────────────────────────────────────────────
-
   const seedTrips = useCallback(async () => {
     log('--- Seeding Trips ---')
     tripIdsRef.current.clear()
@@ -291,7 +251,6 @@ export function DevSeedPage() {
     for (let i = 0; i < TRIPS.length; i++) {
       const tripDef = { ...TRIPS[i] }
 
-      // Sub-trips: Bangkok (#3) and Ubud (#4) are children of SE Asia (#2)
       if (i === 3 || i === 4) {
         const parentId = tripIdsRef.current.get(2)
         if (parentId) {
@@ -308,8 +267,6 @@ export function DevSeedPage() {
     log(`Done: ${TRIPS.length} trips created`)
   }, [log])
 
-  // ─── Seed Itineraries ────────────────────────────────────────────
-
   const seedItineraries = useCallback(async () => {
     log('--- Seeding Itineraries ---')
 
@@ -321,7 +278,6 @@ export function DevSeedPage() {
         continue
       }
 
-      // Generate itinerary days from trip date range
       const daysRes = await itineraryApi.generateDays(tripId)
       const days = daysRes.data
       log(`  Generated ${days.length} days for ${TRIPS[tripIdx].destination}`)
@@ -353,8 +309,6 @@ export function DevSeedPage() {
     log('Done: itineraries seeded')
   }, [log])
 
-  // ─── Seed Checklists ─────────────────────────────────────────────
-
   const seedChecklists = useCallback(async () => {
     log('--- Seeding Checklists ---')
 
@@ -376,7 +330,6 @@ export function DevSeedPage() {
           itemIds.push(itemRes.data.id)
         }
 
-        // Pre-check items for progress bar testing
         if (clDef.checkedIndices) {
           for (const idx of clDef.checkedIndices) {
             if (idx < itemIds.length) {
@@ -393,12 +346,9 @@ export function DevSeedPage() {
     log('Done: checklists seeded')
   }, [log])
 
-  // ─── Seed Calendar ───────────────────────────────────────────────
-
   const seedCalendar = useCallback(async () => {
     log('--- Seeding Calendar ---')
 
-    // Enable US and UK holidays for 2026
     const countries = ['US', 'UK']
     for (const code of countries) {
       try {
@@ -409,7 +359,6 @@ export function DevSeedPage() {
       }
     }
 
-    // Add custom days
     for (const day of CUSTOM_DAYS) {
       await calendarApi.createCustomDay(day)
       log(`  Custom day: ${day.name} (${day.date}${day.recurring ? ', recurring' : ''})`)
@@ -418,18 +367,14 @@ export function DevSeedPage() {
     log(`Done: calendar seeded (${countries.join(' + ')} holidays + ${CUSTOM_DAYS.length} custom days)`)
   }, [log])
 
-  // ─── Clear All Data ──────────────────────────────────────────────
-
   const clearAllData = useCallback(async () => {
     setRunning(true)
     setLogs([])
     try {
       log('--- Clearing All Data ---')
 
-      // Delete all trips (cascades to itineraries, checklists)
       const tripsRes = await api.get<TripSummary[]>('/trips')
       const trips = tripsRes.data
-      // Delete children first, then parents
       const parents = trips.filter((t) => !t.parent_trip_id)
       const children = trips.filter((t) => t.parent_trip_id)
       for (const trip of children) {
@@ -442,7 +387,6 @@ export function DevSeedPage() {
       }
       log(`  Removed ${trips.length} trips (with itineraries + checklists)`)
 
-      // Clear calendar: disable all country holidays and delete custom days
       try {
         const calRes = await calendarApi.getHolidays(2026)
         for (const entry of calRes.data.enabled_countries) {
@@ -467,8 +411,6 @@ export function DevSeedPage() {
       setRunning(false)
     }
   }, [log])
-
-  // ─── Seed Everything ─────────────────────────────────────────────
 
   const seedEverything = useCallback(async () => {
     setRunning(true)
@@ -502,11 +444,13 @@ export function DevSeedPage() {
   )
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold text-cloud-900 mb-1">Test Data Generator</h1>
+    <>
+      <h1 className="text-xl font-semibold text-cloud-900 mb-1">Test Data Generator</h1>
       <p className="text-sm text-cloud-500 mb-6">
-        Seeds comprehensive test data: {TRIPS.length} trips (all statuses/types), {Object.values(ACTIVITIES).flat().length} activities,{' '}
-        {Object.values(CHECKLISTS).flat().reduce((sum, cl) => sum + cl.items.length, 0)} checklist items, and calendar data.
+        Seeds comprehensive test data: {TRIPS.length} trips (all statuses/types),{' '}
+        {Object.values(ACTIVITIES).flat().length} activities,{' '}
+        {Object.values(CHECKLISTS).flat().reduce((sum, cl) => sum + cl.items.length, 0)} checklist
+        items, and calendar data.
       </p>
 
       <div className="flex flex-wrap gap-2 mb-6">
@@ -562,12 +506,21 @@ export function DevSeedPage() {
           <span className="text-cloud-400">Click a button to start seeding data...</span>
         ) : (
           logs.map((line, i) => (
-            <div key={i} className={line.startsWith('ERROR') ? 'text-red-600 font-semibold' : line.startsWith('Done') || line.startsWith('===') ? 'text-emerald-600 font-semibold' : ''}>
+            <div
+              key={i}
+              className={
+                line.startsWith('ERROR')
+                  ? 'text-red-600 font-semibold'
+                  : line.startsWith('Done') || line.startsWith('===')
+                    ? 'text-emerald-600 font-semibold'
+                    : ''
+              }
+            >
               {line}
             </div>
           ))
         )}
       </div>
-    </div>
+    </>
   )
 }
