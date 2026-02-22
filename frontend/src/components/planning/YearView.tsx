@@ -117,8 +117,13 @@ export function YearView({
     return map
   }, [holidays])
 
-  const customDaySet = useMemo(() => {
-    return new Set(customDays.map((cd) => (cd.recurring ? `${year}-${cd.date.slice(5)}` : cd.date)))
+  const customDayMap = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const cd of customDays) {
+      const dateStr = cd.recurring ? `${year}-${cd.date.slice(5)}` : cd.date
+      map.set(dateStr, cd.name)
+    }
+    return map
   }, [customDays, year])
 
   const nonEventInventory = useMemo(
@@ -254,7 +259,7 @@ export function YearView({
                             isSelected={false}
                             isSelectedForCreate={day.date === selectedDate}
                             holidayLabel={holidayMap.get(day.date)}
-                            customDayLabel={customDaySet.has(day.date) ? 'custom' : undefined}
+                            customDayName={customDayMap.get(day.date)}
                             compact
                             onClick={() => onDayClick(day.date)}
                             onHolidayClick={onHolidayClick}

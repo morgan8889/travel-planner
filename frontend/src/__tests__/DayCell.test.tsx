@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
 import { DayCell } from '../components/planning/DayCell'
 
@@ -89,8 +89,8 @@ describe('DayCell compact mode', () => {
   })
 })
 
-describe('DayCell full mode custom day icon', () => {
-  it('renders Star icon when customDayLabel is present in full mode', () => {
+describe('DayCell full mode custom day dot', () => {
+  it('renders amber dot (not SVG) when customDayName is present in full mode', () => {
     const { container } = render(
       <DayCell
         date="2026-07-14"
@@ -98,15 +98,17 @@ describe('DayCell full mode custom day icon', () => {
         isToday={false}
         isCurrentMonth={true}
         isSelected={false}
-        customDayLabel="Ironman"
+        customDayName="Ironman"
       />
     )
-    // lucide-react Star renders as an SVG
-    const svg = container.querySelector('svg')
-    expect(svg).toBeInTheDocument()
+    // No SVG — no Star icon
+    expect(container.querySelector('svg')).not.toBeInTheDocument()
+    // Amber dot present
+    const dot = container.querySelector('.rounded-full.bg-amber-400')
+    expect(dot).toBeInTheDocument()
   })
 
-  it('does NOT render Star icon when holidayLabel takes precedence', () => {
+  it('does NOT render amber dot when holidayLabel takes precedence in full mode', () => {
     const { container } = render(
       <DayCell
         date="2026-12-25"
@@ -115,15 +117,34 @@ describe('DayCell full mode custom day icon', () => {
         isCurrentMonth={true}
         isSelected={false}
         holidayLabel="Christmas"
-        customDayLabel="My Event"
+        customDayName="My Event"
       />
     )
-    // holiday text renders, no star
     expect(screen.getByText('Christmas')).toBeInTheDocument()
     expect(container.querySelector('svg')).not.toBeInTheDocument()
+    expect(container.querySelector('.rounded-full.bg-amber-400')).not.toBeInTheDocument()
   })
 
-  it('does NOT render Star icon in compact mode', () => {
+  it('shows hover popover with name and date in full mode', () => {
+    render(
+      <DayCell
+        date="2026-07-14"
+        dayNumber={14}
+        isToday={false}
+        isCurrentMonth={true}
+        isSelected={false}
+        customDayName="Ironman"
+      />
+    )
+    const dot = document.querySelector('.rounded-full.bg-amber-400') as HTMLElement
+    fireEvent.mouseEnter(dot)
+    expect(screen.getByText('Ironman')).toBeInTheDocument()
+    expect(screen.getByText('Jul 14')).toBeInTheDocument()
+    fireEvent.mouseLeave(dot)
+    expect(screen.queryByText('Ironman')).not.toBeInTheDocument()
+  })
+
+  it('renders corner dot in compact mode (not SVG)', () => {
     const { container } = render(
       <DayCell
         date="2026-07-14"
@@ -131,10 +152,32 @@ describe('DayCell full mode custom day icon', () => {
         isToday={false}
         isCurrentMonth={true}
         isSelected={false}
-        customDayLabel="Ironman"
+        customDayName="Ironman"
         compact={true}
       />
     )
     expect(container.querySelector('svg')).not.toBeInTheDocument()
+    // Corner dot: bottom-0.5 left-0.5 w-1.5 h-1.5
+    const cornerDot = container.querySelector('.w-1\\.5.h-1\\.5.rounded-full.bg-amber-400')
+    expect(cornerDot).toBeInTheDocument()
+  })
+
+  it('shows hover popover from corner dot in compact mode', () => {
+    render(
+      <DayCell
+        date="2026-07-14"
+        dayNumber={14}
+        isToday={false}
+        isCurrentMonth={true}
+        isSelected={false}
+        customDayName="Ironman"
+        compact={true}
+      />
+    )
+    const cornerDot = document.querySelector('.w-1\\.5.h-1\\.5.rounded-full.bg-amber-400') as HTMLElement
+    fireEvent.mouseEnter(cornerDot)
+    expect(screen.getByText('Ironman')).toBeInTheDocument()
+    fireEvent.mouseLeave(cornerDot)
+    expect(screen.queryByText('Ironman')).not.toBeInTheDocument()
   })
 })
