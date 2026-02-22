@@ -87,7 +87,9 @@ async def delete_account(
     await db.execute(sa_delete(ImportRecord).where(ImportRecord.user_id == user_id))
 
     # 5. Delete calendar records
-    await db.execute(sa_delete(HolidayCalendar).where(HolidayCalendar.user_id == user_id))
+    await db.execute(
+        sa_delete(HolidayCalendar).where(HolidayCalendar.user_id == user_id)
+    )
     await db.execute(sa_delete(CustomDay).where(CustomDay.user_id == user_id))
 
     # 6. Delete Supabase auth user first — if this fails, we abort before committing DB

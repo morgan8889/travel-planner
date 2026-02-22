@@ -298,10 +298,12 @@ async def scan_gmail(
     before = trip.end_date.strftime("%Y/%m/%d")
     query = f"{TRAVEL_SEARCH} after:{after} before:{before}"
     msgs_result = await asyncio.to_thread(
-        lambda: service.users()
-        .messages()
-        .list(userId="me", q=query, maxResults=50)
-        .execute()
+        lambda: (
+            service.users()
+            .messages()
+            .list(userId="me", q=query, maxResults=50)
+            .execute()
+        )
     )
     messages = msgs_result.get("messages", [])
 
@@ -315,10 +317,12 @@ async def scan_gmail(
             continue
 
         msg = await asyncio.to_thread(
-            lambda eid=email_id: service.users()
-            .messages()
-            .get(userId="me", id=eid, format="full")
-            .execute()
+            lambda eid=email_id: (
+                service.users()
+                .messages()
+                .get(userId="me", id=eid, format="full")
+                .execute()
+            )
         )
         content = _extract_text(msg)
         if not content:
