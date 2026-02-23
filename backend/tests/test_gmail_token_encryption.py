@@ -1,18 +1,11 @@
-"""Tests for Gmail OAuth token encryption at rest.
-
-TOKEN_ENCRYPTION_KEY must be set before importing anything that uses EncryptedText.
-"""
+"""Tests for Gmail OAuth token encryption at rest."""
 
 import os
 
-from cryptography.fernet import Fernet
+import pytest
 
-# Set key before any app imports so the lazy env lookup works in tests.
-TEST_KEY = Fernet.generate_key().decode()
-os.environ["TOKEN_ENCRYPTION_KEY"] = TEST_KEY
-
-from travel_planner.crypto import EncryptedText  # noqa: E402
-from travel_planner.models.gmail import GmailConnection  # noqa: E402
+from travel_planner.crypto import EncryptedText
+from travel_planner.models.gmail import GmailConnection
 
 
 # ---------------------------------------------------------------------------
@@ -38,7 +31,8 @@ def test_result_value_decrypts_back_to_original():
 
 
 def test_encryption_is_non_deterministic():
-    """Fernet uses a random IV, so encrypting the same value twice yields different ciphertext."""
+    """Fernet uses a random IV, so encrypting the same value twice
+    yields different ciphertext."""
     enc = EncryptedText()
     plaintext = "same_token"
     assert enc.process_bind_param(plaintext, dialect=None) != enc.process_bind_param(
@@ -54,12 +48,11 @@ def test_none_passes_through_unchanged():
 
 
 def test_missing_key_raises_on_encrypt():
-    """A missing TOKEN_ENCRYPTION_KEY must raise ValueError, not silently store plaintext."""
+    """A missing TOKEN_ENCRYPTION_KEY must raise ValueError, not
+    silently store plaintext."""
     saved = os.environ.pop("TOKEN_ENCRYPTION_KEY")
     try:
         enc = EncryptedText()
-        import pytest
-
         with pytest.raises(ValueError, match="TOKEN_ENCRYPTION_KEY"):
             enc.process_bind_param("token", dialect=None)
     finally:
@@ -73,8 +66,6 @@ def test_missing_key_raises_on_decrypt():
 
     saved = os.environ.pop("TOKEN_ENCRYPTION_KEY")
     try:
-        import pytest
-
         with pytest.raises(ValueError, match="TOKEN_ENCRYPTION_KEY"):
             enc.process_result_value(ciphertext, dialect=None)
     finally:
