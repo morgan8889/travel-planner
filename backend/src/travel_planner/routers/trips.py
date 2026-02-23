@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import JSONResponse
 from sqlalchemy import func, select, text
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -101,9 +102,21 @@ async def _claim_pending_invitations(
                 )
             await db.delete(inv)
             await db.commit()
-        except Exception:
+        except SQLAlchemyError:
             logger.exception("Failed to claim invitation %s for %s", inv.id, email)
             await db.rollback()
+
+
+def _auto_complete_trip(trip: Trip) -> bool:
+    """Set trip status to completed if past end_date. Returns True if changed."""
+    if (
+        trip.end_date is not None
+        and trip.end_date < date.today()
+        and trip.status != TripStatus.completed
+    ):
+        trip.status = TripStatus.completed
+        return True
+    return False
 
 
 def _build_trip_response(trip: Trip) -> TripResponse:
@@ -229,20 +242,14 @@ async def list_trips(
     trips = result.scalars().all()
 
     # Auto-complete past trips before applying the status filter
-    today = date.today()
     changed = False
     for t in trips:
-        if (
-            t.end_date is not None
-            and t.end_date < today
-            and t.status != TripStatus.completed
-        ):
-            t.status = TripStatus.completed
+        if _auto_complete_trip(t):
             changed = True
     if changed:
         try:
             await db.commit()
-        except Exception:
+        except SQLAlchemyError:
             logger.exception("Failed to auto-complete past trips on list")
             await db.rollback()
 
@@ -377,16 +384,10 @@ async def get_trip(
     """Get trip detail with members and children. Requires membership."""
     await _claim_pending_invitations(user.id, user.email, db)
     trip, _ = await get_trip_with_membership(trip_id, user.id, db)
-    today = date.today()
-    if (
-        trip.end_date is not None
-        and trip.end_date < today
-        and trip.status != TripStatus.completed
-    ):
-        trip.status = TripStatus.completed
+    if _auto_complete_trip(trip):
         try:
             await db.commit()
-        except Exception:
+        except SQLAlchemyError:
             logger.exception("Failed to auto-complete past trip %s", trip.id)
             await db.rollback()
     return _build_trip_response(trip)

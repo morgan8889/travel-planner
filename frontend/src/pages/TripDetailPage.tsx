@@ -26,6 +26,7 @@ import { ChecklistCard } from '../components/checklist/ChecklistCard'
 import { AddChecklistModal } from '../components/checklist/AddChecklistModal'
 import { GmailImportSection } from '../components/trips/GmailImportSection'
 import { getEventName } from '../lib/tripUtils'
+import { getDaysUntil } from '../lib/dateUtils'
 import type { TripCreate, TripStatus, TripUpdate } from '../lib/types'
 
 function formatDateRange(startDate: string, endDate: string): string {
@@ -43,20 +44,6 @@ function formatDateRange(startDate: string, endDate: string): string {
   })
 
   return `${startFormatted} - ${endFormatted}`
-}
-
-function getCountdownText(startDate: string): string {
-  const start = new Date(startDate + 'T00:00:00')
-  const now = new Date()
-  now.setHours(0, 0, 0, 0)
-  const diffTime = start.getTime() - now.getTime()
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-
-  if (diffDays > 1) return `in ${diffDays} days`
-  if (diffDays === 1) return 'tomorrow'
-  if (diffDays === 0) return 'today'
-  if (diffDays === -1) return 'yesterday'
-  return `${Math.abs(diffDays)} days ago`
 }
 
 function DetailSkeleton() {
@@ -386,7 +373,7 @@ export function TripDetailPage() {
                 <Calendar className="w-5 h-5 text-cloud-400 shrink-0" />
                 <span>{formatDateRange(trip.start_date, trip.end_date)}</span>
                 <span className="text-sm text-cloud-400">
-                  ({getCountdownText(trip.start_date)})
+                  ({getDaysUntil(trip.start_date)})
                 </span>
               </div>
 

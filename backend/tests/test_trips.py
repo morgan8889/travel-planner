@@ -1470,6 +1470,83 @@ def test_list_invitations_requires_owner(
         app.dependency_overrides[get_current_user_id] = lambda: TEST_USER_ID
 
 
+def test_list_trips_propagates_non_db_errors_from_auto_complete(
+    auth_headers: dict, override_get_db, mock_db_session
+):
+    """GET /trips lets non-SQLAlchemy errors from auto-complete commit propagate."""
+    owner_member = _make_member()
+    trip = _make_trip(members=[owner_member])
+    trip.end_date = date(2024, 1, 1)
+    trip.status = TripStatus.planning
+
+    result_mock = MagicMock()
+    result_mock.scalars.return_value.all.return_value = [trip]
+    stats_mock = MagicMock()
+    stats_mock.__iter__ = MagicMock(return_value=iter([]))
+    mock_db_session.execute = AsyncMock(
+        side_effect=[_make_no_inv_result(), result_mock, stats_mock]
+    )
+    mock_db_session.commit = AsyncMock(side_effect=ValueError("programming bug"))
+    mock_db_session.rollback = AsyncMock()
+
+    no_raise_client = TestClient(app, raise_server_exceptions=False)
+    response = no_raise_client.get("/trips", headers=auth_headers)
+    assert response.status_code == 500
+
+
+def test_list_trips_auto_complete_survives_sqlalchemy_error(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """GET /trips returns 200 and calls rollback on SQLAlchemyError in auto-complete."""
+    from sqlalchemy.exc import SQLAlchemyError
+
+    owner_member = _make_member()
+    trip = _make_trip(members=[owner_member])
+    trip.end_date = date(2024, 1, 1)
+    trip.status = TripStatus.planning
+
+    result_mock = MagicMock()
+    result_mock.scalars.return_value.all.return_value = [trip]
+    stats_mock = MagicMock()
+    stats_mock.__iter__ = MagicMock(return_value=iter([]))
+    mock_db_session.execute = AsyncMock(
+        side_effect=[_make_no_inv_result(), result_mock, stats_mock]
+    )
+    mock_db_session.commit = AsyncMock(side_effect=SQLAlchemyError("db failure"))
+    mock_db_session.rollback = AsyncMock()
+
+    response = client.get("/trips", headers=auth_headers)
+    assert response.status_code == 200
+    mock_db_session.rollback.assert_called_once()
+
+
+def test_get_trip_auto_complete_survives_sqlalchemy_error(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """GET /trips/{id} returns 200 and rolls back on SQLAlchemyError."""
+    from sqlalchemy.exc import SQLAlchemyError
+
+    owner_user = _make_user()
+    owner_member = _make_member(user=owner_user)
+    trip = _make_trip(members=[owner_member])
+    trip.end_date = date(2024, 1, 1)
+    trip.status = TripStatus.booked
+    trip.destination_latitude = None
+    trip.destination_longitude = None
+
+    result_mock = MagicMock()
+    result_mock.scalar_one_or_none.return_value = trip
+    mock_db_session.execute = AsyncMock(
+        side_effect=[_make_no_inv_result(), result_mock]
+    )
+    mock_db_session.commit = AsyncMock(side_effect=SQLAlchemyError("db failure"))
+    mock_db_session.rollback = AsyncMock()
+
+    response = client.get(f"/trips/{trip.id}", headers=auth_headers)
+    assert response.status_code == 200
+    mock_db_session.rollback.assert_called_once()
+
+
 def test_list_invitations_success(
     client: TestClient, auth_headers: dict, override_get_db, mock_db_session
 ):

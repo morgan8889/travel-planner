@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { TripSummary, HolidayEntry, CustomDay } from '../../lib/types'
+import { formatShortDate } from '../../lib/dateUtils'
 
 const CHIP_COLORS: Record<string, string> = {
   dreaming: 'bg-purple-100 text-purple-700 hover:bg-purple-200',
@@ -17,11 +18,6 @@ interface TripSummaryBarProps {
   currentYear: number
   holidays: HolidayEntry[]
   customDays: CustomDay[]
-}
-
-function formatShortDate(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00')
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 function getPeriodRange(zoomLevel: string, month: number, year: number): [string, string] {
