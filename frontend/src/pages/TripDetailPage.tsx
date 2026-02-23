@@ -1,5 +1,5 @@
 import { useState, useMemo, Suspense, lazy } from 'react'
-import { TriangleAlert, ArrowLeft, ChevronRight, SquarePen, Calendar, Trash2, MapPinOff, Plus } from 'lucide-react'
+import { TriangleAlert, ArrowLeft, ChevronRight, SquarePen, Calendar, Trash2, MapPin, MapPinOff, Plus } from 'lucide-react'
 
 const MapView = lazy(() => import('../components/map/MapView').then((m) => ({ default: m.MapView })))
 import { TripMarker } from '../components/map/TripMarker'
@@ -25,6 +25,7 @@ import { AddDayModal } from '../components/itinerary/AddDayModal'
 import { ChecklistCard } from '../components/checklist/ChecklistCard'
 import { AddChecklistModal } from '../components/checklist/AddChecklistModal'
 import { GmailImportSection } from '../components/trips/GmailImportSection'
+import { getEventName } from '../lib/tripUtils'
 import type { TripCreate, TripStatus, TripUpdate } from '../lib/types'
 
 function formatDateRange(startDate: string, endDate: string): string {
@@ -304,6 +305,9 @@ export function TripDetailPage() {
     )
   }
 
+  const isEvent = trip.type === 'event'
+  const displayTitle = isEvent ? (getEventName(trip.notes) ?? trip.destination) : trip.destination
+
   return (
     <div>
       {/* Breadcrumb / Back */}
@@ -312,7 +316,7 @@ export function TripDetailPage() {
           My Trips
         </Link>
         <ChevronRight className="w-4 h-4 text-cloud-400" />
-        <span className="text-cloud-900 font-medium truncate">{trip.destination}</span>
+        <span className="text-cloud-900 font-medium truncate">{displayTitle}</span>
       </nav>
 
       {/* Mobile map banner (visible below lg breakpoint) */}
@@ -349,9 +353,17 @@ export function TripDetailPage() {
           ) : (
             <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-cloud-200 p-6">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
-                <h1 className="text-3xl font-bold text-cloud-900">
-                  {trip.destination}
-                </h1>
+                <div>
+                  <h1 className="text-3xl font-bold text-cloud-900">
+                    {displayTitle}
+                  </h1>
+                  {isEvent && (
+                    <div className="flex items-center gap-1.5 text-sm text-cloud-500 mt-1">
+                      <MapPin className="w-4 h-4 shrink-0" />
+                      <span>{trip.destination}</span>
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={() => setIsEditing(true)}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-cloud-600 bg-white border border-cloud-300 rounded-lg hover:bg-cloud-50 hover:text-cloud-900 transition-colors shrink-0"
@@ -668,7 +680,7 @@ export function TripDetailPage() {
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={handleDelete}
         title="Delete Trip"
-        message={`Are you sure you want to delete "${trip.destination}"? This action cannot be undone and will remove all members and associated data.`}
+        message={`Are you sure you want to delete "${displayTitle}"? This action cannot be undone and will remove all members and associated data.`}
         confirmLabel="Delete Trip"
         isLoading={deleteTrip.isPending}
       />
