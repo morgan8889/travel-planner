@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { TripStatus, TripType } from '../../lib/types'
+import { getEventName } from '../../lib/tripUtils'
 
 const TRIP_COLORS: Record<string, string> = {
   dreaming: 'bg-purple-200 text-purple-800 hover:bg-purple-300',
@@ -43,12 +44,6 @@ function formatShortDate(dateStr: string): string {
     month: 'short',
     day: 'numeric',
   })
-}
-
-function getEventName(notes: string | null | undefined): string | null {
-  if (!notes) return null
-  const dashIdx = notes.indexOf(' — ')
-  return dashIdx !== -1 ? notes.slice(0, dashIdx) : notes.slice(0, 60)
 }
 
 interface TripPopoverProps {
