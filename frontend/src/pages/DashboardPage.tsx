@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { TripStatusBadge } from '../components/trips/TripStatusBadge'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { TripMarker } from '../components/map/TripMarker'
+import { getEventName } from '../lib/tripUtils'
 import type { TripSummary } from '../lib/types'
 
 const MapView = lazy(() => import('../components/map/MapView').then((m) => ({ default: m.MapView })))
@@ -15,10 +16,17 @@ function getDisplayName(email: string | undefined): string {
   return email.split('@')[0]
 }
 
-function UpcomingTripCard({ trip }: { trip: { id: string; destination: string; start_date: string; end_date: string; status: import('../lib/types').TripStatus } }) {
-  const start = new Date(trip.start_date + 'T00:00:00')
+function getDaysUntil(dateStr: string): string {
+  const start = new Date(dateStr + 'T00:00:00')
   const daysUntil = Math.ceil((start.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-  const daysText = daysUntil > 1 ? `in ${daysUntil} days` : daysUntil === 1 ? 'tomorrow' : daysUntil === 0 ? 'today' : `${Math.abs(daysUntil)} days ago`
+  if (daysUntil > 1) return `in ${daysUntil} days`
+  if (daysUntil === 1) return 'tomorrow'
+  if (daysUntil === 0) return 'today'
+  return `${Math.abs(daysUntil)} days ago`
+}
+
+function UpcomingTripCard({ trip }: { trip: TripSummary }) {
+  const daysText = getDaysUntil(trip.start_date)
 
   return (
     <Link
@@ -105,11 +113,24 @@ export function DashboardPage() {
     .sort((a, b) => a.start_date.localeCompare(b.start_date))
     .slice(0, 3) ?? []
 
-  const tripsWithCoords = trips?.filter(
-    (t) => t.destination_latitude !== null && t.destination_longitude !== null
-  ) ?? []
+  // Map: only show trips in next 90 days (planning/booked/active); fall back to non-completed
+  const now = new Date()
+  const cutoffDate = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000)
+  const upcomingMapTrips =
+    trips?.filter((t) => {
+      if (!['planning', 'booked', 'active'].includes(t.status)) return false
+      return new Date(t.start_date + 'T00:00:00') <= cutoffDate
+    }) ?? []
 
-  // Compute bounds for fitBounds from all trip pins (clamped to valid lat/lng ranges)
+  const mapTrips =
+    upcomingMapTrips.length > 0
+      ? upcomingMapTrips
+      : (trips?.filter((t) => t.status !== 'completed') ?? [])
+
+  const tripsWithCoords = mapTrips.filter(
+    (t) => t.destination_latitude !== null && t.destination_longitude !== null
+  )
+
   const fitBounds: [[number, number], [number, number]] | undefined =
     tripsWithCoords.length >= 2
       ? [
@@ -129,6 +150,12 @@ export function DashboardPage() {
       ? ([tripsWithCoords[0].destination_longitude!, tripsWithCoords[0].destination_latitude!] as [number, number])
       : undefined
 
+  // Next Up overlay: soonest planning/booked/active trip
+  const nextUpTrip =
+    (trips ?? [])
+      .filter((t) => ['planning', 'booked', 'active'].includes(t.status))
+      .sort((a, b) => a.start_date.localeCompare(b.start_date))[0] ?? null
+
   return (
     <div className="space-y-8">
       {/* Welcome */}
@@ -141,7 +168,7 @@ export function DashboardPage() {
 
       {/* World Map */}
       <div className="bg-white rounded-2xl border border-cloud-200 shadow-sm overflow-hidden">
-        <div className="h-72 md:h-96">
+        <div className="h-80 md:h-[440px] relative">
           <Suspense fallback={<div className="h-full bg-cloud-100 animate-pulse" />}>
             <MapView
               center={singleCenter}
@@ -163,6 +190,29 @@ export function DashboardPage() {
               ))}
             </MapView>
           </Suspense>
+          {/* Next Up overlay */}
+          {nextUpTrip && (
+            <Link
+              to="/trips/$tripId"
+              params={{ tripId: nextUpTrip.id }}
+              className="absolute bottom-4 left-4 z-10"
+              data-testid="next-up-overlay"
+            >
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-cloud-200 p-3 max-w-[240px] hover:border-indigo-300 transition-colors">
+                <p className="font-semibold text-cloud-900 text-sm truncate">
+                  {nextUpTrip.type === 'event'
+                    ? (getEventName(nextUpTrip.notes) ?? nextUpTrip.destination)
+                    : nextUpTrip.destination}
+                </p>
+                <p className="text-xs text-cloud-500 mt-0.5">
+                  {nextUpTrip.start_date} · {getDaysUntil(nextUpTrip.start_date)}
+                </p>
+                <div className="mt-1.5">
+                  <TripStatusBadge status={nextUpTrip.status} />
+                </div>
+              </div>
+            </Link>
+          )}
         </div>
         {tripsWithCoords.length === 0 && (
           <div className="px-6 py-3 border-t border-cloud-100 text-sm text-cloud-500">

@@ -127,12 +127,26 @@ describe('DashboardPage', () => {
     })
   })
 
-  it('renders Quick Actions links', async () => {
-    mockUseTrips.mockReturnValue({ data: [], isLoading: false })
+  it('renders Next Up overlay for nearest upcoming planning trip', async () => {
+    mockUseTrips.mockReturnValue({
+      data: [FUTURE_TRIP],
+      isLoading: false,
+    })
+    renderDashboard()
+    // The overlay card should show destination and a countdown
+    expect(await screen.findByTestId('next-up-overlay')).toBeInTheDocument()
+    expect(screen.getByTestId('next-up-overlay')).toHaveTextContent('Paris, France')
+  })
+
+  it('does not render Next Up overlay when no upcoming trips', async () => {
+    mockUseTrips.mockReturnValue({
+      data: [COMPLETED_TRIP_NO_COORDS],
+      isLoading: false,
+    })
     renderDashboard()
 
-    expect(await screen.findByText('New Trip')).toBeInTheDocument()
-    expect(screen.getByText('View Calendar')).toBeInTheDocument()
+    await screen.findByText(/welcome back/i)
+    expect(screen.queryByTestId('next-up-overlay')).not.toBeInTheDocument()
   })
 })
 
