@@ -1,11 +1,11 @@
+from pydantic import model_validator
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://localhost:5432/travel_planner"
-    supabase_url: str = ""  # Required for RS256 JWT verification via JWKS
+    supabase_url: str = ""
     supabase_key: str = ""
-    supabase_jwt_secret: str = ""  # DEPRECATED: No longer used (kept for reference)
     supabase_service_role_key: str | None = None
     app_frontend_url: str = "http://localhost:5173"
     anthropic_api_key: str = ""
@@ -16,6 +16,12 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:5173"]
 
     model_config = {"env_file": ".env"}
+
+    @model_validator(mode="after")
+    def check_required(self) -> "Settings":
+        if not self.supabase_url:
+            raise ValueError("supabase_url is required (set SUPABASE_URL env var)")
+        return self
 
 
 settings = Settings()

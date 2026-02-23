@@ -2,7 +2,16 @@ import enum
 import uuid
 from datetime import date
 
-from sqlalchemy import Date, Enum, Float, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Date,
+    Enum,
+    Float,
+    ForeignKey,
+    Index,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -58,7 +67,10 @@ class Trip(Base, UUIDMixin, TimestampMixin):
 
 class TripMember(Base, UUIDMixin):
     __tablename__ = "trip_members"
-    __table_args__ = (UniqueConstraint("trip_id", "user_id", name="uq_trip_member"),)
+    __table_args__ = (
+        UniqueConstraint("trip_id", "user_id", name="uq_trip_member"),
+        Index("ix_trip_members_user_id", "user_id"),
+    )
 
     trip_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("trips.id", ondelete="CASCADE")

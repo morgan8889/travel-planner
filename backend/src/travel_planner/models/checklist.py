@@ -1,6 +1,14 @@
 import uuid
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -9,6 +17,7 @@ from travel_planner.models.base import Base, TimestampMixin, UUIDMixin
 
 class Checklist(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "checklists"
+    __table_args__ = (Index("ix_checklists_trip_id", "trip_id"),)
 
     trip_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("trips.id", ondelete="CASCADE")

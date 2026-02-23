@@ -50,7 +50,7 @@ export function RootLayout() {
               <Settings className="w-4 h-4" />
             </Link>
             <button
-              onClick={() => signOut()}
+              onClick={() => void signOut().catch(console.error)}
               className="px-3 py-1.5 text-sm font-medium text-cloud-500 bg-white border border-cloud-200 rounded-lg hover:bg-cloud-50 hover:text-cloud-900 transition-colors"
             >
               Sign Out
