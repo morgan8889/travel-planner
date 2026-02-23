@@ -350,5 +350,31 @@ describe('DashboardPage Needs Attention', () => {
     // After expanding, all 4 groups render — 4 "View trip" links
     expect(screen.getAllByText(/view trip/i)).toHaveLength(4)
     expect(screen.queryByRole('button', { name: /show more/i })).not.toBeInTheDocument()
+    // Show less button appears
+    expect(screen.getByRole('button', { name: /show less/i })).toBeInTheDocument()
+  })
+
+  it('collapses back to 3 groups after clicking Show less', async () => {
+    const user = userEvent.setup()
+    const trips = Array.from({ length: 4 }, (_, i) =>
+      makeTrip({
+        id: `trip-${i + 1}`,
+        destination: `City ${i + 1}`,
+        status: 'booked',
+        transport_total: 1,
+        transport_confirmed: 0,
+        start_date: `2026-0${i + 3}-01`,
+      })
+    )
+    mockUseTrips.mockReturnValue({ data: trips, isLoading: false })
+    renderDashboard()
+
+    await user.click(await screen.findByRole('button', { name: /show more/i }))
+    expect(screen.getAllByText(/view trip/i)).toHaveLength(4)
+
+    await user.click(screen.getByRole('button', { name: /show less/i }))
+    expect(screen.getAllByText(/view trip/i)).toHaveLength(3)
+    expect(screen.getByRole('button', { name: /show more/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /show less/i })).not.toBeInTheDocument()
   })
 })
