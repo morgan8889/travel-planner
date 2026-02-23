@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react'
+import type { ElementType } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { Plus, Calendar, ArrowRight, CheckCircle2, Plane, Hotel } from 'lucide-react'
+import { Plus, Calendar, ArrowRight, CheckCircle2, Plane, Hotel, UtensilsCrossed } from 'lucide-react'
 import { useTrips } from '../hooks/useTrips'
 import { useAuth } from '../contexts/AuthContext'
 import { TripStatusBadge } from '../components/trips/TripStatusBadge'
@@ -48,32 +49,26 @@ function UpcomingTripCard({ trip }: { trip: TripSummary }) {
   )
 }
 
-const STATUS_ORDER: Record<string, number> = { active: 0, booked: 1, planning: 2 }
-
-type ActionItem = {
+type TripActionGroup = {
   tripId: string
-  destination: string
-  icon: React.ElementType
-  label: string
+  displayName: string
+  startDate: string
+  items: { icon: ElementType; label: string }[]
 }
 
-function getActionItems(trips: TripSummary[]): ActionItem[] {
+function getActionGroups(trips: TripSummary[]): TripActionGroup[] {
   const actionable = trips.filter((t) =>
     ['planning', 'booked', 'active'].includes(t.status)
   )
-  actionable.sort((a, b) => {
-    const statusDiff = (STATUS_ORDER[a.status] ?? 3) - (STATUS_ORDER[b.status] ?? 3)
-    if (statusDiff !== 0) return statusDiff
-    return a.start_date.localeCompare(b.start_date)
-  })
+  actionable.sort((a, b) => a.start_date.localeCompare(b.start_date))
 
-  const items: ActionItem[] = []
+  const groups: TripActionGroup[] = []
   for (const trip of actionable) {
+    const items: { icon: ElementType; label: string }[] = []
+
     const unconfirmedFlights = (trip.transport_total ?? 0) - (trip.transport_confirmed ?? 0)
     if (unconfirmedFlights > 0) {
       items.push({
-        tripId: trip.id,
-        destination: trip.destination,
         icon: Plane,
         label: `${unconfirmedFlights} flight${unconfirmedFlights > 1 ? 's' : ''} not confirmed`,
       })
@@ -81,24 +76,37 @@ function getActionItems(trips: TripSummary[]): ActionItem[] {
     const unconfirmedHotels = (trip.lodging_total ?? 0) - (trip.lodging_confirmed ?? 0)
     if (unconfirmedHotels > 0) {
       items.push({
-        tripId: trip.id,
-        destination: trip.destination,
         icon: Hotel,
         label: `${unconfirmedHotels} hotel${unconfirmedHotels > 1 ? 's' : ''} not confirmed`,
+      })
+    }
+    const unconfirmedRestaurants = (trip.restaurant_total ?? 0) - (trip.restaurant_confirmed ?? 0)
+    if (unconfirmedRestaurants > 0) {
+      items.push({
+        icon: UtensilsCrossed,
+        label: `${unconfirmedRestaurants} restaurant booking${unconfirmedRestaurants > 1 ? 's' : ''} to confirm`,
       })
     }
     const unplannedDays = (trip.itinerary_day_count ?? 0) - (trip.days_with_activities ?? 0)
     if (unplannedDays > 0) {
       items.push({
-        tripId: trip.id,
-        destination: trip.destination,
         icon: Calendar,
         label: `${unplannedDays} day${unplannedDays > 1 ? 's' : ''} not planned`,
       })
     }
-    if (items.length >= 5) break
+
+    if (items.length > 0) {
+      groups.push({
+        tripId: trip.id,
+        displayName: trip.type === 'event'
+          ? (getEventName(trip.notes) ?? trip.destination)
+          : trip.destination,
+        startDate: trip.start_date,
+        items,
+      })
+    }
   }
-  return items.slice(0, 5)
+  return groups
 }
 
 export function DashboardPage() {
@@ -261,8 +269,8 @@ export function DashboardPage() {
           {isLoading ? (
             <div className="flex items-center justify-center py-8"><LoadingSpinner /></div>
           ) : (() => {
-            const items = getActionItems(trips ?? [])
-            if (items.length === 0) {
+            const groups = getActionGroups(trips ?? [])
+            if (groups.length === 0) {
               return (
                 <div className="bg-white rounded-xl border border-cloud-200 p-6 flex items-center gap-3">
                   <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
@@ -271,45 +279,49 @@ export function DashboardPage() {
               )
             }
             return (
-              <div className="space-y-2">
-                {items.map((item, idx) => (
-                  <Link
-                    key={idx}
-                    to="/trips/$tripId"
-                    params={{ tripId: item.tripId }}
-                    className="flex items-center justify-between p-3 bg-white rounded-xl border border-cloud-200 hover:border-amber-200 hover:shadow-sm transition-all group"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <item.icon className="w-4 h-4 text-amber-500 shrink-0" />
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-cloud-800 group-hover:text-indigo-700 truncate">{item.destination}</p>
-                        <p className="text-xs text-cloud-500">{item.label}</p>
+              <div className="space-y-3">
+                {groups.map((group) => (
+                  <div key={group.tripId} className="bg-white rounded-xl border border-cloud-200 overflow-hidden">
+                    <div className="flex items-center justify-between px-4 py-2.5 border-b border-cloud-100">
+                      <div className="min-w-0 mr-2">
+                        <span className="text-sm font-semibold text-cloud-800 truncate block">
+                          {group.displayName}
+                        </span>
+                        <span className="text-xs text-cloud-500">
+                          {group.startDate} · {getDaysUntil(group.startDate)}
+                        </span>
                       </div>
+                      <Link
+                        to="/trips/$tripId"
+                        params={{ tripId: group.tripId }}
+                        className="text-xs text-indigo-600 hover:text-indigo-700 font-medium whitespace-nowrap shrink-0"
+                      >
+                        View trip →
+                      </Link>
                     </div>
-                    <ArrowRight className="w-4 h-4 text-cloud-400 group-hover:text-indigo-500 shrink-0 ml-2" />
-                  </Link>
+                    <div className="divide-y divide-cloud-50">
+                      {group.items.map((item, idx) => (
+                        <Link
+                          key={idx}
+                          to="/trips/$tripId"
+                          params={{ tripId: group.tripId }}
+                          className="flex items-center justify-between px-4 py-2.5 hover:bg-cloud-50/50 transition-colors group"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <item.icon className="w-4 h-4 text-amber-500 shrink-0" />
+                            <p className="text-sm text-cloud-700 group-hover:text-indigo-700 truncate">
+                              {item.label}
+                            </p>
+                          </div>
+                          <ArrowRight className="w-3.5 h-3.5 text-cloud-400 group-hover:text-indigo-500 shrink-0 ml-2" />
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             )
           })()}
-
-          {/* Quick links */}
-          <div className="flex gap-3 mt-4">
-            <Link
-              to="/trips/new"
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-cloud-700 bg-white border border-cloud-200 rounded-lg hover:border-indigo-200 hover:text-indigo-700 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              New Trip
-            </Link>
-            <Link
-              to="/calendar"
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-cloud-700 bg-white border border-cloud-200 rounded-lg hover:border-indigo-200 hover:text-indigo-700 transition-colors"
-            >
-              <Calendar className="w-4 h-4" />
-              View Calendar
-            </Link>
-          </div>
         </div>
       </div>
     </div>

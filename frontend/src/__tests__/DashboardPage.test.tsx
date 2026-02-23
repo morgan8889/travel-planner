@@ -193,6 +193,8 @@ function makeTrip(overrides: Partial<TripSummary>): TripSummary {
     lodging_confirmed: 0,
     activity_total: 0,
     activity_confirmed: 0,
+    restaurant_total: 0,
+    restaurant_confirmed: 0,
     ...overrides,
   }
 }
@@ -257,5 +259,49 @@ describe('DashboardPage Needs Attention', () => {
     renderDashboard()
     await screen.findByText(/all caught up/i)
     expect(screen.queryByText(/berlin/i)).not.toBeInTheDocument()
+  })
+
+  it('shows restaurant action item for unconfirmed restaurant bookings', async () => {
+    mockUseTrips.mockReturnValue({
+      data: [makeTrip({
+        destination: 'Kyoto',
+        status: 'booked',
+        restaurant_total: 3,
+        restaurant_confirmed: 1,
+      })],
+      isLoading: false,
+    })
+    renderDashboard()
+    expect(await screen.findByText(/2 restaurant booking/i)).toBeInTheDocument()
+  })
+
+  it('groups action items under their trip header', async () => {
+    mockUseTrips.mockReturnValue({
+      data: [
+        makeTrip({ id: 'trip-a', destination: 'Rome', status: 'booked', transport_total: 2, transport_confirmed: 0 }),
+        makeTrip({ id: 'trip-b', destination: 'Athens', status: 'planning', lodging_total: 1, lodging_confirmed: 0 }),
+      ],
+      isLoading: false,
+    })
+    renderDashboard()
+
+    // Both trip headers shown (use getAllByText since destination appears in multiple places)
+    expect((await screen.findAllByText('Rome'))[0]).toBeInTheDocument()
+    expect(screen.getAllByText('Athens')[0]).toBeInTheDocument()
+
+    // Each has its own action item
+    expect(screen.getByText(/2 flight/i)).toBeInTheDocument()
+    expect(screen.getByText(/1 hotel/i)).toBeInTheDocument()
+
+    // Each header has a "View trip" link
+    const viewLinks = screen.getAllByText(/view trip/i)
+    expect(viewLinks).toHaveLength(2)
+  })
+
+  it('does not show quick link buttons', async () => {
+    mockUseTrips.mockReturnValue({ data: [], isLoading: false })
+    renderDashboard()
+    await screen.findByText(/welcome back/i)
+    expect(screen.queryByText('View Calendar')).not.toBeInTheDocument()
   })
 })
