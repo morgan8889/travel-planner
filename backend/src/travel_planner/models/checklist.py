@@ -1,47 +1,28 @@
 import uuid
-from datetime import datetime
 
-from sqlalchemy import (
-    Boolean,
-    DateTime,
-    ForeignKey,
-    Integer,
-    String,
-    Text,
-    UniqueConstraint,
-    func,
-)
+from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from travel_planner.models.user import Base
+from travel_planner.models.base import Base, TimestampMixin, UUIDMixin
 
 
-class Checklist(Base):
+class Checklist(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "checklists"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
     trip_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("trips.id", ondelete="CASCADE")
     )
     title: Mapped[str] = mapped_column(String(255))
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
 
     items: Mapped[list["ChecklistItem"]] = relationship(
         back_populates="checklist", order_by="ChecklistItem.sort_order"
     )
 
 
-class ChecklistItem(Base):
+class ChecklistItem(Base, UUIDMixin):
     __tablename__ = "checklist_items"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
     checklist_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("checklists.id", ondelete="CASCADE")
     )
@@ -52,12 +33,9 @@ class ChecklistItem(Base):
     user_checks: Mapped[list["ChecklistItemUser"]] = relationship(back_populates="item")
 
 
-class ChecklistItemUser(Base):
+class ChecklistItemUser(Base, UUIDMixin):
     __tablename__ = "checklist_item_users"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
     item_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("checklist_items.id", ondelete="CASCADE")
     )
