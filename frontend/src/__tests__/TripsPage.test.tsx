@@ -230,6 +230,71 @@ describe('TripsPage', () => {
     expect(screen.queryByText('Berlin, Germany')).not.toBeInTheDocument()
   })
 
+  it('renders type filter pills', async () => {
+    mockGet.mockResolvedValue({ data: mockTrips })
+    renderWithProviders(<TripsPage />)
+
+    expect(await screen.findByText('All Types')).toBeInTheDocument()
+    expect(screen.getByText('Vacation')).toBeInTheDocument()
+    expect(screen.getByText('Event')).toBeInTheDocument()
+    expect(screen.getByText('Remote Week')).toBeInTheDocument()
+    expect(screen.getByText('Sabbatical')).toBeInTheDocument()
+  })
+
+  it('clicking Event type filter shows only event-type trips', async () => {
+    const user = userEvent.setup()
+    const tripsWithEvent = [
+      ...mockTrips,
+      {
+        ...mockTrips[0],
+        id: 'trip-3',
+        type: 'event' as const,
+        destination: 'Boston Marathon',
+        status: 'booked' as const,
+      },
+    ]
+    mockGet.mockResolvedValue({ data: tripsWithEvent })
+    renderWithProviders(<TripsPage />)
+
+    // Click All status filter so all trips are visible
+    await user.click(await screen.findByRole('button', { name: 'All' }))
+
+    expect((await screen.findAllByText('Boston Marathon')).length).toBeGreaterThan(0)
+    expect(screen.getByText('Paris, France')).toBeInTheDocument()
+
+    // Click 'Event' type pill — only Boston Marathon should remain
+    await user.click(screen.getByRole('button', { name: 'Event' }))
+
+    expect(screen.getAllByText('Boston Marathon').length).toBeGreaterThan(0)
+    expect(screen.queryByText('Paris, France')).not.toBeInTheDocument()
+    expect(screen.queryByText('Lisbon, Portugal')).not.toBeInTheDocument()
+  })
+
+  it('clicking All Types resets type filter', async () => {
+    const user = userEvent.setup()
+    const tripsWithEvent = [
+      ...mockTrips,
+      {
+        ...mockTrips[0],
+        id: 'trip-3',
+        type: 'event' as const,
+        destination: 'Boston Marathon',
+        status: 'booked' as const,
+      },
+    ]
+    mockGet.mockResolvedValue({ data: tripsWithEvent })
+    renderWithProviders(<TripsPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'All' }))
+    await user.click(screen.getByRole('button', { name: 'Event' }))
+    expect(screen.queryByText('Paris, France')).not.toBeInTheDocument()
+
+    // Reset — all trips visible again
+    await user.click(screen.getByRole('button', { name: 'All Types' }))
+    expect(screen.getByText('Paris, France')).toBeInTheDocument()
+    expect(screen.getAllByText('Boston Marathon').length).toBeGreaterThan(0)
+  })
+
   it('renders error state with retry button on fetch failure', async () => {
     mockGet.mockRejectedValue(new Error('Network error'))
     renderWithProviders(<TripsPage />)

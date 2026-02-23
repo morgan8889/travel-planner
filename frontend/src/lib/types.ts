@@ -45,6 +45,8 @@ export interface TripSummary {
   lodging_confirmed?: number
   activity_total?: number
   activity_confirmed?: number
+  restaurant_total?: number
+  restaurant_confirmed?: number
 }
 
 export interface Trip extends Omit<TripSummary, 'member_count'> {
