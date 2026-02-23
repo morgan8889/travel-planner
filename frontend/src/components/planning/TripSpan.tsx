@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { TripStatus, TripType } from '../../lib/types'
 import { getEventName } from '../../lib/tripUtils'
+import { formatShortDate } from '../../lib/dateUtils'
 
 const TRIP_COLORS: Record<string, string> = {
   dreaming: 'bg-purple-200 text-purple-800 hover:bg-purple-300',
@@ -37,13 +38,6 @@ interface TripSpanProps {
   isHighlighted?: boolean
   /** Trip notes — used to extract event name for event-type trips */
   notes?: string | null
-}
-
-function formatShortDate(dateStr: string): string {
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  })
 }
 
 interface TripPopoverProps {

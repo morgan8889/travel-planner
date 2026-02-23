@@ -2,6 +2,7 @@ import { useMemo, useState, useRef } from 'react'
 import { DayCell } from './DayCell'
 import { TripSpan } from './TripSpan'
 import type { TripSummary, HolidayEntry, CustomDay } from '../../lib/types'
+import { formatDate, formatShortDate } from '../../lib/dateUtils'
 
 interface YearViewProps {
   year: number
@@ -28,10 +29,6 @@ const STATUS_DOT: Record<string, string> = {
   completed: 'bg-cloud-400',
 }
 
-function formatDate(y: number, m: number, d: number): string {
-  return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-}
-
 function getMiniGrid(year: number, month: number) {
   const firstDay = new Date(year, month, 1)
   const lastDay = new Date(year, month + 1, 0)
@@ -46,10 +43,6 @@ function getMiniGrid(year: number, month: number) {
     days.push({ date: formatDate(year, month, d), dayNumber: d, isCurrentMonth: true })
   }
   return days
-}
-
-function formatShortDate(dateStr: string): string {
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 const TRIPS_DEFAULT = 5

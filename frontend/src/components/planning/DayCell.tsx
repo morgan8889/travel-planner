@@ -1,4 +1,5 @@
 import { useState, memo } from 'react'
+import { formatShortDate } from '../../lib/dateUtils'
 
 interface DayCellProps {
   date: string  // YYYY-MM-DD
@@ -15,13 +16,6 @@ interface DayCellProps {
   onMouseEnter?: (date: string) => void
   onClick?: (date: string) => void
   onHolidayClick?: (date: string) => void
-}
-
-function formatShortDate(dateStr: string): string {
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  })
 }
 
 function DayPopover({ name, date, align }: {

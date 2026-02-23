@@ -3,6 +3,7 @@ import { DayCell } from './DayCell'
 import { TripSpan } from './TripSpan'
 import type { TripSummary, HolidayEntry, CustomDay } from '../../lib/types'
 import type { DragSelection } from './useDragSelect'
+import { formatDate } from '../../lib/dateUtils'
 
 interface MonthViewProps {
   year: number
@@ -19,10 +20,6 @@ interface MonthViewProps {
 }
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-
-function formatDate(y: number, m: number, d: number): string {
-  return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-}
 
 function getMonthGrid(year: number, month: number) {
   const firstDay = new Date(year, month, 1)

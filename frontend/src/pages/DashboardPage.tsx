@@ -8,6 +8,7 @@ import { TripStatusBadge } from '../components/trips/TripStatusBadge'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { TripMarker } from '../components/map/TripMarker'
 import { getEventName } from '../lib/tripUtils'
+import { getDaysUntil } from '../lib/dateUtils'
 import type { TripSummary } from '../lib/types'
 
 const MapView = lazy(() => import('../components/map/MapView').then((m) => ({ default: m.MapView })))
@@ -15,15 +16,6 @@ const MapView = lazy(() => import('../components/map/MapView').then((m) => ({ de
 function getDisplayName(email: string | undefined): string {
   if (!email) return 'there'
   return email.split('@')[0]
-}
-
-function getDaysUntil(dateStr: string): string {
-  const start = new Date(dateStr + 'T00:00:00')
-  const daysUntil = Math.ceil((start.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-  if (daysUntil > 1) return `in ${daysUntil} days`
-  if (daysUntil === 1) return 'tomorrow'
-  if (daysUntil === 0) return 'today'
-  return `${Math.abs(daysUntil)} days ago`
 }
 
 function UpcomingTripCard({ trip }: { trip: TripSummary }) {
