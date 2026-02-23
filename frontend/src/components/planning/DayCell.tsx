@@ -1,5 +1,4 @@
-import { memo } from 'react'
-import { Star } from 'lucide-react'
+import { useState, memo } from 'react'
 
 interface DayCellProps {
   date: string  // YYYY-MM-DD
@@ -9,13 +8,33 @@ interface DayCellProps {
   isSelected: boolean
   isSelectedForCreate?: boolean
   holidayLabel?: string
-  customDayLabel?: string
+  customDayName?: string
   compact?: boolean  // true for quarter/year views
   showLabel?: boolean  // show label text in compact mode (quarter view)
   onMouseDown?: (date: string) => void
   onMouseEnter?: (date: string) => void
   onClick?: (date: string) => void
   onHolidayClick?: (date: string) => void
+}
+
+function formatShortDate(dateStr: string): string {
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  })
+}
+
+function DayPopover({ name, date, align }: {
+  name: string
+  date: string
+  align: 'left' | 'right'
+}) {
+  return (
+    <div className={`absolute bottom-full ${align === 'left' ? 'left-0' : 'right-0'} mb-1 px-2.5 py-2 bg-cloud-900 text-white text-[11px] rounded-lg shadow-lg whitespace-nowrap z-50 pointer-events-none min-w-[100px]`}>
+      <div className="font-semibold leading-tight">{name}</div>
+      <div className="opacity-70 mt-0.5">{formatShortDate(date)}</div>
+    </div>
+  )
 }
 
 export const DayCell = memo(function DayCell({
@@ -26,7 +45,7 @@ export const DayCell = memo(function DayCell({
   isSelected,
   isSelectedForCreate = false,
   holidayLabel,
-  customDayLabel,
+  customDayName,
   compact = false,
   showLabel = false,
   onMouseDown,
@@ -34,18 +53,18 @@ export const DayCell = memo(function DayCell({
   onClick,
   onHolidayClick,
 }: DayCellProps) {
-  const label = holidayLabel || customDayLabel
+  const [showCustomPopover, setShowCustomPopover] = useState(false)
+  const [showHolidayPopover, setShowHolidayPopover] = useState(false)
+  const label = holidayLabel || customDayName
 
   if (compact) {
     return (
       <div
-        className={`w-full ${showLabel ? 'h-full min-h-[2.5rem]' : 'aspect-square'} border-b border-r border-cloud-100 flex flex-col items-start p-1 text-xs cursor-pointer
+        className={`relative w-full ${showLabel ? 'h-full min-h-[2.5rem]' : 'aspect-square'} border-b border-r border-cloud-100 flex flex-col items-start p-1 text-xs cursor-pointer
           ${isCurrentMonth ? 'text-cloud-700' : 'text-cloud-300'}
           ${isToday ? 'ring-2 ring-indigo-500 ring-inset font-bold' : ''}
           ${!isToday && isSelectedForCreate ? 'ring-2 ring-indigo-500 bg-indigo-50' : ''}
           ${isSelected ? 'bg-indigo-100' : ''}
-          ${holidayLabel ? 'font-semibold text-red-600' : ''}
-          ${customDayLabel ? 'font-semibold text-amber-600' : ''}
         `}
         onClick={() => {
           if (holidayLabel && onHolidayClick) {
@@ -54,13 +73,40 @@ export const DayCell = memo(function DayCell({
             onClick?.(date)
           }
         }}
-        title={label}
+        onMouseLeave={() => {
+          setShowCustomPopover(false)
+          setShowHolidayPopover(false)
+        }}
       >
         {dayNumber}
         {showLabel && label && (
-          <span className={`text-[10px] leading-tight truncate max-w-full ${holidayLabel ? 'text-red-500' : 'text-amber-500'}`}>
+          <span className={`text-[10px] leading-tight truncate max-w-full ${holidayLabel ? 'text-rose-500' : 'text-amber-500'}`}>
             {label}
           </span>
+        )}
+        {holidayLabel && (
+          <>
+            <div
+              className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-rose-400 cursor-default"
+              onMouseEnter={() => setShowHolidayPopover(true)}
+              onMouseLeave={() => setShowHolidayPopover(false)}
+            />
+            {showHolidayPopover && (
+              <DayPopover name={holidayLabel} date={date} align="right" />
+            )}
+          </>
+        )}
+        {customDayName && (
+          <>
+            <div
+              className="absolute bottom-0.5 left-0.5 w-1.5 h-1.5 rounded-full bg-amber-400 cursor-default"
+              onMouseEnter={() => setShowCustomPopover(true)}
+              onMouseLeave={() => setShowCustomPopover(false)}
+            />
+            {showCustomPopover && (
+              <DayPopover name={customDayName} date={date} align="left" />
+            )}
+          </>
         )}
       </div>
     )
@@ -96,12 +142,28 @@ export const DayCell = memo(function DayCell({
           {dayNumber}
         </span>
         {holidayLabel && (
-          <span className="text-[10px] leading-tight mt-1 truncate max-w-[calc(100%-2rem)] text-right text-red-500">
-            {holidayLabel}
-          </span>
+          <div className="relative">
+            <div
+              className="w-2 h-2 rounded-full bg-rose-400 shrink-0 mt-1 cursor-default"
+              onMouseEnter={() => setShowHolidayPopover(true)}
+              onMouseLeave={() => setShowHolidayPopover(false)}
+            />
+            {showHolidayPopover && (
+              <DayPopover name={holidayLabel} date={date} align="right" />
+            )}
+          </div>
         )}
-        {customDayLabel && !holidayLabel && (
-          <Star className="w-3 h-3 text-amber-500 shrink-0 mt-1" />
+        {customDayName && !holidayLabel && (
+          <div className="relative">
+            <div
+              className="w-2 h-2 rounded-full bg-amber-400 shrink-0 mt-1 cursor-default"
+              onMouseEnter={() => setShowCustomPopover(true)}
+              onMouseLeave={() => setShowCustomPopover(false)}
+            />
+            {showCustomPopover && (
+              <DayPopover name={customDayName} date={date} align="right" />
+            )}
+          </div>
         )}
       </div>
     </div>

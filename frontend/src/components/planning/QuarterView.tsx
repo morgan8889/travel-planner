@@ -67,10 +67,13 @@ export function QuarterView({
     }
     return map
   }, [holidays])
-  const customDaySet = useMemo(() => {
-    return new Set(customDays.map((cd) =>
-      cd.recurring ? `${year}-${cd.date.slice(5)}` : cd.date
-    ))
+  const customDayMap = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const cd of customDays) {
+      const dateStr = cd.recurring ? `${year}-${cd.date.slice(5)}` : cd.date
+      map.set(dateStr, cd.name)
+    }
+    return map
   }, [customDays, year])
 
   return (
@@ -126,7 +129,7 @@ export function QuarterView({
                           isSelected={false}
                           isSelectedForCreate={day.date === selectedDate}
                           holidayLabel={holidayMap.get(day.date)}
-                          customDayLabel={customDaySet.has(day.date) ? 'custom' : undefined}
+                          customDayName={customDayMap.get(day.date)}
                           compact
                           showLabel
                           onClick={() => onDayClick(day.date)}

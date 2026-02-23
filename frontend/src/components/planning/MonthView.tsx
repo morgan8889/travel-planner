@@ -147,7 +147,7 @@ export function MonthView({
                   isSelected={isInSelection(day.date)}
                   isSelectedForCreate={day.date === selectedDate}
                   holidayLabel={holidayMap.get(day.date)}
-                  customDayLabel={customDayMap.get(day.date)}
+                  customDayName={customDayMap.get(day.date)}
                   onMouseDown={onDragStart}
                   onMouseEnter={onDragMove}
                   onHolidayClick={onHolidayClick}

@@ -41,7 +41,8 @@ describe('TripSpan popover card', () => {
       />,
     )
     fireEvent.mouseEnter(screen.getByRole('button'))
-    expect(screen.getByText('3M Half Marathon')).toBeInTheDocument()
+    // inline bar label + popover both show the event name
+    expect(screen.getAllByText('3M Half Marathon').length).toBeGreaterThanOrEqual(2)
   })
 
   it('shows destination for non-event trips on hover (size=medium)', () => {
@@ -74,9 +75,11 @@ describe('TripSpan popover card', () => {
     )
     const btn = screen.getByRole('button')
     fireEvent.mouseEnter(btn)
-    expect(screen.getByText('3M Half Marathon')).toBeInTheDocument()
+    // popover + inline label both show event name when hovered
+    expect(screen.getAllByText('3M Half Marathon').length).toBeGreaterThanOrEqual(2)
     fireEvent.mouseLeave(btn)
-    expect(screen.queryByText('3M Half Marathon')).not.toBeInTheDocument()
+    // after mouse leave, popover is gone — only inline label remains
+    expect(screen.getAllByText('3M Half Marathon').length).toBe(1)
   })
 
   it('shows popover on hover for size=full (month view)', () => {
@@ -110,5 +113,62 @@ describe('TripSpan popover card', () => {
     // Should show "Jan 18" not "Jan 18 – Jan 18"
     const dateEl = screen.getByText('Jan 18')
     expect(dateEl).toBeInTheDocument()
+  })
+})
+
+describe('TripSpan event bar inline label', () => {
+  it('shows event name as inline bar text for event trip (size=medium)', () => {
+    const { container } = render(
+      <TripSpan
+        {...base}
+        size="medium"
+        colorBy="type"
+        tripType="event"
+        notes="3M Half Marathon — local Austin race"
+      />,
+    )
+    const span = container.querySelector('span')
+    expect(span?.textContent).toBe('3M Half Marathon')
+  })
+
+  it('shows destination as inline bar text for non-event trip (size=medium)', () => {
+    const { container } = render(
+      <TripSpan
+        {...base}
+        size="medium"
+        colorBy="type"
+        tripType="vacation"
+      />,
+    )
+    const span = container.querySelector('span')
+    expect(span?.textContent).toBe('Austin, TX')
+  })
+
+  it('shows event name as bar text for event trip (size=full)', () => {
+    render(
+      <TripSpan
+        {...base}
+        size="full"
+        colorBy="type"
+        tripType="event"
+        notes="Unbound 200 — gravel race"
+      />,
+    )
+    const button = screen.getByRole('button')
+    expect(button.textContent).toContain('Unbound 200')
+  })
+
+  it('falls back to destination when event trip has no notes (size=medium)', () => {
+    const { container } = render(
+      <TripSpan
+        {...base}
+        size="medium"
+        colorBy="type"
+        tripType="event"
+        notes={null}
+      />,
+    )
+    const span = container.querySelector('span')
+    expect(span?.textContent).toBe('Austin, TX')
   })
 })

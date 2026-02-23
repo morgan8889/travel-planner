@@ -122,6 +122,9 @@ export function TripSpan({
     ? ` ring-2 ring-indigo-500 ring-offset-1${pulsing ? ' animate-pulse' : ''}`
     : ''
 
+  const displayLabel =
+    tripType === 'event' ? (getEventName(notes) ?? destination) : destination
+
   if (size === 'small' || size === 'medium') {
     const heightClass = size === 'small' ? 'h-1.5' : 'h-3'
     const bottomOffset = size === 'small' ? stackIndex * 8 : stackIndex * 14
@@ -146,7 +149,7 @@ export function TripSpan({
       >
         {size === 'medium' && (
           <span className="absolute inset-0 flex items-center px-1 text-[9px] leading-none truncate pointer-events-none">
-            {destination}
+            {displayLabel}
           </span>
         )}
         {hovered && (
@@ -178,7 +181,7 @@ export function TripSpan({
       onFocus={() => setHovered(true)}
       onBlur={() => setHovered(false)}
     >
-      {destination}
+      {displayLabel}
       {hovered && (
         <TripPopover
           destination={destination}

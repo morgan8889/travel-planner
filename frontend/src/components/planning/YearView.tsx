@@ -117,8 +117,13 @@ export function YearView({
     return map
   }, [holidays])
 
-  const customDaySet = useMemo(() => {
-    return new Set(customDays.map((cd) => (cd.recurring ? `${year}-${cd.date.slice(5)}` : cd.date)))
+  const customDayMap = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const cd of customDays) {
+      const dateStr = cd.recurring ? `${year}-${cd.date.slice(5)}` : cd.date
+      map.set(dateStr, cd.name)
+    }
+    return map
   }, [customDays, year])
 
   const nonEventInventory = useMemo(
@@ -177,6 +182,8 @@ export function YearView({
   const holidaysExpanded = expanded.year === year && expanded.holidays
 
   const [hoveredCustomId, setHoveredCustomId] = useState<string | null>(null)
+  const [hoveredMonthDotState, setHoveredMonthDot] = useState<{ year: number; month: number } | null>(null)
+  const hoveredMonthDot = hoveredMonthDotState?.year === year ? hoveredMonthDotState.month : null
 
   function setTripsExpanded(value: boolean) {
     setExpanded((prev) => ({ ...prev, year, trips: value }))
@@ -206,7 +213,7 @@ export function YearView({
   }
 
   return (
-    <div className="flex">
+    <div className="flex items-start">
       {/* Mini calendar grid — 3 columns */}
       <div className="flex-1 grid grid-cols-3 gap-6 p-4 min-w-0">
         {MONTH_NAMES.map((name, month) => {
@@ -235,16 +242,25 @@ export function YearView({
                   {name}
                 </button>
                 {eventCount > 0 && (
-                  <span
-                    className="w-2 h-2 rounded-full bg-amber-400 shrink-0"
-                    title={customDaysForYear
-                      .filter(
-                        (cd) =>
-                          new Date(cd.resolvedDate + 'T00:00:00').getMonth() === month,
-                      )
-                      .map((cd) => cd.name)
-                      .join(', ')}
-                  />
+                  <div className="relative">
+                    <span
+                      className="w-2 h-2 rounded-full bg-amber-400 shrink-0 block cursor-default"
+                      onMouseEnter={() => setHoveredMonthDot({ year, month })}
+                      onMouseLeave={() => setHoveredMonthDot(null)}
+                    />
+                    {hoveredMonthDot === month && (
+                      <div className="absolute top-full left-0 mt-1 px-2.5 py-2 bg-cloud-900 text-white text-[11px] rounded-lg shadow-lg whitespace-nowrap z-50 pointer-events-none min-w-[120px]">
+                        {customDaysForYear
+                          .filter((cd) => new Date(cd.resolvedDate + 'T00:00:00').getMonth() === month)
+                          .map((cd) => (
+                            <div key={cd.id} className="leading-snug">
+                              <span className="font-semibold">{cd.name}</span>
+                              <span className="opacity-70 ml-1">{formatShortDate(cd.resolvedDate)}</span>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
               {weeks.map((week, weekIdx) => {
@@ -270,7 +286,7 @@ export function YearView({
                             isSelected={false}
                             isSelectedForCreate={day.date === selectedDate}
                             holidayLabel={holidayMap.get(day.date)}
-                            customDayLabel={customDaySet.has(day.date) ? 'custom' : undefined}
+                            customDayName={customDayMap.get(day.date)}
                             compact
                             onClick={() => onDayClick(day.date)}
                             onHolidayClick={onHolidayClick}

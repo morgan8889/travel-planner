@@ -74,6 +74,12 @@ describe('YearView layout', () => {
     const threeColGrid = container.querySelector('.grid.grid-cols-3')
     expect(threeColGrid).toBeInTheDocument()
   })
+
+  it('outer flex container uses items-start', () => {
+    const { container } = render(<YearView {...baseProps} />)
+    const outerFlex = container.querySelector('.flex.items-start')
+    expect(outerFlex).toBeInTheDocument()
+  })
 })
 
 describe('YearView trip inventory panel', () => {
@@ -142,8 +148,8 @@ describe('YearView trip inventory panel', () => {
       }),
     ]
     render(<YearView {...baseProps} trips={trips} />)
-    // Event name (from notes) appears in Events section
-    expect(screen.getByText('3M Half Marathon')).toBeInTheDocument()
+    // Event name (from notes) appears in Events section (may also appear in bar label)
+    expect(screen.getAllByText('3M Half Marathon').length).toBeGreaterThanOrEqual(1)
     // Trips section shows no trips (only non-event trips go there)
     expect(screen.getByText(/no trips planned/i)).toBeInTheDocument()
   })
@@ -250,15 +256,8 @@ describe('YearView event badges', () => {
       { id: 'cd-2', user_id: 'u-1', name: 'Fun Run', date: '2026-07-20', recurring: false, created_at: '2026-01-01T00:00:00Z' },
     ]
     const { container } = render(<YearView {...baseProps} customDays={customDays} />)
-    // Heading dots are <span class="w-2 h-2 rounded-full bg-amber-400 ...">
     const dots = container.querySelectorAll('span.bg-amber-400.w-2.h-2.rounded-full')
     expect(dots.length).toBeGreaterThan(0)
-    // The dot for July should list both event names in its title tooltip
-    const julyDot = Array.from(dots).find((el) =>
-      (el.getAttribute('title') ?? '').includes('Race Day'),
-    )
-    expect(julyDot).toBeInTheDocument()
-    expect(julyDot?.getAttribute('title')).toContain('Fun Run')
   })
 
   it('does not show a numeric count inside the dot', () => {
@@ -287,6 +286,28 @@ describe('YearView event badges', () => {
     const { container } = render(<YearView {...baseProps} customDays={[]} />)
     const dots = container.querySelectorAll('span.bg-amber-400.w-2.h-2.rounded-full')
     expect(dots.length).toBe(0)
+  })
+
+  it('shows hover popover with custom day names when month dot is hovered', () => {
+    const customDays: CustomDay[] = [
+      { id: 'cd-1', user_id: 'u-1', name: 'Race Day', date: '2026-07-14', recurring: false, created_at: '2026-01-01T00:00:00Z' },
+      { id: 'cd-2', user_id: 'u-1', name: 'Fun Run', date: '2026-07-20', recurring: false, created_at: '2026-01-01T00:00:00Z' },
+    ]
+    const { container } = render(<YearView {...baseProps} customDays={customDays} />)
+    // The calendar grid is the flex-1 child, sidebar is the w-60 child
+    // Month header dots are inside buttons in the grid area
+    const monthHeaderDots = container.querySelectorAll(
+      '.flex-1 span.bg-amber-400.w-2.h-2.rounded-full'
+    )
+    // Before hover: 'Race Day' visible once in Events panel
+    expect(screen.getAllByText('Race Day').length).toBe(1)
+    fireEvent.mouseEnter(monthHeaderDots[0])
+    // After hover: 'Race Day' appears again in popover (twice total)
+    expect(screen.getAllByText('Race Day').length).toBe(2)
+    expect(screen.getAllByText('Fun Run').length).toBe(2)
+    fireEvent.mouseLeave(monthHeaderDots[0])
+    // After leave: back to once
+    expect(screen.getAllByText('Race Day').length).toBe(1)
   })
 })
 
