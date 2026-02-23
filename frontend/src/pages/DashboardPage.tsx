@@ -111,7 +111,7 @@ export function DashboardPage() {
   const upcomingTrips = trips
     ?.filter((t) => t.status !== 'completed')
     .sort((a, b) => a.start_date.localeCompare(b.start_date))
-    .slice(0, 3) ?? []
+    .slice(0, 5) ?? []
 
   // Map: only show trips in next 90 days (planning/booked/active); fall back to non-completed
   const now = new Date()

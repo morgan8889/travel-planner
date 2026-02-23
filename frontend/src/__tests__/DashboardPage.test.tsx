@@ -148,6 +148,26 @@ describe('DashboardPage', () => {
     await screen.findByText(/welcome back/i)
     expect(screen.queryByTestId('next-up-overlay')).not.toBeInTheDocument()
   })
+
+  it('shows up to 5 upcoming trips and no more', async () => {
+    const sixTrips = Array.from({ length: 6 }, (_, i) => ({
+      ...FUTURE_TRIP,
+      id: `trip-${i + 1}`,
+      destination: `City ${i + 1}`,
+      start_date: `203${i}-06-15`,
+      // No coordinates so trips won't appear as map markers
+      destination_latitude: null,
+      destination_longitude: null,
+    }))
+    mockUseTrips.mockReturnValue({ data: sixTrips, isLoading: false })
+    renderDashboard()
+
+    // Should show exactly 5 trip names in the upcoming panel, not 6
+    for (let i = 1; i <= 5; i++) {
+      expect((await screen.findAllByText(`City ${i}`))[0]).toBeInTheDocument()
+    }
+    expect(screen.queryByText('City 6')).not.toBeInTheDocument()
+  })
 })
 
 function makeTrip(overrides: Partial<TripSummary>): TripSummary {
