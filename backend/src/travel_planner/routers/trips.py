@@ -230,7 +230,7 @@ async def list_trips(
     result = await db.execute(stmt)
     trips = result.scalars().all()
 
-    # Auto-complete past trips (before status filter so the filter sees updated statuses)
+    # Auto-complete past trips before applying the status filter
     today = date.today()
     changed = False
     for t in trips:
