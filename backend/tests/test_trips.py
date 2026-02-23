@@ -338,6 +338,54 @@ def test_get_trip_detail_success(
     assert data["children"] == []
 
 
+# --- Test 7b: Get trip auto-completes past trip ---
+
+
+def test_get_trip_auto_completes_past_trip(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """GET /trips/{id} auto-updates a past non-completed trip to 'completed'."""
+    owner_user = _make_user()
+    owner_member = _make_member(user=owner_user)
+    trip = _make_trip(members=[owner_member])
+    trip.end_date = date(2024, 1, 1)  # past
+    trip.status = TripStatus.booked  # not yet completed
+    trip.destination_latitude = None
+    trip.destination_longitude = None
+
+    result_mock = MagicMock()
+    result_mock.scalar_one_or_none.return_value = trip
+    mock_db_session.execute = AsyncMock(return_value=result_mock)
+
+    response = client.get(f"/trips/{trip.id}", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "completed"
+    mock_db_session.commit.assert_called()
+
+
+def test_get_trip_does_not_complete_future_trip(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """GET /trips/{id} does NOT auto-complete a trip whose end_date is in the future."""
+    owner_user = _make_user()
+    owner_member = _make_member(user=owner_user)
+    trip = _make_trip(members=[owner_member])
+    trip.end_date = date(2099, 12, 31)
+    trip.status = TripStatus.booked
+    trip.destination_latitude = None
+    trip.destination_longitude = None
+
+    result_mock = MagicMock()
+    result_mock.scalar_one_or_none.return_value = trip
+    mock_db_session.execute = AsyncMock(return_value=result_mock)
+
+    response = client.get(f"/trips/{trip.id}", headers=auth_headers)
+    assert response.status_code == 200
+    assert response.json()["status"] == "booked"
+    mock_db_session.commit.assert_not_called()
+
+
 # --- Test 8: Get trip detail not found ---
 
 

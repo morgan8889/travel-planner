@@ -307,6 +307,13 @@ async def get_trip(
 ) -> TripResponse:
     """Get trip detail with members and children. Requires membership."""
     trip, _ = await get_trip_with_membership(trip_id, user_id, db)
+    today = date.today()
+    if trip.end_date < today and trip.status != TripStatus.completed:
+        trip.status = TripStatus.completed
+        try:
+            await db.commit()
+        except Exception:
+            await db.rollback()
     return _build_trip_response(trip)
 
 
