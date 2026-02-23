@@ -50,9 +50,7 @@ def test_chat_message_role_column_is_enum_not_string():
     from travel_planner.models.chat import ChatMessage
 
     col_type = ChatMessage.__table__.c.role.type
-    assert isinstance(col_type, SAEnum), (
-        f"Expected Enum, got {type(col_type).__name__}"
-    )
+    assert isinstance(col_type, SAEnum), f"Expected Enum, got {type(col_type).__name__}"
 
 
 # ---------------------------------------------------------------------------
@@ -64,7 +62,6 @@ def test_all_enums_exported_from_models():
     from travel_planner.models import (  # noqa: F401
         ActivityCategory,
         ActivitySource,
-        BlockType,
         ChatRole,
         ImportStatus,
         MemberRole,
@@ -78,5 +75,4 @@ def test_all_enums_exported_from_models():
     assert ActivityCategory.transport == "transport"
     assert ActivitySource.manual == "manual"
     assert ImportStatus.pending_review == "pending_review"
-    assert BlockType.pto == "pto"
     assert ChatRole.user == "user"
