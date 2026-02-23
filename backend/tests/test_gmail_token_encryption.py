@@ -7,7 +7,6 @@ import pytest
 from travel_planner.crypto import EncryptedText
 from travel_planner.models.gmail import GmailConnection
 
-
 # ---------------------------------------------------------------------------
 # EncryptedText TypeDecorator behaviour
 # ---------------------------------------------------------------------------
