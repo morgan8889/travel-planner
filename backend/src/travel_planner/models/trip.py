@@ -92,6 +92,7 @@ class TripMember(Base):
 
 class TripInvitation(Base):
     __tablename__ = "trip_invitations"
+    __table_args__ = (UniqueConstraint("trip_id", "email", name="uq_trip_invitation"),)
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4

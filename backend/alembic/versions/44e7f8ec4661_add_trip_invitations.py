@@ -43,10 +43,12 @@ def upgrade() -> None:
             server_default=sa.text("now()"),
             nullable=False,
         ),
+        sa.UniqueConstraint("trip_id", "email", name="uq_trip_invitation"),
     )
     op.create_index("ix_trip_invitations_email", "trip_invitations", ["email"])
 
 
 def downgrade() -> None:
+    op.drop_constraint("uq_trip_invitation", "trip_invitations", type_="unique")
     op.drop_index("ix_trip_invitations_email", "trip_invitations")
     op.drop_table("trip_invitations")

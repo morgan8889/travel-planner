@@ -25,6 +25,7 @@ from travel_planner.models.user import UserProfile
 from travel_planner.routers.itinerary import _sync_itinerary_days
 from travel_planner.schemas.trip import (
     AddMemberRequest,
+    MemberInvitedResponse,
     MemberPreview,
     TripCreate,
     TripInvitationResponse,
@@ -84,17 +85,27 @@ async def _claim_pending_invitations(
     invitations = result.scalars().all()
     if not invitations:
         return
-    try:
-        for inv in invitations:
-            member = TripMember(
-                trip_id=inv.trip_id, user_id=user_id, role=MemberRole.member
+    for inv in invitations:
+        try:
+            existing = await db.scalar(
+                select(TripMember).where(
+                    TripMember.trip_id == inv.trip_id,
+                    TripMember.user_id == user_id,
+                )
             )
-            db.add(member)
+            if not existing:
+                db.add(
+                    TripMember(
+                        trip_id=inv.trip_id, user_id=user_id, role=MemberRole.member
+                    )
+                )
             await db.delete(inv)
-        await db.commit()
-    except Exception:
-        logger.exception("Failed to claim pending invitations for %s", email)
-        await db.rollback()
+            await db.commit()
+        except Exception:
+            logger.exception(
+                "Failed to claim invitation %s for %s", inv.id, email
+            )
+            await db.rollback()
 
 
 def _build_trip_response(trip: Trip) -> TripResponse:
@@ -512,7 +523,7 @@ async def add_member(
         db.add(invitation)
         await db.commit()
         return JSONResponse(
-            content={"status": "invited", "email": email},
+            content=MemberInvitedResponse(status="invited", email=email).model_dump(),
             status_code=202,
         )
 

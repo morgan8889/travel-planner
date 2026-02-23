@@ -134,6 +134,12 @@ class UpdateMemberRole(BaseModel):
     role: MemberRole
 
 
+class MemberInvitedResponse(BaseModel):
+    status: str
+    email: str
+    model_config = {"from_attributes": True}
+
+
 class TripInvitationResponse(BaseModel):
     model_config = {"from_attributes": True}
 
