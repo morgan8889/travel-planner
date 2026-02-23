@@ -61,8 +61,8 @@ export function TripCard({ trip }: TripCardProps) {
       : 0
 
   return (
-    <Link to="/trips/$tripId" params={{ tripId: trip.id }} className="block group">
-      <div className="bg-white rounded-2xl border border-cloud-200 p-5 transition-all duration-300 hover:shadow-lg hover:shadow-cloud-300/20 hover:-translate-y-0.5 hover:border-indigo-200 animate-card-enter">
+    <Link to="/trips/$tripId" params={{ tripId: trip.id }} className="block group h-full">
+      <div className="bg-white rounded-2xl border border-cloud-200 p-5 transition-all duration-300 hover:shadow-lg hover:shadow-cloud-300/20 hover:-translate-y-0.5 hover:border-indigo-200 animate-card-enter h-full flex flex-col">
         <div className="flex items-start justify-between mb-3">
           <h3 className="text-lg font-semibold text-cloud-900 group-hover:text-indigo-700 transition-colors duration-300 truncate mr-2">
             {displayTitle}
@@ -117,7 +117,7 @@ export function TripCard({ trip }: TripCardProps) {
           })}
         </div>
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mt-auto">
           <TripStatusBadge status={trip.status} />
 
           <div className="flex items-center -space-x-2" data-testid="member-count">

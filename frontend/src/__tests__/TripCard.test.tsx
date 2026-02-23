@@ -140,6 +140,15 @@ describe('TripCard', () => {
     const bar = await screen.findByTestId('itinerary-progress')
     expect(bar).toHaveTextContent('All days planned')
   })
+
+  it('card link and inner div have h-full class for equal grid height', async () => {
+    renderWithProviders(<TripCard trip={mockTrip} />)
+    const link = await screen.findByRole('link')
+    expect(link).toHaveClass('h-full')
+    const innerDiv = link.querySelector('div')
+    expect(innerDiv).toHaveClass('h-full')
+    expect(innerDiv).toHaveClass('flex-col')
+  })
 })
 
 describe('TripCard event type title', () => {
