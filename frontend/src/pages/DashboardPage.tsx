@@ -326,6 +326,7 @@ export function DashboardPage() {
                 </div>
                 {hiddenCount > 0 && (
                   <button
+                    type="button"
                     onClick={() => setNeedsAttentionExpanded(true)}
                     className="w-full mt-2 py-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
                   >
