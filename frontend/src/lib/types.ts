@@ -10,6 +10,14 @@ export interface TripMember {
   email: string
 }
 
+export interface TripInvitation {
+  id: string
+  trip_id: string
+  email: string
+  invited_by: string
+  created_at: string
+}
+
 export interface MemberPreview {
   initials: string
   color: string

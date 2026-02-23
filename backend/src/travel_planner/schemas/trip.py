@@ -132,3 +132,13 @@ class AddMemberRequest(BaseModel):
 
 class UpdateMemberRole(BaseModel):
     role: MemberRole
+
+
+class TripInvitationResponse(BaseModel):
+    model_config = {"from_attributes": True}
+
+    id: uuid.UUID
+    trip_id: uuid.UUID
+    email: str
+    invited_by: uuid.UUID
+    created_at: datetime

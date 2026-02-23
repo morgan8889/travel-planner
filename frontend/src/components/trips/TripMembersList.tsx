@@ -1,8 +1,9 @@
-import type { TripMember } from '../../lib/types'
+import type { TripMember, TripInvitation } from '../../lib/types'
 import { X } from 'lucide-react'
 
 interface TripMembersListProps {
   members: TripMember[]
+  invitations?: TripInvitation[]
   isOwner: boolean
   onRemove?: (memberId: string) => void
   onUpdateRole?: (memberId: string, role: 'owner' | 'member') => void
@@ -30,6 +31,7 @@ const avatarColors = [
 
 export function TripMembersList({
   members,
+  invitations = [],
   isOwner,
   onRemove,
   onUpdateRole,
@@ -87,6 +89,21 @@ export function TripMembersList({
                 <X className="w-4 h-4" />
               </button>
             )}
+          </div>
+        </li>
+      ))}
+      {invitations.map((inv) => (
+        <li key={inv.id} className="flex items-center gap-3 py-3 last:pb-0 opacity-50">
+          <div className="w-9 h-9 rounded-full bg-cloud-200 flex items-center justify-center shrink-0">
+            <span className="text-xs font-medium text-cloud-500">?</span>
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-cloud-500 truncate">{inv.email}</p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+              Pending
+            </span>
           </div>
         </li>
       ))}

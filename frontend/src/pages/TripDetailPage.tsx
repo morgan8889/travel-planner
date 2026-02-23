@@ -7,7 +7,7 @@ import { ActivityMarker } from '../components/map/ActivityMarker'
 import { MarkerPopup } from '../components/map/MarkerPopup'
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { useTrip, useUpdateTrip, useDeleteTrip } from '../hooks/useTrips'
-import { useAddMember, useRemoveMember, useUpdateMemberRole } from '../hooks/useMembers'
+import { useAddMember, useRemoveMember, useUpdateMemberRole, useInvitations } from '../hooks/useMembers'
 import { useItineraryDays, useGenerateDays, useDeleteDay, useTripActivities } from '../hooks/useItinerary'
 import { useChecklists } from '../hooks/useChecklists'
 import { useAuth } from '../contexts/AuthContext'
@@ -129,6 +129,8 @@ export function TripDetailPage() {
   const isOwner = trip?.members.some(
     (m) => m.user_id === user?.id && m.role === 'owner'
   ) ?? false
+
+  const { data: invitations = [] } = useInvitations(tripId, isOwner)
 
   // Compute map bounds from trip destination + geolocated activities
   const destLat = trip?.destination_latitude ?? null
@@ -621,6 +623,7 @@ export function TripDetailPage() {
 
               <TripMembersList
                 members={trip.members}
+                invitations={invitations}
                 isOwner={isOwner}
                 onRemove={handleRemoveMember}
                 onUpdateRole={handleUpdateRole}
@@ -661,6 +664,7 @@ export function TripDetailPage() {
 
           <TripMembersList
             members={trip.members}
+            invitations={invitations}
             isOwner={isOwner}
             onRemove={handleRemoveMember}
             onUpdateRole={handleUpdateRole}

@@ -2,22 +2,32 @@ import logging
 from datetime import date
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi.responses import JSONResponse
 from sqlalchemy import func, select, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from travel_planner.auth import CurrentUser, CurrentUserId
+from travel_planner.config import settings
 from travel_planner.db import get_db
 from travel_planner.models.itinerary import Activity, ItineraryDay
-from travel_planner.models.trip import MemberRole, Trip, TripMember, TripStatus
+from travel_planner.models.trip import (
+    MemberRole,
+    Trip,
+    TripInvitation,
+    TripMember,
+    TripStatus,
+)
 from travel_planner.models.user import UserProfile
 from travel_planner.routers.itinerary import _sync_itinerary_days
 from travel_planner.schemas.trip import (
     AddMemberRequest,
     MemberPreview,
     TripCreate,
+    TripInvitationResponse,
     TripMemberResponse,
     TripResponse,
     TripSummary,
@@ -60,6 +70,31 @@ async def get_trip_with_membership(
         )
 
     return trip, membership
+
+
+async def _claim_pending_invitations(
+    user_id: UUID, user_email: str | None, db: AsyncSession
+) -> None:
+    """Auto-add user as trip member for any pending invitations matching their email."""
+    if not user_email:
+        return
+    email = user_email.lower()
+    stmt = select(TripInvitation).where(TripInvitation.email == email)
+    result = await db.execute(stmt)
+    invitations = result.scalars().all()
+    if not invitations:
+        return
+    try:
+        for inv in invitations:
+            member = TripMember(
+                trip_id=inv.trip_id, user_id=user_id, role=MemberRole.member
+            )
+            db.add(member)
+            await db.delete(inv)
+        await db.commit()
+    except Exception:
+        logger.exception("Failed to claim pending invitations for %s", email)
+        await db.rollback()
 
 
 def _build_trip_response(trip: Trip) -> TripResponse:
@@ -166,15 +201,16 @@ async def create_trip(
 
 @router.get("", response_model=list[TripSummary])
 async def list_trips(
-    user_id: CurrentUserId,
+    user: CurrentUser,
     db: AsyncSession = Depends(get_db),
     status: TripStatus | None = Query(default=None),
 ) -> list[TripSummary]:
     """List all trips the current user is a member of."""
+    await _claim_pending_invitations(user.id, user.email, db)
     stmt = (
         select(Trip)
         .join(TripMember)
-        .where(TripMember.user_id == user_id)
+        .where(TripMember.user_id == user.id)
         .options(selectinload(Trip.members).joinedload(TripMember.user))
         .order_by(Trip.start_date)
     )
@@ -306,11 +342,12 @@ async def list_trips(
 @router.get("/{trip_id}", response_model=TripResponse)
 async def get_trip(
     trip_id: UUID,
-    user_id: CurrentUserId,
+    user: CurrentUser,
     db: AsyncSession = Depends(get_db),
 ) -> TripResponse:
     """Get trip detail with members and children. Requires membership."""
-    trip, _ = await get_trip_with_membership(trip_id, user_id, db)
+    await _claim_pending_invitations(user.id, user.email, db)
+    trip, _ = await get_trip_with_membership(trip_id, user.id, db)
     today = date.today()
     if trip.end_date < today and trip.status != TripStatus.completed:
         trip.status = TripStatus.completed
@@ -377,43 +414,36 @@ async def add_member(
     body: AddMemberRequest,
     user_id: CurrentUserId,
     db: AsyncSession = Depends(get_db),
-) -> TripMemberResponse:
+) -> TripMemberResponse | Response:
     """Add a member to a trip by email. Requires owner role."""
     trip, _ = await get_trip_with_membership(trip_id, user_id, db, require_owner=True)
 
+    email = body.email.lower().strip()
+
     # Look up the user by email in local profiles first
-    stmt = select(UserProfile).where(UserProfile.email == body.email)
+    stmt = select(UserProfile).where(UserProfile.email == email)
     result = await db.execute(stmt)
     target_user = result.scalar_one_or_none()
-    logger.warning(
-        "add_member: local profile lookup for %s → %s, service_key_set=%s",
-        body.email,
-        target_user,
-        False,
-    )
 
     if target_user is None:
         # Fall back to auth.users — covers users who have a Supabase account
         # but haven't created a trip yet (no local profile row)
         auth_row = await db.execute(
             text("SELECT id FROM auth.users WHERE email = :email"),
-            {"email": body.email},
+            {"email": email},
         )
         auth_user = auth_row.fetchone()
-        logger.warning(
-            "add_member: auth.users lookup for %s → %s", body.email, auth_user
-        )
         if auth_user:
             auth_user_id = UUID(str(auth_user[0]))
-            display_name = body.email.split("@")[0]
+            display_name = email.split("@")[0]
             upsert = insert(UserProfile).values(
                 id=auth_user_id,
-                email=body.email,
+                email=email,
                 display_name=display_name,
             )
             upsert = upsert.on_conflict_do_update(
                 index_elements=["id"],
-                set_={"email": body.email},
+                set_={"email": email},
             )
             await db.execute(upsert)
             r2 = await db.execute(
@@ -421,9 +451,58 @@ async def add_member(
             )
             target_user = r2.scalar_one_or_none()
 
+    # 3. No account at all — send Supabase invite, create pending invitation
     if target_user is None:
-        raise HTTPException(
-            status_code=404, detail="No account found with this email address"
+        # Check for duplicate pending invitation
+        dup_result = await db.execute(
+            select(TripInvitation).where(
+                TripInvitation.trip_id == trip_id,
+                TripInvitation.email == email,
+            )
+        )
+        if dup_result.scalar_one_or_none() is not None:
+            raise HTTPException(
+                status_code=409,
+                detail="Invitation already sent to this email",
+            )
+
+        if settings.supabase_service_role_key:
+            try:
+                async with httpx.AsyncClient() as http_client:
+                    resp = await http_client.post(
+                        f"{settings.supabase_url}/auth/v1/admin/users",
+                        headers={
+                            "apikey": settings.supabase_service_role_key,
+                            "Authorization": (
+                                f"Bearer {settings.supabase_service_role_key}"
+                            ),
+                        },
+                        json={"email": email},
+                    )
+            except httpx.HTTPError as exc:
+                logger.error("Supabase invite network error for %s: %s", email, exc)
+                raise HTTPException(
+                    status_code=500, detail="Failed to send invite"
+                ) from exc
+            if resp.status_code >= 400:
+                logger.error(
+                    "Supabase invite failed for %s: %s %s",
+                    email,
+                    resp.status_code,
+                    resp.text,
+                )
+                raise HTTPException(status_code=500, detail="Failed to send invite")
+
+        invitation = TripInvitation(
+            trip_id=trip_id,
+            email=email,
+            invited_by=user_id,
+        )
+        db.add(invitation)
+        await db.commit()
+        return JSONResponse(
+            content={"status": "invited", "email": email},
+            status_code=202,
         )
 
     # Check if already a member
@@ -496,3 +575,18 @@ async def update_member_role(
         display_name=target_member.user.display_name,
         email=target_member.user.email,
     )
+
+
+@router.get("/{trip_id}/invitations", response_model=list[TripInvitationResponse])
+async def list_invitations(
+    trip_id: UUID,
+    user_id: CurrentUserId,
+    db: AsyncSession = Depends(get_db),
+) -> list[TripInvitationResponse]:
+    """List pending invitations for a trip. Requires owner role."""
+    await get_trip_with_membership(trip_id, user_id, db, require_owner=True)
+
+    stmt = select(TripInvitation).where(TripInvitation.trip_id == trip_id)
+    result = await db.execute(stmt)
+    invitations = result.scalars().all()
+    return [TripInvitationResponse.model_validate(inv) for inv in invitations]
