@@ -5,6 +5,8 @@ from uuid import UUID
 import pytest
 from fastapi.testclient import TestClient
 
+from tests.conftest import create_test_token
+
 from travel_planner.main import app
 from travel_planner.models.trip import (
     MemberRole,
@@ -1288,6 +1290,108 @@ def test_list_trips_claims_pending_invitation(
     assert added.trip_id == TRIP_ID
     assert added.user_id == TEST_USER_ID
     assert added.role == MemberRole.member
+
+
+def test_claim_invitation_case_insensitive_email(
+    client: TestClient, override_get_db, mock_db_session
+):
+    """Email matching in _claim_pending_invitations is case-insensitive.
+
+    A JWT with UPPER@EXAMPLE.COM should claim an invitation stored as upper@example.com.
+    """
+    from travel_planner.models.trip import TripInvitation as TripInvitationModel
+
+    mixed_case_email = "UPPER@EXAMPLE.COM"
+    stored_email = "upper@example.com"
+
+    token = create_test_token(str(TEST_USER_ID), mixed_case_email)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    inv = MagicMock(spec=TripInvitationModel)
+    inv.trip_id = TRIP_ID
+    inv.email = stored_email
+
+    inv_scalars = MagicMock()
+    inv_scalars.all.return_value = [inv]
+    inv_result = MagicMock()
+    inv_result.scalars.return_value = inv_scalars
+
+    trips_scalars = MagicMock()
+    trips_scalars.all.return_value = []
+    trips_result = MagicMock()
+    trips_result.scalars.return_value = trips_scalars
+
+    mock_db_session.execute = AsyncMock(side_effect=[inv_result, trips_result])
+    mock_db_session.add = MagicMock()
+    mock_db_session.delete = AsyncMock()
+    mock_db_session.scalar = AsyncMock(return_value=None)
+
+    response = client.get("/trips", headers=headers)
+    assert response.status_code == 200
+    # Invitation was claimed despite email case mismatch
+    mock_db_session.delete.assert_called_once_with(inv)
+    mock_db_session.add.assert_called_once()
+
+
+def test_claim_invitation_skips_add_when_already_member(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """When the user is already a member, the invitation is deleted but no new member is added."""
+    from travel_planner.models.trip import TripInvitation as TripInvitationModel
+
+    inv = MagicMock(spec=TripInvitationModel)
+    inv.trip_id = TRIP_ID
+    inv.email = TEST_USER_EMAIL
+
+    inv_scalars = MagicMock()
+    inv_scalars.all.return_value = [inv]
+    inv_result = MagicMock()
+    inv_result.scalars.return_value = inv_scalars
+
+    trips_scalars = MagicMock()
+    trips_scalars.all.return_value = []
+    trips_result = MagicMock()
+    trips_result.scalars.return_value = trips_scalars
+
+    mock_db_session.execute = AsyncMock(side_effect=[inv_result, trips_result])
+    mock_db_session.add = MagicMock()
+    mock_db_session.delete = AsyncMock()
+    # scalar() returns an existing TripMember → add() should be skipped
+    existing_member = MagicMock(spec=TripMember)
+    mock_db_session.scalar = AsyncMock(return_value=existing_member)
+
+    response = client.get("/trips", headers=auth_headers)
+    assert response.status_code == 200
+    # Invitation still deleted even though add was skipped
+    mock_db_session.delete.assert_called_once_with(inv)
+    # No new member added
+    mock_db_session.add.assert_not_called()
+
+
+def test_claim_invitation_skips_when_no_email(
+    client: TestClient, override_get_db, mock_db_session
+):
+    """_claim_pending_invitations returns early when user has no email (anonymous users)."""
+    # Anonymous / email-less user
+    token = create_test_token(str(TEST_USER_ID), "")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    trips_scalars = MagicMock()
+    trips_scalars.all.return_value = []
+    trips_result = MagicMock()
+    trips_result.scalars.return_value = trips_scalars
+
+    # Only the list-trips query should fire; invitation query must not run
+    mock_db_session.execute = AsyncMock(return_value=trips_result)
+    mock_db_session.add = MagicMock()
+    mock_db_session.delete = AsyncMock()
+
+    response = client.get("/trips", headers=headers)
+    assert response.status_code == 200
+    # No invitation lookup or membership changes
+    mock_db_session.delete.assert_not_called()
+    mock_db_session.add.assert_not_called()
+    assert mock_db_session.execute.call_count == 1
 
 
 # ---------------------------------------------------------------------------
