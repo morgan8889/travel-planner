@@ -102,9 +102,7 @@ async def _claim_pending_invitations(
             await db.delete(inv)
             await db.commit()
         except Exception:
-            logger.exception(
-                "Failed to claim invitation %s for %s", inv.id, email
-            )
+            logger.exception("Failed to claim invitation %s for %s", inv.id, email)
             await db.rollback()
 
 
