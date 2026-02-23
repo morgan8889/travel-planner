@@ -298,6 +298,15 @@ async def list_trips(
                     Activity.confirmation_number.isnot(None),
                 )
                 .label("activity_confirmed"),
+                func.count(Activity.id)
+                .filter(Activity.category == "food")
+                .label("restaurant_total"),
+                func.count(Activity.id)
+                .filter(
+                    Activity.category == "food",
+                    Activity.confirmation_number.isnot(None),
+                )
+                .label("restaurant_confirmed"),
             )
             .outerjoin(
                 activity_per_day,
@@ -321,6 +330,8 @@ async def list_trips(
         lodging_confirmed = row.lodging_confirmed if row else 0
         activity_total = row.activity_total if row else 0
         activity_confirmed = row.activity_confirmed if row else 0
+        restaurant_total = row.restaurant_total if row else 0
+        restaurant_confirmed = row.restaurant_confirmed if row else 0
         sorted_members = sorted(t.members, key=lambda m: m.id)
         previews = [
             MemberPreview(
@@ -352,6 +363,8 @@ async def list_trips(
                 lodging_confirmed=lodging_confirmed,
                 activity_total=activity_total,
                 activity_confirmed=activity_confirmed,
+                restaurant_total=restaurant_total,
+                restaurant_confirmed=restaurant_confirmed,
             )
         )
     return summaries

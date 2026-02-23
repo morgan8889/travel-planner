@@ -106,6 +106,8 @@ class TripSummary(BaseModel):
     lodging_confirmed: int = 0
     activity_total: int = 0
     activity_confirmed: int = 0
+    restaurant_total: int = 0
+    restaurant_confirmed: int = 0
     model_config = {"from_attributes": True}
 
 
