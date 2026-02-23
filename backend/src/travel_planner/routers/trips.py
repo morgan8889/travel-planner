@@ -1,3 +1,4 @@
+from datetime import date
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -179,6 +180,19 @@ async def list_trips(
 
     result = await db.execute(stmt)
     trips = result.scalars().all()
+
+    # Auto-complete past trips
+    today = date.today()
+    changed = False
+    for t in trips:
+        if t.end_date < today and t.status != TripStatus.completed:
+            t.status = TripStatus.completed
+            changed = True
+    if changed:
+        try:
+            await db.commit()
+        except Exception:
+            await db.rollback()
 
     # Bulk itinerary stats — 1 extra query for all trips
     trip_ids = [t.id for t in trips]

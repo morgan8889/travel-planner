@@ -775,6 +775,70 @@ def test_update_member_role_not_found(
     assert response.status_code == 404
 
 
+def test_list_trips_auto_completes_past_trips(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """GET /trips auto-updates past non-completed trips to 'completed' in response."""
+    owner_member = _make_member()
+    trip = _make_trip(members=[owner_member])
+    trip.end_date = date(2024, 1, 1)  # clearly in the past
+    trip.status = TripStatus.planning  # not yet completed
+
+    result_mock = MagicMock()
+    result_mock.scalars.return_value.all.return_value = [trip]
+    stats_mock = MagicMock()
+    stats_mock.__iter__ = MagicMock(return_value=iter([]))
+    mock_db_session.execute = AsyncMock(side_effect=[result_mock, stats_mock])
+
+    response = client.get("/trips", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data[0]["status"] == "completed"
+    mock_db_session.commit.assert_called()
+
+
+def test_list_trips_does_not_complete_future_trips(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """GET /trips does NOT auto-complete trips whose end_date is in the future."""
+    owner_member = _make_member()
+    trip = _make_trip(members=[owner_member])
+    trip.end_date = date(2099, 12, 31)
+    trip.status = TripStatus.planning
+
+    result_mock = MagicMock()
+    result_mock.scalars.return_value.all.return_value = [trip]
+    stats_mock = MagicMock()
+    stats_mock.__iter__ = MagicMock(return_value=iter([]))
+    mock_db_session.execute = AsyncMock(side_effect=[result_mock, stats_mock])
+
+    response = client.get("/trips", headers=auth_headers)
+    assert response.status_code == 200
+    assert response.json()[0]["status"] == "planning"
+    mock_db_session.commit.assert_not_called()
+
+
+def test_list_trips_does_not_recommit_already_completed_past_trips(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """GET /trips skips commit when past trips are already 'completed'."""
+    owner_member = _make_member()
+    trip = _make_trip(members=[owner_member])
+    trip.end_date = date(2024, 1, 1)
+    trip.status = TripStatus.completed  # already done
+
+    result_mock = MagicMock()
+    result_mock.scalars.return_value.all.return_value = [trip]
+    stats_mock = MagicMock()
+    stats_mock.__iter__ = MagicMock(return_value=iter([]))
+    mock_db_session.execute = AsyncMock(side_effect=[result_mock, stats_mock])
+
+    response = client.get("/trips", headers=auth_headers)
+    assert response.status_code == 200
+    assert response.json()[0]["status"] == "completed"
+    mock_db_session.commit.assert_not_called()
+
+
 def test_list_trips_includes_booking_stats(
     client: TestClient, auth_headers: dict, override_get_db, mock_db_session
 ):
