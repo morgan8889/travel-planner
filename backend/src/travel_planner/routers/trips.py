@@ -3,7 +3,7 @@ from datetime import date
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -381,12 +381,41 @@ async def add_member(
     """Add a member to a trip by email. Requires owner role."""
     trip, _ = await get_trip_with_membership(trip_id, user_id, db, require_owner=True)
 
-    # Look up the user by email
+    # Look up the user by email in local profiles first
     stmt = select(UserProfile).where(UserProfile.email == body.email)
     result = await db.execute(stmt)
     target_user = result.scalar_one_or_none()
+
     if target_user is None:
-        raise HTTPException(status_code=404, detail="User not found")
+        # Fall back to auth.users — covers users who have a Supabase account
+        # but haven't created a trip yet (no local profile row)
+        auth_row = await db.execute(
+            text("SELECT id FROM auth.users WHERE email = :email"),
+            {"email": body.email},
+        )
+        auth_user = auth_row.fetchone()
+        if auth_user:
+            auth_user_id = UUID(str(auth_user[0]))
+            display_name = body.email.split("@")[0]
+            upsert = insert(UserProfile).values(
+                id=auth_user_id,
+                email=body.email,
+                display_name=display_name,
+            )
+            upsert = upsert.on_conflict_do_update(
+                index_elements=["id"],
+                set_={"email": body.email},
+            )
+            await db.execute(upsert)
+            r2 = await db.execute(
+                select(UserProfile).where(UserProfile.id == auth_user_id)
+            )
+            target_user = r2.scalar_one_or_none()
+
+    if target_user is None:
+        raise HTTPException(
+            status_code=404, detail="No account found with this email address"
+        )
 
     # Check if already a member
     existing = next((m for m in trip.members if m.user_id == target_user.id), None)

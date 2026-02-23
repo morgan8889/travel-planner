@@ -64,23 +64,23 @@ export function TripCard({ trip }: TripCardProps) {
     <Link to="/trips/$tripId" params={{ tripId: trip.id }} className="block group">
       <div className="bg-white rounded-2xl border border-cloud-200 p-5 transition-all duration-300 hover:shadow-lg hover:shadow-cloud-300/20 hover:-translate-y-0.5 hover:border-indigo-200 animate-card-enter">
         <div className="flex items-start justify-between mb-3">
-          <div className="min-w-0 mr-2">
-            <h3 className="text-lg font-semibold text-cloud-900 group-hover:text-indigo-700 transition-colors duration-300 truncate">
-              {displayTitle}
-            </h3>
-            {isEvent && (
-              <div className="flex items-center gap-1 text-sm text-cloud-500 mt-0.5">
-                <MapPin className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate">{trip.destination}</span>
-              </div>
-            )}
-          </div>
+          <h3 className="text-lg font-semibold text-cloud-900 group-hover:text-indigo-700 transition-colors duration-300 truncate mr-2">
+            {displayTitle}
+          </h3>
           <TripTypeBadge type={trip.type} />
         </div>
 
-        <div className="flex items-center gap-1.5 text-sm text-cloud-500 mb-3">
-          <Calendar className="w-4 h-4 shrink-0" />
-          <span data-testid="trip-dates">{dateRange}</span>
+        <div className="flex items-center justify-between gap-2 text-sm text-cloud-500 mb-3">
+          <div className="flex items-center gap-1.5">
+            <Calendar className="w-4 h-4 shrink-0" />
+            <span data-testid="trip-dates">{dateRange}</span>
+          </div>
+          {isEvent && (
+            <div className="flex items-center gap-1 shrink-0">
+              <MapPin className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate max-w-[120px]">{trip.destination}</span>
+            </div>
+          )}
         </div>
 
         {itinerary_day_count > 0 && (

@@ -645,11 +645,15 @@ def test_add_member_user_not_found(
     result_mock1 = MagicMock()
     result_mock1.scalar_one_or_none.return_value = trip
 
-    # Second call: lookup user by email - not found
+    # Second call: lookup user by email in user_profiles - not found
     result_mock2 = MagicMock()
     result_mock2.scalar_one_or_none.return_value = None
 
-    mock_db_session.execute = AsyncMock(side_effect=[result_mock1, result_mock2])
+    # Third call: fallback lookup in auth.users - not found
+    result_mock3 = MagicMock()
+    result_mock3.fetchone.return_value = None
+
+    mock_db_session.execute = AsyncMock(side_effect=[result_mock1, result_mock2, result_mock3])
 
     payload = {"email": "unknown@example.com"}
     response = client.post(
