@@ -17,6 +17,7 @@ def test_bind_param_does_not_store_plaintext():
     enc = EncryptedText()
     plaintext = "ya29.access_token_value"
     result = enc.process_bind_param(plaintext, dialect=None)
+    assert result is not None
     assert result != plaintext
     assert plaintext not in result
 

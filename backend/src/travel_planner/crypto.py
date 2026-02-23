@@ -9,6 +9,7 @@ Fernet; print(Fernet.generate_key().decode())"
 """
 
 import os
+from typing import Any
 
 from cryptography.fernet import Fernet
 from sqlalchemy import Text
@@ -36,13 +37,13 @@ class EncryptedText(TypeDecorator):
             )
         return Fernet(key.encode() if isinstance(key, str) else key)
 
-    def process_bind_param(self, value: str | None, dialect) -> str | None:
+    def process_bind_param(self, value: str | None, dialect: Any) -> str | None:
         """Encrypt plaintext before writing to the database."""
         if value is None:
             return None
         return self._fernet().encrypt(value.encode()).decode()
 
-    def process_result_value(self, value: str | None, dialect) -> str | None:
+    def process_result_value(self, value: str | None, dialect: Any) -> str | None:
         """Decrypt ciphertext after reading from the database."""
         if value is None:
             return None
