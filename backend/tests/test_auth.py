@@ -228,3 +228,107 @@ def test_delete_account_calls_supabase_admin_when_key_set(
 
     assert response.status_code == 204
     mock_http.delete.assert_called_once()
+
+
+def test_delete_account_commits_only_after_supabase_succeeds(
+    client: TestClient, auth_headers: dict[str, str], override_get_db, mock_db_session
+):
+    """DELETE /auth/me commits DB only after Supabase deletion returns 200/204."""
+    owned_trips_mock = MagicMock()
+    owned_trips_mock.all.return_value = []
+    mock_db_session.execute.side_effect = [
+        owned_trips_mock,
+        MagicMock(),  # delete TripMembers
+        MagicMock(),  # delete GmailConnections
+        MagicMock(),  # delete ImportRecords
+        MagicMock(),  # delete HolidayCalendars
+        MagicMock(),  # delete CustomDays
+        MagicMock(),  # delete UserProfile
+    ]
+
+    with patch("travel_planner.routers.auth.settings") as mock_settings:
+        mock_settings.supabase_service_role_key = "test-service-key"
+        mock_settings.supabase_url = "http://test.supabase.co"
+
+        with patch("travel_planner.routers.auth.httpx.AsyncClient") as mock_cls:
+            mock_http = AsyncMock()
+            mock_cls.return_value.__aenter__ = AsyncMock(return_value=mock_http)
+            mock_cls.return_value.__aexit__ = AsyncMock(return_value=False)
+            mock_http.delete = AsyncMock(return_value=MagicMock(status_code=200))
+
+            response = client.delete("/auth/me", headers=auth_headers)
+
+    assert response.status_code == 204
+    # 7 executes: 1 select + 6 deletes (no owned trips → no Trip delete)
+    assert mock_db_session.execute.call_count == 7
+    mock_db_session.commit.assert_called_once()
+
+
+def test_delete_account_supabase_failure_returns_500_and_no_commit(
+    client: TestClient, auth_headers: dict[str, str], override_get_db, mock_db_session
+):
+    """DELETE /auth/me returns 500 and does NOT commit when Supabase deletion fails."""
+    owned_trips_mock = MagicMock()
+    owned_trips_mock.all.return_value = []
+    mock_db_session.execute.side_effect = [
+        owned_trips_mock,
+        MagicMock(),  # delete TripMembers
+        MagicMock(),  # delete GmailConnections
+        MagicMock(),  # delete ImportRecords
+        MagicMock(),  # delete HolidayCalendars
+        MagicMock(),  # delete CustomDays
+        MagicMock(),  # delete UserProfile
+    ]
+
+    with patch("travel_planner.routers.auth.settings") as mock_settings:
+        mock_settings.supabase_service_role_key = "test-service-key"
+        mock_settings.supabase_url = "http://test.supabase.co"
+
+        with patch("travel_planner.routers.auth.httpx.AsyncClient") as mock_cls:
+            mock_http = AsyncMock()
+            mock_cls.return_value.__aenter__ = AsyncMock(return_value=mock_http)
+            mock_cls.return_value.__aexit__ = AsyncMock(return_value=False)
+            mock_http.delete = AsyncMock(return_value=MagicMock(status_code=500))
+
+            response = client.delete("/auth/me", headers=auth_headers)
+
+    assert response.status_code == 500
+    assert "Failed to delete auth user" in response.json()["detail"]
+    mock_db_session.commit.assert_not_called()
+
+
+def test_delete_account_deletes_owned_trips(
+    client: TestClient, auth_headers: dict[str, str], override_get_db, mock_db_session
+):
+    """DELETE /auth/me issues a Trip bulk-delete when the user owns trips."""
+    owned_trip_id = UUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+
+    owned_trips_mock = MagicMock()
+    owned_trips_mock.all.return_value = [(owned_trip_id,)]
+    mock_db_session.execute.side_effect = [
+        owned_trips_mock,
+        MagicMock(),  # delete owned Trip rows
+        MagicMock(),  # delete TripMembers
+        MagicMock(),  # delete GmailConnections
+        MagicMock(),  # delete ImportRecords
+        MagicMock(),  # delete HolidayCalendars
+        MagicMock(),  # delete CustomDays
+        MagicMock(),  # delete UserProfile
+    ]
+
+    with patch("travel_planner.routers.auth.settings") as mock_settings:
+        mock_settings.supabase_service_role_key = "test-service-key"
+        mock_settings.supabase_url = "http://test.supabase.co"
+
+        with patch("travel_planner.routers.auth.httpx.AsyncClient") as mock_cls:
+            mock_http = AsyncMock()
+            mock_cls.return_value.__aenter__ = AsyncMock(return_value=mock_http)
+            mock_cls.return_value.__aexit__ = AsyncMock(return_value=False)
+            mock_http.delete = AsyncMock(return_value=MagicMock(status_code=204))
+
+            response = client.delete("/auth/me", headers=auth_headers)
+
+    assert response.status_code == 204
+    # 1 select + 1 delete trips + 6 other deletes = 8
+    assert mock_db_session.execute.call_count == 8
+    mock_db_session.commit.assert_called_once()
