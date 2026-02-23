@@ -1,3 +1,4 @@
+import logging
 from datetime import date
 from uuid import UUID
 
@@ -25,6 +26,8 @@ from travel_planner.schemas.trip import (
     _member_color,
     _member_initials,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/trips", tags=["trips"])
 
@@ -192,6 +195,7 @@ async def list_trips(
         try:
             await db.commit()
         except Exception:
+            logger.exception("Failed to auto-complete past trips on list")
             await db.rollback()
 
     # Bulk itinerary stats — 1 extra query for all trips
@@ -313,6 +317,7 @@ async def get_trip(
         try:
             await db.commit()
         except Exception:
+            logger.exception("Failed to auto-complete past trip %s", trip.id)
             await db.rollback()
     return _build_trip_response(trip)
 
