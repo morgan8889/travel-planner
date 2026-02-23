@@ -207,6 +207,7 @@ async def list_trips(
 ) -> list[TripSummary]:
     """List all trips the current user is a member of."""
     await _claim_pending_invitations(user.id, user.email, db)
+    # Fetch ALL trips without status filter so auto-complete runs on the full set
     stmt = (
         select(Trip)
         .join(TripMember)
@@ -214,17 +215,19 @@ async def list_trips(
         .options(selectinload(Trip.members).joinedload(TripMember.user))
         .order_by(Trip.start_date)
     )
-    if status is not None:
-        stmt = stmt.where(Trip.status == status)
 
     result = await db.execute(stmt)
     trips = result.scalars().all()
 
-    # Auto-complete past trips
+    # Auto-complete past trips (before status filter so the filter sees updated statuses)
     today = date.today()
     changed = False
     for t in trips:
-        if t.end_date < today and t.status != TripStatus.completed:
+        if (
+            t.end_date is not None
+            and t.end_date < today
+            and t.status != TripStatus.completed
+        ):
             t.status = TripStatus.completed
             changed = True
     if changed:
@@ -233,6 +236,10 @@ async def list_trips(
         except Exception:
             logger.exception("Failed to auto-complete past trips on list")
             await db.rollback()
+
+    # Apply status filter in Python after auto-complete so the response is consistent
+    if status is not None:
+        trips = [t for t in trips if t.status == status]
 
     # Bulk itinerary stats — 1 extra query for all trips
     trip_ids = [t.id for t in trips]
@@ -349,7 +356,11 @@ async def get_trip(
     await _claim_pending_invitations(user.id, user.email, db)
     trip, _ = await get_trip_with_membership(trip_id, user.id, db)
     today = date.today()
-    if trip.end_date < today and trip.status != TripStatus.completed:
+    if (
+        trip.end_date is not None
+        and trip.end_date < today
+        and trip.status != TripStatus.completed
+    ):
         trip.status = TripStatus.completed
         try:
             await db.commit()
