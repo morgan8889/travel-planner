@@ -259,13 +259,13 @@ describe('TripsPage', () => {
     // Click All status filter so all trips are visible
     await user.click(await screen.findByRole('button', { name: 'All' }))
 
-    expect((await screen.findAllByText('Boston Marathon')).length).toBeGreaterThan(0)
-    expect(screen.getByText('Paris, France')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Boston Marathon' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Paris, France' })).toBeInTheDocument()
 
     // Click 'Event' type pill — only Boston Marathon should remain
     await user.click(screen.getByRole('button', { name: 'Event' }))
 
-    expect(screen.getAllByText('Boston Marathon').length).toBeGreaterThan(0)
+    expect(screen.getByRole('heading', { name: 'Boston Marathon' })).toBeInTheDocument()
     expect(screen.queryByText('Paris, France')).not.toBeInTheDocument()
     expect(screen.queryByText('Lisbon, Portugal')).not.toBeInTheDocument()
   })
@@ -291,8 +291,8 @@ describe('TripsPage', () => {
 
     // Reset — all trips visible again
     await user.click(screen.getByRole('button', { name: 'All Types' }))
-    expect(screen.getByText('Paris, France')).toBeInTheDocument()
-    expect(screen.getAllByText('Boston Marathon').length).toBeGreaterThan(0)
+    expect(screen.getByRole('heading', { name: 'Paris, France' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Boston Marathon' })).toBeInTheDocument()
   })
 
   it('renders error state with retry button on fetch failure', async () => {
