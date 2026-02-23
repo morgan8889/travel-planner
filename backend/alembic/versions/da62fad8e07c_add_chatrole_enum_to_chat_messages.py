@@ -1,7 +1,7 @@
 """add chatrole enum to chat_messages
 
 Revision ID: da62fad8e07c
-Revises: d1d1e465e127
+Revises: 44e7f8ec4661
 Create Date: 2026-02-23 09:47:36.867150
 
 """
@@ -13,7 +13,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "da62fad8e07c"
-down_revision: Union[str, Sequence[str], None] = "d1d1e465e127"
+down_revision: Union[str, Sequence[str], None] = "44e7f8ec4661"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
