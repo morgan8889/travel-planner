@@ -1274,6 +1274,8 @@ def test_list_trips_claims_pending_invitation(
     mock_db_session.execute = AsyncMock(side_effect=[inv_result, trips_result])
     mock_db_session.add = MagicMock()
     mock_db_session.delete = AsyncMock()
+    # scalar() is called to check for an existing TripMember — return None so add() runs
+    mock_db_session.scalar = AsyncMock(return_value=None)
 
     response = client.get("/trips", headers=auth_headers)
     assert response.status_code == 200
