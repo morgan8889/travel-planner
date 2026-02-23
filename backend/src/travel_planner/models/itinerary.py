@@ -19,7 +19,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from travel_planner.models.user import Base
+from travel_planner.models.base import Base, UUIDMixin
 
 
 class ActivityCategory(enum.StrEnum):
@@ -40,16 +40,13 @@ class ImportStatus(enum.StrEnum):
     rejected = "rejected"
 
 
-class ItineraryDay(Base):
+class ItineraryDay(Base, UUIDMixin):
     __tablename__ = "itinerary_days"
     __table_args__ = (
         UniqueConstraint("trip_id", "date", name="uq_itinerary_day"),
         Index("ix_itinerary_days_trip_id", "trip_id"),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
     trip_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("trips.id", ondelete="CASCADE")
     )
@@ -61,13 +58,10 @@ class ItineraryDay(Base):
     )
 
 
-class Activity(Base):
+class Activity(Base, UUIDMixin):
     __tablename__ = "activities"
     __table_args__ = (Index("ix_activities_itinerary_day_id", "itinerary_day_id"),)
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
     itinerary_day_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("itinerary_days.id", ondelete="CASCADE")
     )
