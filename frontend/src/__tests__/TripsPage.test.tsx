@@ -259,10 +259,8 @@ describe('TripsPage', () => {
     // Click All status filter so all trips are visible
     await user.click(await screen.findByRole('button', { name: 'All' }))
 
-    expect(await screen.findByRole('heading', { name: 'Boston Marathon' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Paris, France' })).toBeInTheDocument()
-
-    // Click 'Event' type pill — only Boston Marathon should remain
+    // Click All Types first to reset type filter (events are hidden by default)
+    await user.click(screen.getByRole('button', { name: 'All Types' }))
     await user.click(screen.getByRole('button', { name: 'Event' }))
 
     expect(screen.getByRole('heading', { name: 'Boston Marathon' })).toBeInTheDocument()
@@ -286,6 +284,8 @@ describe('TripsPage', () => {
     renderWithProviders(<TripsPage />)
 
     await user.click(await screen.findByRole('button', { name: 'All' }))
+    // Reset to show-all first, then select only Event to hide vacation/remote_week trips
+    await user.click(screen.getByRole('button', { name: 'All Types' }))
     await user.click(screen.getByRole('button', { name: 'Event' }))
     expect(screen.queryByText('Paris, France')).not.toBeInTheDocument()
 
@@ -301,5 +301,48 @@ describe('TripsPage', () => {
 
     expect(await screen.findByText('Try Again')).toBeInTheDocument()
     expect(screen.getByText(/something went wrong/i)).toBeInTheDocument()
+  })
+
+  it('renders type filter pills in the same container as status pills', async () => {
+    mockGet.mockResolvedValue({ data: mockTrips })
+    renderWithProviders(<TripsPage />)
+
+    // Both status and type pills should be present
+    expect(await screen.findByRole('button', { name: 'All' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'All Types' })).toBeInTheDocument()
+
+    // Both should be in a single filter row (check they share a parent)
+    const allBtn = screen.getByRole('button', { name: 'All' })
+    const allTypesBtn = screen.getByRole('button', { name: 'All Types' })
+    expect(allBtn.closest('[data-testid="filter-row"]')).toBe(
+      allTypesBtn.closest('[data-testid="filter-row"]')
+    )
+  })
+
+  it('defaults type filter to vacation, remote_week, sabbatical', async () => {
+    const tripsAllTypes = [
+      ...mockTrips,
+      { ...mockTrips[0], id: 'ev-1', type: 'event' as const, destination: 'Boston Marathon', status: 'booked' as const },
+      { ...mockTrips[0], id: 'sb-1', type: 'sabbatical' as const, destination: 'Tor de Giants', status: 'planning' as const },
+    ]
+    mockGet.mockResolvedValue({ data: tripsAllTypes })
+    renderWithProviders(<TripsPage />)
+
+    // Click All status to show all statuses
+    await userEvent.setup().click(await screen.findByRole('button', { name: 'All' }))
+
+    // Sabbatical should be visible (in default)
+    expect(screen.getByText('Tor de Giants')).toBeInTheDocument()
+    // Event should NOT be visible (not in default)
+    expect(screen.queryByText('Boston Marathon')).not.toBeInTheDocument()
+  })
+
+  it('type filter pills use teal color when active', async () => {
+    mockGet.mockResolvedValue({ data: mockTrips })
+    renderWithProviders(<TripsPage />)
+
+    // "Vacation" pill is active by default — should have teal classes
+    const vacationBtn = await screen.findByRole('button', { name: 'Vacation' })
+    expect(vacationBtn.className).toContain('teal')
   })
 })

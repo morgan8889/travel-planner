@@ -44,7 +44,7 @@ function SkeletonCard() {
 
 export function TripsPage() {
   const [activeStatuses, setActiveStatuses] = useState<TripStatus[]>(['dreaming', 'planning', 'booked'])
-  const [activeTypes, setActiveTypes] = useState<TripType[]>([])
+  const [activeTypes, setActiveTypes] = useState<TripType[]>(['vacation', 'remote_week', 'sabbatical'])
   const { data: allTrips, isLoading, error, refetch } = useTrips()
 
   function toggleStatus(value: TripStatus | undefined) {
@@ -91,8 +91,8 @@ export function TripsPage() {
         </Link>
       </div>
 
-      {/* Status Filter Pills */}
-      <div className="flex flex-wrap gap-2 mb-6">
+      {/* Filter Pills */}
+      <div className="flex flex-wrap gap-2 mb-6" data-testid="filter-row">
         {statusFilters.map((filter) => {
           const isActive =
             filter.value === undefined
@@ -113,10 +113,9 @@ export function TripsPage() {
             </button>
           )
         })}
-      </div>
 
-      {/* Type Filter Pills */}
-      <div className="flex flex-wrap gap-2 mb-6">
+        <div className="w-px h-6 bg-cloud-200 self-center mx-1" aria-hidden="true" />
+
         {typeFilters.map((filter) => {
           const isActive =
             filter.value === undefined
@@ -129,8 +128,8 @@ export function TripsPage() {
               onClick={() => toggleType(filter.value)}
               className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${
                 isActive
-                  ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-600/20 ring-offset-1'
-                  : 'bg-white text-cloud-600 border border-cloud-200 hover:border-indigo-300 hover:text-indigo-700 hover:bg-indigo-50/50'
+                  ? 'bg-teal-600 text-white shadow-sm ring-2 ring-teal-600/20 ring-offset-1'
+                  : 'bg-white text-cloud-600 border border-teal-200 hover:border-teal-300 hover:text-teal-700 hover:bg-teal-50/50'
               }`}
             >
               {filter.label}
