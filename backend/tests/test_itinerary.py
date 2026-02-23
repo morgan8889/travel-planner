@@ -1028,3 +1028,136 @@ def test_update_activity_move_target_day_different_trip(
         headers=auth_headers,
     )
     assert response.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# Activity time validation
+# ---------------------------------------------------------------------------
+
+
+def test_create_activity_rejects_end_time_before_start_time(
+    client: TestClient,
+    auth_headers: dict,
+    itinerary_day_id: str,
+    override_get_db,
+    mock_db_session,
+):
+    """POST activity returns 422 when end_time is before start_time."""
+    response = client.post(
+        f"/itinerary/days/{itinerary_day_id}/activities",
+        headers=auth_headers,
+        json={
+            "title": "Late night flight",
+            "category": "transport",
+            "start_time": "22:00",
+            "end_time": "02:00",
+        },
+    )
+    assert response.status_code == 422
+    assert "end_time" in response.text
+
+
+def test_create_activity_rejects_equal_start_and_end_time(
+    client: TestClient,
+    auth_headers: dict,
+    itinerary_day_id: str,
+    override_get_db,
+    mock_db_session,
+):
+    """POST activity returns 422 when end_time equals start_time."""
+    response = client.post(
+        f"/itinerary/days/{itinerary_day_id}/activities",
+        headers=auth_headers,
+        json={
+            "title": "Instant activity",
+            "category": "activity",
+            "start_time": "10:00",
+            "end_time": "10:00",
+        },
+    )
+    assert response.status_code == 422
+
+
+def test_create_activity_allows_start_time_without_end_time(
+    client: TestClient,
+    auth_headers: dict,
+    itinerary_day_id: str,
+    override_get_db,
+    mock_db_session,
+):
+    """POST activity with only start_time (no end_time) passes validation."""
+    day_id = UUID(itinerary_day_id)
+    owner_user = _make_user()
+    owner_member = _make_member(user=owner_user)
+    trip = _make_trip(members=[owner_member])
+
+    day = MagicMock(spec=ItineraryDay)
+    day.id = day_id
+    day.trip_id = TRIP_ID
+
+    result_mock1 = MagicMock()
+    result_mock1.scalar_one_or_none.return_value = day
+    result_mock2 = MagicMock()
+    result_mock2.scalar_one_or_none.return_value = trip
+    result_mock3 = MagicMock()
+    result_mock3.scalar.return_value = 0
+
+    mock_db_session.execute = AsyncMock(
+        side_effect=[result_mock1, result_mock2, result_mock3]
+    )
+    mock_db_session.add = MagicMock()
+    mock_db_session.commit = AsyncMock()
+
+    async def mock_refresh(obj):
+        obj.id = UUID("888e4567-e89b-12d3-a456-426614174007")
+        obj.created_at = _ACTIVITY_CREATED_AT
+        obj.source = ActivitySource.manual
+        obj.source_ref = None
+        obj.import_status = None
+
+    mock_db_session.refresh = AsyncMock(side_effect=mock_refresh)
+
+    response = client.post(
+        f"/itinerary/days/{itinerary_day_id}/activities",
+        headers=auth_headers,
+        json={
+            "title": "Overnight train",
+            "category": "transport",
+            "start_time": "22:00",
+        },
+    )
+    assert response.status_code == 201
+    assert response.json()["end_time"] is None
+
+
+def test_update_activity_rejects_end_time_before_start_time(
+    client: TestClient,
+    auth_headers: dict,
+    activity_id: str,
+    override_get_db,
+    mock_db_session,
+):
+    """PATCH activity returns 422 when end_time is before start_time."""
+    response = client.patch(
+        f"/itinerary/activities/{activity_id}",
+        headers=auth_headers,
+        json={"start_time": "18:00", "end_time": "09:00"},
+    )
+    assert response.status_code == 422
+    assert "end_time" in response.text
+
+
+def test_update_activity_rejects_equal_start_and_end_time(
+    client: TestClient,
+    auth_headers: dict,
+    activity_id: str,
+    override_get_db,
+    mock_db_session,
+):
+    """PATCH activity returns 422 when end_time equals start_time."""
+    response = client.patch(
+        f"/itinerary/activities/{activity_id}",
+        headers=auth_headers,
+        json={"start_time": "14:30", "end_time": "14:30"},
+    )
+    assert response.status_code == 422
