@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { Calendar, Hotel, MapPin, Plane } from 'lucide-react'
 import type { TripSummary } from '../../lib/types'
+import { getEventName } from '../../lib/tripUtils'
 import { TripStatusBadge } from './TripStatusBadge'
 import { TripTypeBadge } from './TripTypeBadge'
 
@@ -29,6 +30,8 @@ function formatDateRange(startDate: string, endDate: string): string {
 
 export function TripCard({ trip }: TripCardProps) {
   const dateRange = formatDateRange(trip.start_date, trip.end_date)
+  const isEvent = trip.type === 'event'
+  const displayTitle = isEvent ? (getEventName(trip.notes) ?? trip.destination) : trip.destination
   const {
     member_count,
     member_previews = [],
@@ -61,9 +64,17 @@ export function TripCard({ trip }: TripCardProps) {
     <Link to="/trips/$tripId" params={{ tripId: trip.id }} className="block group">
       <div className="bg-white rounded-2xl border border-cloud-200 p-5 transition-all duration-300 hover:shadow-lg hover:shadow-cloud-300/20 hover:-translate-y-0.5 hover:border-indigo-200 animate-card-enter">
         <div className="flex items-start justify-between mb-3">
-          <h3 className="text-lg font-semibold text-cloud-900 group-hover:text-indigo-700 transition-colors duration-300 truncate mr-2">
-            {trip.destination}
-          </h3>
+          <div className="min-w-0 mr-2">
+            <h3 className="text-lg font-semibold text-cloud-900 group-hover:text-indigo-700 transition-colors duration-300 truncate">
+              {displayTitle}
+            </h3>
+            {isEvent && (
+              <div className="flex items-center gap-1 text-sm text-cloud-500 mt-0.5">
+                <MapPin className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{trip.destination}</span>
+              </div>
+            )}
+          </div>
           <TripTypeBadge type={trip.type} />
         </div>
 
