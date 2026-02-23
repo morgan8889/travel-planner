@@ -6,6 +6,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     String,
     UniqueConstraint,
@@ -21,6 +22,7 @@ class HolidayCalendar(Base):
     __tablename__ = "holiday_calendars"
     __table_args__ = (
         UniqueConstraint("user_id", "country_code", "year", name="uq_holiday_calendar"),
+        Index("ix_holiday_calendars_user_id", "user_id"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -38,6 +40,7 @@ class HolidayCalendar(Base):
 
 class CustomDay(Base):
     __tablename__ = "custom_days"
+    __table_args__ = (Index("ix_custom_days_user_id", "user_id"),)
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4

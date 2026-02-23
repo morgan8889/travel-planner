@@ -8,6 +8,7 @@ from sqlalchemy import (
     Enum,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -41,7 +42,10 @@ class ImportStatus(enum.StrEnum):
 
 class ItineraryDay(Base):
     __tablename__ = "itinerary_days"
-    __table_args__ = (UniqueConstraint("trip_id", "date", name="uq_itinerary_day"),)
+    __table_args__ = (
+        UniqueConstraint("trip_id", "date", name="uq_itinerary_day"),
+        Index("ix_itinerary_days_trip_id", "trip_id"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
@@ -59,6 +63,7 @@ class ItineraryDay(Base):
 
 class Activity(Base):
     __tablename__ = "activities"
+    __table_args__ = (Index("ix_activities_itinerary_day_id", "itinerary_day_id"),)
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4

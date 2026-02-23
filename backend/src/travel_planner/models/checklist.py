@@ -5,6 +5,7 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -19,6 +20,7 @@ from travel_planner.models.user import Base
 
 class Checklist(Base):
     __tablename__ = "checklists"
+    __table_args__ = (Index("ix_checklists_trip_id", "trip_id"),)
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4

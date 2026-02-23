@@ -8,6 +8,7 @@ from sqlalchemy import (
     Enum,
     Float,
     ForeignKey,
+    Index,
     String,
     Text,
     UniqueConstraint,
@@ -73,7 +74,10 @@ class Trip(Base):
 
 class TripMember(Base):
     __tablename__ = "trip_members"
-    __table_args__ = (UniqueConstraint("trip_id", "user_id", name="uq_trip_member"),)
+    __table_args__ = (
+        UniqueConstraint("trip_id", "user_id", name="uq_trip_member"),
+        Index("ix_trip_members_user_id", "user_id"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
