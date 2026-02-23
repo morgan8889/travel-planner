@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { TripMembersList } from '../components/trips/TripMembersList'
-import type { TripMember } from '../lib/types'
+import type { TripMember, TripInvitation } from '../lib/types'
 
 const mockMembers: TripMember[] = [
   {
@@ -85,5 +85,35 @@ describe('TripMembersList', () => {
     // The "Member" text is a clickable button for owners
     await user.click(screen.getByText('Member'))
     expect(onUpdateRole).toHaveBeenCalledWith('member-2', 'owner')
+  })
+
+  it('renders pending invitation row with email and Pending badge', () => {
+    const mockInvitation: TripInvitation = {
+      id: 'inv-1',
+      trip_id: 'trip-1',
+      email: 'pending@example.com',
+      invited_by: 'user-1',
+      created_at: '2026-02-23T00:00:00Z',
+    }
+    render(
+      <TripMembersList
+        members={[]}
+        invitations={[mockInvitation]}
+        isOwner={true}
+      />
+    )
+    expect(screen.getByText('pending@example.com')).toBeInTheDocument()
+    expect(screen.getByText('Pending')).toBeInTheDocument()
+  })
+
+  it('renders no pending rows when invitations is empty', () => {
+    render(
+      <TripMembersList
+        members={[]}
+        invitations={[]}
+        isOwner={false}
+      />
+    )
+    expect(screen.queryByText('Pending')).not.toBeInTheDocument()
   })
 })

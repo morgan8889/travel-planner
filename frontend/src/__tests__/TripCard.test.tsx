@@ -140,6 +140,56 @@ describe('TripCard', () => {
     const bar = await screen.findByTestId('itinerary-progress')
     expect(bar).toHaveTextContent('All days planned')
   })
+
+  it('card link and inner div have h-full class for equal grid height', async () => {
+    renderWithProviders(<TripCard trip={mockTrip} />)
+    const link = await screen.findByRole('link')
+    expect(link).toHaveClass('h-full')
+    const innerDiv = link.querySelector('div')
+    expect(innerDiv).toHaveClass('h-full')
+    expect(innerDiv).toHaveClass('flex-col')
+  })
+})
+
+describe('TripCard event type title', () => {
+  it('shows event name as title for event trips', async () => {
+    const eventTrip: TripSummary = {
+      ...mockTrip,
+      type: 'event',
+      destination: 'Austin, TX',
+      notes: '3M Half Marathon — local Austin race',
+    }
+    renderWithProviders(<TripCard trip={eventTrip} />)
+    expect(await screen.findByRole('heading', { name: '3M Half Marathon' })).toBeInTheDocument()
+  })
+
+  it('shows destination as secondary location line for event trips', async () => {
+    const eventTrip: TripSummary = {
+      ...mockTrip,
+      type: 'event',
+      destination: 'Austin, TX',
+      notes: '3M Half Marathon — local Austin race',
+    }
+    renderWithProviders(<TripCard trip={eventTrip} />)
+    await screen.findByRole('heading', { name: '3M Half Marathon' })
+    expect(screen.getByText('Austin, TX')).toBeInTheDocument()
+  })
+
+  it('falls back to destination in title when event notes are null', async () => {
+    const eventTrip: TripSummary = {
+      ...mockTrip,
+      type: 'event',
+      destination: 'Austin, TX',
+      notes: null,
+    }
+    renderWithProviders(<TripCard trip={eventTrip} />)
+    expect(await screen.findByRole('heading', { name: 'Austin, TX' })).toBeInTheDocument()
+  })
+
+  it('shows destination directly in title for non-event trips', async () => {
+    renderWithProviders(<TripCard trip={mockTrip} />)
+    expect(await screen.findByRole('heading', { name: 'Paris, France' })).toBeInTheDocument()
+  })
 })
 
 describe('TripCard booking chips', () => {

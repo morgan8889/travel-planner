@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
@@ -127,12 +128,46 @@ describe('DashboardPage', () => {
     })
   })
 
-  it('renders Quick Actions links', async () => {
-    mockUseTrips.mockReturnValue({ data: [], isLoading: false })
+  it('renders Next Up overlay for nearest upcoming planning trip', async () => {
+    mockUseTrips.mockReturnValue({
+      data: [FUTURE_TRIP],
+      isLoading: false,
+    })
+    renderDashboard()
+    // The overlay card should show destination and a countdown
+    expect(await screen.findByTestId('next-up-overlay')).toBeInTheDocument()
+    expect(screen.getByTestId('next-up-overlay')).toHaveTextContent('Paris, France')
+  })
+
+  it('does not render Next Up overlay when no upcoming trips', async () => {
+    mockUseTrips.mockReturnValue({
+      data: [COMPLETED_TRIP_NO_COORDS],
+      isLoading: false,
+    })
     renderDashboard()
 
-    expect(await screen.findByText('New Trip')).toBeInTheDocument()
-    expect(screen.getByText('View Calendar')).toBeInTheDocument()
+    await screen.findByText(/welcome back/i)
+    expect(screen.queryByTestId('next-up-overlay')).not.toBeInTheDocument()
+  })
+
+  it('shows up to 5 upcoming trips and no more', async () => {
+    const sixTrips = Array.from({ length: 6 }, (_, i) => ({
+      ...FUTURE_TRIP,
+      id: `trip-${i + 1}`,
+      destination: `City ${i + 1}`,
+      start_date: `203${i}-06-15`,
+      // No coordinates so trips won't appear as map markers
+      destination_latitude: null,
+      destination_longitude: null,
+    }))
+    mockUseTrips.mockReturnValue({ data: sixTrips, isLoading: false })
+    renderDashboard()
+
+    // Should show exactly 5 trip names in the upcoming panel, not 6
+    for (let i = 1; i <= 5; i++) {
+      expect((await screen.findAllByText(`City ${i}`))[0]).toBeInTheDocument()
+    }
+    expect(screen.queryByText('City 6')).not.toBeInTheDocument()
   })
 })
 
@@ -159,6 +194,8 @@ function makeTrip(overrides: Partial<TripSummary>): TripSummary {
     lodging_confirmed: 0,
     activity_total: 0,
     activity_confirmed: 0,
+    restaurant_total: 0,
+    restaurant_confirmed: 0,
     ...overrides,
   }
 }
@@ -223,5 +260,121 @@ describe('DashboardPage Needs Attention', () => {
     renderDashboard()
     await screen.findByText(/all caught up/i)
     expect(screen.queryByText(/berlin/i)).not.toBeInTheDocument()
+  })
+
+  it('shows restaurant action item for unconfirmed restaurant bookings', async () => {
+    mockUseTrips.mockReturnValue({
+      data: [makeTrip({
+        destination: 'Kyoto',
+        status: 'booked',
+        restaurant_total: 3,
+        restaurant_confirmed: 1,
+      })],
+      isLoading: false,
+    })
+    renderDashboard()
+    expect(await screen.findByText(/2 restaurant booking/i)).toBeInTheDocument()
+  })
+
+  it('groups action items under their trip header', async () => {
+    mockUseTrips.mockReturnValue({
+      data: [
+        makeTrip({ id: 'trip-a', destination: 'Rome', status: 'booked', transport_total: 2, transport_confirmed: 0 }),
+        makeTrip({ id: 'trip-b', destination: 'Athens', status: 'planning', lodging_total: 1, lodging_confirmed: 0 }),
+      ],
+      isLoading: false,
+    })
+    renderDashboard()
+
+    // Both trip headers shown (use getAllByText since destination appears in multiple places)
+    expect((await screen.findAllByText('Rome'))[0]).toBeInTheDocument()
+    expect(screen.getAllByText('Athens')[0]).toBeInTheDocument()
+
+    // Each has its own action item
+    expect(screen.getByText(/2 flight/i)).toBeInTheDocument()
+    expect(screen.getByText(/1 hotel/i)).toBeInTheDocument()
+
+    // Each header has a "View trip" link
+    const viewLinks = screen.getAllByText(/view trip/i)
+    expect(viewLinks).toHaveLength(2)
+  })
+
+  it('does not show quick link buttons', async () => {
+    mockUseTrips.mockReturnValue({ data: [], isLoading: false })
+    renderDashboard()
+    await screen.findByText(/welcome back/i)
+    expect(screen.queryByText('View Calendar')).not.toBeInTheDocument()
+  })
+
+  it('shows only 3 trip groups by default when more than 3 have action items', async () => {
+    const trips = Array.from({ length: 4 }, (_, i) =>
+      makeTrip({
+        id: `trip-${i + 1}`,
+        destination: `City ${i + 1}`,
+        status: 'booked',
+        transport_total: 1,
+        transport_confirmed: 0,
+        start_date: `2026-0${i + 3}-01`,
+      })
+    )
+    mockUseTrips.mockReturnValue({ data: trips, isLoading: false })
+    renderDashboard()
+
+    // Wait for render; with 4 trips each having 1 unconfirmed flight,
+    // only 3 groups should render in Needs Attention (capped). Each group
+    // has exactly one "View trip" link — 3 groups → 3 links.
+    await screen.findByText(/needs attention/i)
+    expect(screen.getAllByText(/view trip/i)).toHaveLength(3)
+
+    // Show more button visible
+    expect(screen.getByRole('button', { name: /show more/i })).toBeInTheDocument()
+  })
+
+  it('shows all trip groups after clicking Show more', async () => {
+    const user = userEvent.setup()
+    const trips = Array.from({ length: 4 }, (_, i) =>
+      makeTrip({
+        id: `trip-${i + 1}`,
+        destination: `City ${i + 1}`,
+        status: 'booked',
+        transport_total: 1,
+        transport_confirmed: 0,
+        start_date: `2026-0${i + 3}-01`,
+      })
+    )
+    mockUseTrips.mockReturnValue({ data: trips, isLoading: false })
+    renderDashboard()
+
+    await user.click(await screen.findByRole('button', { name: /show more/i }))
+
+    // After expanding, all 4 groups render — 4 "View trip" links
+    expect(screen.getAllByText(/view trip/i)).toHaveLength(4)
+    expect(screen.queryByRole('button', { name: /show more/i })).not.toBeInTheDocument()
+    // Show less button appears
+    expect(screen.getByRole('button', { name: /show less/i })).toBeInTheDocument()
+  })
+
+  it('collapses back to 3 groups after clicking Show less', async () => {
+    const user = userEvent.setup()
+    const trips = Array.from({ length: 4 }, (_, i) =>
+      makeTrip({
+        id: `trip-${i + 1}`,
+        destination: `City ${i + 1}`,
+        status: 'booked',
+        transport_total: 1,
+        transport_confirmed: 0,
+        start_date: `2026-0${i + 3}-01`,
+      })
+    )
+    mockUseTrips.mockReturnValue({ data: trips, isLoading: false })
+    renderDashboard()
+
+    await user.click(await screen.findByRole('button', { name: /show more/i }))
+    expect(screen.getAllByText(/view trip/i)).toHaveLength(4)
+
+    await user.click(screen.getByRole('button', { name: /show less/i }))
+    expect(screen.getAllByText(/view trip/i)).toHaveLength(3)
+    expect(screen.getByRole('button', { name: /show more/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /show less/i })).not.toBeInTheDocument()
   })
 })

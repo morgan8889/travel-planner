@@ -8,6 +8,7 @@ export const tripKeys = {
   list: (status?: TripStatus) => [...tripKeys.lists(), { status }] as const,
   details: () => [...tripKeys.all, 'detail'] as const,
   detail: (id: string) => [...tripKeys.details(), id] as const,
+  invitations: (id: string) => [...tripKeys.detail(id), 'invitations'] as const,
 }
 
 export function useTrips(status?: TripStatus) {

@@ -63,7 +63,7 @@ describe("App", () => {
     // Wait for loading to complete
     await screen.findByText("Welcome to Travel Planner");
     expect(screen.getByLabelText("Email address")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /send magic link/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /sign in/i })).toBeInTheDocument();
   });
 
   it("renders main layout when authenticated", async () => {

@@ -64,6 +64,13 @@ def _make_trip(
     return trip
 
 
+def _make_no_inv_result() -> MagicMock:
+    """Return a mock execute result with no pending invitations."""
+    r = MagicMock()
+    r.scalars.return_value.all.return_value = []
+    return r
+
+
 def _make_member(
     member_id: UUID = MEMBER_ID,
     trip_id: UUID = TRIP_ID,
@@ -173,7 +180,9 @@ def test_list_trips_returns_user_trips(
     result_mock.scalars.return_value.all.return_value = [trip]
     stats_mock = MagicMock()
     stats_mock.__iter__ = MagicMock(return_value=iter([]))
-    mock_db_session.execute = AsyncMock(side_effect=[result_mock, stats_mock])
+    mock_db_session.execute = AsyncMock(
+        side_effect=[_make_no_inv_result(), result_mock, stats_mock]
+    )
 
     response = client.get("/trips", headers=auth_headers)
     assert response.status_code == 200
@@ -197,7 +206,9 @@ def test_list_trips_status_filter(
     result_mock.scalars.return_value.all.return_value = [trip]
     stats_mock = MagicMock()
     stats_mock.__iter__ = MagicMock(return_value=iter([]))
-    mock_db_session.execute = AsyncMock(side_effect=[result_mock, stats_mock])
+    mock_db_session.execute = AsyncMock(
+        side_effect=[_make_no_inv_result(), result_mock, stats_mock]
+    )
 
     response = client.get("/trips?status=dreaming", headers=auth_headers)
     assert response.status_code == 200
@@ -215,10 +226,12 @@ def test_list_trips_includes_member_previews(
 
     result_mock = MagicMock()
     result_mock.scalars.return_value.all.return_value = [trip]
-    # Second execute call for itinerary stats
+    # Third execute call for itinerary stats
     stats_mock = MagicMock()
     stats_mock.__iter__ = MagicMock(return_value=iter([]))
-    mock_db_session.execute = AsyncMock(side_effect=[result_mock, stats_mock])
+    mock_db_session.execute = AsyncMock(
+        side_effect=[_make_no_inv_result(), result_mock, stats_mock]
+    )
 
     response = client.get("/trips", headers=auth_headers)
     assert response.status_code == 200
@@ -255,7 +268,9 @@ def test_list_trips_returns_all_member_previews(
     result_mock.scalars.return_value.all.return_value = [trip]
     stats_mock = MagicMock()
     stats_mock.__iter__ = MagicMock(return_value=iter([]))
-    mock_db_session.execute = AsyncMock(side_effect=[result_mock, stats_mock])
+    mock_db_session.execute = AsyncMock(
+        side_effect=[_make_no_inv_result(), result_mock, stats_mock]
+    )
 
     response = client.get("/trips", headers=auth_headers)
     assert response.status_code == 200
@@ -281,7 +296,9 @@ def test_list_trips_includes_itinerary_stats(
     stats_row.active_count = 3
     stats_mock = MagicMock()
     stats_mock.__iter__ = MagicMock(return_value=iter([stats_row]))
-    mock_db_session.execute = AsyncMock(side_effect=[result_mock, stats_mock])
+    mock_db_session.execute = AsyncMock(
+        side_effect=[_make_no_inv_result(), result_mock, stats_mock]
+    )
 
     response = client.get("/trips", headers=auth_headers)
     assert response.status_code == 200
@@ -305,7 +322,9 @@ def test_list_trips_returns_start_date(
     result_mock.scalars.return_value.all.return_value = [trip]
     stats_mock = MagicMock()
     stats_mock.__iter__ = MagicMock(return_value=iter([]))
-    mock_db_session.execute = AsyncMock(side_effect=[result_mock, stats_mock])
+    mock_db_session.execute = AsyncMock(
+        side_effect=[_make_no_inv_result(), result_mock, stats_mock]
+    )
 
     response = client.get("/trips", headers=auth_headers)
     assert response.status_code == 200
@@ -327,7 +346,9 @@ def test_get_trip_detail_success(
 
     result_mock = MagicMock()
     result_mock.scalar_one_or_none.return_value = trip
-    mock_db_session.execute = AsyncMock(return_value=result_mock)
+    mock_db_session.execute = AsyncMock(
+        side_effect=[_make_no_inv_result(), result_mock]
+    )
 
     response = client.get(f"/trips/{TRIP_ID}", headers=auth_headers)
     assert response.status_code == 200
@@ -336,6 +357,58 @@ def test_get_trip_detail_success(
     assert len(data["members"]) == 1
     assert data["members"][0]["display_name"] == "Test User"
     assert data["children"] == []
+
+
+# --- Test 7b: Get trip auto-completes past trip ---
+
+
+def test_get_trip_auto_completes_past_trip(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """GET /trips/{id} auto-updates a past non-completed trip to 'completed'."""
+    owner_user = _make_user()
+    owner_member = _make_member(user=owner_user)
+    trip = _make_trip(members=[owner_member])
+    trip.end_date = date(2024, 1, 1)  # past
+    trip.status = TripStatus.booked  # not yet completed
+    trip.destination_latitude = None
+    trip.destination_longitude = None
+
+    result_mock = MagicMock()
+    result_mock.scalar_one_or_none.return_value = trip
+    mock_db_session.execute = AsyncMock(
+        side_effect=[_make_no_inv_result(), result_mock]
+    )
+
+    response = client.get(f"/trips/{trip.id}", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "completed"
+    mock_db_session.commit.assert_called()
+
+
+def test_get_trip_does_not_complete_future_trip(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """GET /trips/{id} does NOT auto-complete a trip whose end_date is in the future."""
+    owner_user = _make_user()
+    owner_member = _make_member(user=owner_user)
+    trip = _make_trip(members=[owner_member])
+    trip.end_date = date(2099, 12, 31)
+    trip.status = TripStatus.booked
+    trip.destination_latitude = None
+    trip.destination_longitude = None
+
+    result_mock = MagicMock()
+    result_mock.scalar_one_or_none.return_value = trip
+    mock_db_session.execute = AsyncMock(
+        side_effect=[_make_no_inv_result(), result_mock]
+    )
+
+    response = client.get(f"/trips/{trip.id}", headers=auth_headers)
+    assert response.status_code == 200
+    assert response.json()["status"] == "booked"
+    mock_db_session.commit.assert_not_called()
 
 
 # --- Test 8: Get trip detail not found ---
@@ -347,7 +420,9 @@ def test_get_trip_detail_not_found(
     """Test GET /trips/{trip_id} returns 404 for nonexistent trip."""
     result_mock = MagicMock()
     result_mock.scalar_one_or_none.return_value = None
-    mock_db_session.execute = AsyncMock(return_value=result_mock)
+    mock_db_session.execute = AsyncMock(
+        side_effect=[_make_no_inv_result(), result_mock]
+    )
 
     response = client.get(f"/trips/{TRIP_ID}", headers=auth_headers)
     assert response.status_code == 404
@@ -368,7 +443,9 @@ def test_get_trip_detail_not_member(
 
     result_mock = MagicMock()
     result_mock.scalar_one_or_none.return_value = trip
-    mock_db_session.execute = AsyncMock(return_value=result_mock)
+    mock_db_session.execute = AsyncMock(
+        side_effect=[_make_no_inv_result(), result_mock]
+    )
 
     response = client.get(f"/trips/{TRIP_ID}", headers=auth_headers)
     assert response.status_code == 403
@@ -588,7 +665,9 @@ def test_add_member_duplicate(
 def test_add_member_user_not_found(
     client: TestClient, auth_headers: dict, override_get_db, mock_db_session
 ):
-    """Test POST /trips/{trip_id}/members returns 404 when email not in system."""
+    """POST /trips/{trip_id}/members returns 202 when email not in system."""
+    from unittest.mock import patch
+
     owner_user = _make_user()
     owner_member = _make_member(user=owner_user, role=MemberRole.owner)
     trip = _make_trip(members=[owner_member])
@@ -597,17 +676,196 @@ def test_add_member_user_not_found(
     result_mock1 = MagicMock()
     result_mock1.scalar_one_or_none.return_value = trip
 
-    # Second call: lookup user by email - not found
+    # Second call: lookup user by email in user_profiles - not found
     result_mock2 = MagicMock()
     result_mock2.scalar_one_or_none.return_value = None
 
-    mock_db_session.execute = AsyncMock(side_effect=[result_mock1, result_mock2])
+    # Third call: fallback lookup in auth.users - not found
+    result_mock3 = MagicMock()
+    result_mock3.fetchone.return_value = None
 
-    payload = {"email": "unknown@example.com"}
-    response = client.post(
-        f"/trips/{TRIP_ID}/members", json=payload, headers=auth_headers
+    # Fourth call: duplicate invitation check - not found
+    result_mock4 = MagicMock()
+    result_mock4.scalar_one_or_none.return_value = None
+
+    mock_db_session.execute = AsyncMock(
+        side_effect=[result_mock1, result_mock2, result_mock3, result_mock4]
     )
-    assert response.status_code == 404
+    mock_db_session.add = MagicMock()
+
+    with patch("travel_planner.routers.trips.settings") as mock_settings:
+        mock_settings.supabase_service_role_key = None
+        mock_settings.supabase_url = "https://example.supabase.co"
+
+        payload = {"email": "unknown@example.com"}
+        response = client.post(
+            f"/trips/{TRIP_ID}/members", json=payload, headers=auth_headers
+        )
+
+    assert response.status_code == 202
+    data = response.json()
+    assert data["status"] == "invited"
+    assert data["email"] == "unknown@example.com"
+    mock_db_session.add.assert_called_once()
+
+
+# --- Test 18b: Add member sends invite when no account ---
+
+
+def test_add_member_sends_invite_when_no_account(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """POST /trips/{id}/members returns 202 and creates invitation when unknown."""
+    from unittest.mock import patch
+
+    owner_user = _make_user()
+    owner_member = _make_member(user=owner_user, role=MemberRole.owner)
+    trip = _make_trip(members=[owner_member])
+
+    # Call 1: get_trip_with_membership → trip found
+    result_mock1 = MagicMock()
+    result_mock1.scalar_one_or_none.return_value = trip
+
+    # Call 2: user_profiles lookup → not found
+    result_mock2 = MagicMock()
+    result_mock2.scalar_one_or_none.return_value = None
+
+    # Call 3: auth.users lookup → not found
+    result_mock3 = MagicMock()
+    result_mock3.fetchone.return_value = None
+
+    # Call 4: duplicate invitation check → not found
+    result_mock4 = MagicMock()
+    result_mock4.scalar_one_or_none.return_value = None
+
+    mock_db_session.execute = AsyncMock(
+        side_effect=[result_mock1, result_mock2, result_mock3, result_mock4]
+    )
+    mock_db_session.add = MagicMock()
+
+    with patch("travel_planner.routers.trips.settings") as mock_settings:
+        mock_settings.supabase_service_role_key = None  # Skip actual HTTP call
+        mock_settings.supabase_url = "https://example.supabase.co"
+
+        response = client.post(
+            f"/trips/{TRIP_ID}/members",
+            json={"email": "newuser@example.com"},
+            headers=auth_headers,
+        )
+
+    assert response.status_code == 202
+    data = response.json()
+    assert data["status"] == "invited"
+    assert data["email"] == "newuser@example.com"
+    mock_db_session.add.assert_called_once()
+
+
+# --- Test 18c: Duplicate invitation returns 409 ---
+
+
+def test_add_member_duplicate_invitation(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """POST /trips/{id}/members returns 409 when invitation already pending."""
+    from unittest.mock import patch
+
+    from travel_planner.models.trip import TripInvitation as TripInvitationModel
+
+    owner_user = _make_user()
+    owner_member = _make_member(user=owner_user, role=MemberRole.owner)
+    trip = _make_trip(members=[owner_member])
+
+    # Call 1: get_trip_with_membership
+    result_mock1 = MagicMock()
+    result_mock1.scalar_one_or_none.return_value = trip
+
+    # Call 2: user_profiles lookup → not found
+    result_mock2 = MagicMock()
+    result_mock2.scalar_one_or_none.return_value = None
+
+    # Call 3: auth.users lookup → not found
+    result_mock3 = MagicMock()
+    result_mock3.fetchone.return_value = None
+
+    # Call 4: duplicate invitation check → FOUND (existing invite)
+    existing_inv = MagicMock(spec=TripInvitationModel)
+    result_mock4 = MagicMock()
+    result_mock4.scalar_one_or_none.return_value = existing_inv
+
+    mock_db_session.execute = AsyncMock(
+        side_effect=[result_mock1, result_mock2, result_mock3, result_mock4]
+    )
+
+    with patch("travel_planner.routers.trips.settings") as mock_settings:
+        mock_settings.supabase_service_role_key = None
+        mock_settings.supabase_url = "https://example.supabase.co"
+
+        response = client.post(
+            f"/trips/{TRIP_ID}/members",
+            json={"email": "already.invited@example.com"},
+            headers=auth_headers,
+        )
+
+    assert response.status_code == 409
+    assert "already" in response.json()["detail"].lower()
+
+
+# --- Test 18d: Supabase API failure returns 500 ---
+
+
+def test_add_member_invite_supabase_failure(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """POST /trips/{id}/members returns 500 when Supabase invite API fails."""
+    from unittest.mock import patch
+
+    import httpx
+
+    owner_user = _make_user()
+    owner_member = _make_member(user=owner_user, role=MemberRole.owner)
+    trip = _make_trip(members=[owner_member])
+
+    result_mock1 = MagicMock()
+    result_mock1.scalar_one_or_none.return_value = trip
+
+    result_mock2 = MagicMock()
+    result_mock2.scalar_one_or_none.return_value = None
+
+    result_mock3 = MagicMock()
+    result_mock3.fetchone.return_value = None
+
+    result_mock4 = MagicMock()
+    result_mock4.scalar_one_or_none.return_value = None
+
+    mock_db_session.execute = AsyncMock(
+        side_effect=[result_mock1, result_mock2, result_mock3, result_mock4]
+    )
+
+    mock_response = MagicMock(spec=httpx.Response)
+    mock_response.status_code = 422
+    mock_response.text = "Unprocessable Entity"
+
+    with (
+        patch("travel_planner.routers.trips.settings") as mock_settings,
+        patch("travel_planner.routers.trips.httpx.AsyncClient") as mock_client_cls,
+    ):
+        mock_settings.supabase_service_role_key = "fake-service-key"
+        mock_settings.supabase_url = "https://example.supabase.co"
+
+        mock_http_client = MagicMock()
+        mock_http_client.__aenter__ = AsyncMock(return_value=mock_http_client)
+        mock_http_client.__aexit__ = AsyncMock(return_value=None)
+        mock_http_client.post = AsyncMock(return_value=mock_response)
+        mock_client_cls.return_value = mock_http_client
+
+        response = client.post(
+            f"/trips/{TRIP_ID}/members",
+            json={"email": "failme@example.com"},
+            headers=auth_headers,
+        )
+
+    assert response.status_code == 500
+    assert "invite" in response.json()["detail"].lower()
 
 
 # --- Test 19: Remove member success ---
@@ -775,6 +1033,76 @@ def test_update_member_role_not_found(
     assert response.status_code == 404
 
 
+def test_list_trips_auto_completes_past_trips(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """GET /trips auto-updates past non-completed trips to 'completed' in response."""
+    owner_member = _make_member()
+    trip = _make_trip(members=[owner_member])
+    trip.end_date = date(2024, 1, 1)  # clearly in the past
+    trip.status = TripStatus.planning  # not yet completed
+
+    result_mock = MagicMock()
+    result_mock.scalars.return_value.all.return_value = [trip]
+    stats_mock = MagicMock()
+    stats_mock.__iter__ = MagicMock(return_value=iter([]))
+    mock_db_session.execute = AsyncMock(
+        side_effect=[_make_no_inv_result(), result_mock, stats_mock]
+    )
+
+    response = client.get("/trips", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data[0]["status"] == "completed"
+    mock_db_session.commit.assert_called()
+
+
+def test_list_trips_does_not_complete_future_trips(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """GET /trips does NOT auto-complete trips whose end_date is in the future."""
+    owner_member = _make_member()
+    trip = _make_trip(members=[owner_member])
+    trip.end_date = date(2099, 12, 31)
+    trip.status = TripStatus.planning
+
+    result_mock = MagicMock()
+    result_mock.scalars.return_value.all.return_value = [trip]
+    stats_mock = MagicMock()
+    stats_mock.__iter__ = MagicMock(return_value=iter([]))
+    mock_db_session.execute = AsyncMock(
+        side_effect=[_make_no_inv_result(), result_mock, stats_mock]
+    )
+
+    response = client.get("/trips", headers=auth_headers)
+    assert response.status_code == 200
+    assert response.json()[0]["status"] == "planning"
+    mock_db_session.commit.assert_not_called()
+
+
+def test_list_trips_does_not_recommit_already_completed_past_trips(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """GET /trips skips commit when past trips are already 'completed'."""
+    owner_member = _make_member()
+    trip = _make_trip(members=[owner_member])
+    trip.end_date = date(2024, 1, 1)
+    trip.status = TripStatus.completed  # already done
+
+    result_mock = MagicMock()
+    result_mock.scalars.return_value.all.return_value = [trip]
+    stats_mock = MagicMock()
+    stats_mock.__iter__ = MagicMock(return_value=iter([]))
+    mock_db_session.execute = AsyncMock(
+        side_effect=[_make_no_inv_result(), result_mock, stats_mock]
+    )
+
+    response = client.get("/trips", headers=auth_headers)
+    assert response.status_code == 200
+    assert response.json()[0]["status"] == "completed"
+    mock_db_session.commit.assert_not_called()
+
+
 def test_list_trips_includes_booking_stats(
     client: TestClient, auth_headers: dict, override_get_db, mock_db_session
 ):
@@ -795,11 +1123,15 @@ def test_list_trips_includes_booking_stats(
     stats_row.lodging_confirmed = 1
     stats_row.activity_total = 4
     stats_row.activity_confirmed = 2
+    stats_row.restaurant_total = 0
+    stats_row.restaurant_confirmed = 0
 
     stats_mock = MagicMock()
     stats_mock.__iter__ = MagicMock(return_value=iter([stats_row]))
 
-    mock_db_session.execute = AsyncMock(side_effect=[result_mock, stats_mock])
+    mock_db_session.execute = AsyncMock(
+        side_effect=[_make_no_inv_result(), result_mock, stats_mock]
+    )
 
     response = client.get("/trips", headers=auth_headers)
     assert response.status_code == 200
@@ -810,6 +1142,42 @@ def test_list_trips_includes_booking_stats(
     assert data["lodging_confirmed"] == 1
     assert data["activity_total"] == 4
     assert data["activity_confirmed"] == 2
+
+
+def test_list_trips_returns_restaurant_stats(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """GET /trips returns restaurant_total and restaurant_confirmed counts."""
+    owner_member = _make_member()
+    trip = _make_trip(members=[owner_member])
+
+    result_mock = MagicMock()
+    result_mock.scalars.return_value.all.return_value = [trip]
+
+    stats_row = MagicMock()
+    stats_row.trip_id = trip.id
+    stats_row.day_count = 0
+    stats_row.active_count = 0
+    stats_row.transport_total = 0
+    stats_row.transport_confirmed = 0
+    stats_row.lodging_total = 0
+    stats_row.lodging_confirmed = 0
+    stats_row.activity_total = 0
+    stats_row.activity_confirmed = 0
+    stats_row.restaurant_total = 3
+    stats_row.restaurant_confirmed = 1
+    stats_mock = MagicMock()
+    stats_mock.__iter__ = MagicMock(return_value=iter([stats_row]))
+
+    mock_db_session.execute = AsyncMock(
+        side_effect=[_make_no_inv_result(), result_mock, stats_mock]
+    )
+
+    response = client.get("/trips", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()[0]
+    assert data["restaurant_total"] == 3
+    assert data["restaurant_confirmed"] == 1
 
 
 # --- Test 25: Create child trip ---
@@ -869,13 +1237,57 @@ def test_get_trip_includes_children(
 
     result_mock = MagicMock()
     result_mock.scalar_one_or_none.return_value = parent
-    mock_db_session.execute = AsyncMock(return_value=result_mock)
+    mock_db_session.execute = AsyncMock(
+        side_effect=[_make_no_inv_result(), result_mock]
+    )
 
     response = client.get(f"/trips/{PARENT_TRIP_ID}", headers=auth_headers)
     assert response.status_code == 200
     data = response.json()
     assert len(data["children"]) == 1
     assert data["children"][0]["id"] == str(CHILD_TRIP_ID)
+
+
+def test_list_trips_claims_pending_invitation(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """GET /trips auto-claims pending invitations for the current user's email."""
+    from travel_planner.models.trip import TripInvitation as TripInvitationModel
+
+    # Invitation matching TEST_USER's email
+    inv = MagicMock(spec=TripInvitationModel)
+    inv.trip_id = TRIP_ID
+    inv.email = TEST_USER_EMAIL
+
+    # Call 1: claim invitations query — returns one pending invitation
+    inv_scalars = MagicMock()
+    inv_scalars.all.return_value = [inv]
+    inv_result = MagicMock()
+    inv_result.scalars.return_value = inv_scalars
+
+    # Call 2: list trips query — returns empty (simplest case; skips stats query)
+    trips_scalars = MagicMock()
+    trips_scalars.all.return_value = []
+    trips_result = MagicMock()
+    trips_result.scalars.return_value = trips_scalars
+
+    mock_db_session.execute = AsyncMock(side_effect=[inv_result, trips_result])
+    mock_db_session.add = MagicMock()
+    mock_db_session.delete = AsyncMock()
+    # scalar() is called to check for an existing TripMember — return None so add() runs
+    mock_db_session.scalar = AsyncMock(return_value=None)
+
+    response = client.get("/trips", headers=auth_headers)
+    assert response.status_code == 200
+    # Invitation was deleted (claimed)
+    mock_db_session.delete.assert_called_once_with(inv)
+    # New TripMember was added with correct attributes
+    mock_db_session.add.assert_called_once()
+    added = mock_db_session.add.call_args[0][0]
+    assert isinstance(added, TripMember)
+    assert added.trip_id == TRIP_ID
+    assert added.user_id == TEST_USER_ID
+    assert added.role == MemberRole.member
 
 
 # ---------------------------------------------------------------------------
@@ -1020,3 +1432,61 @@ async def test_sync_no_commit_when_nothing_changes():
 
     db.add.assert_not_called()
     db.commit.assert_not_called()
+
+
+def test_trip_invitation_model_fields():
+    """TripInvitation has the expected fields."""
+    from travel_planner.models.trip import TripInvitation
+
+    inv = TripInvitation.__table__
+    col_names = {c.name for c in inv.columns}
+    assert col_names == {"id", "trip_id", "email", "invited_by", "created_at"}
+
+
+def test_list_invitations_requires_owner(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """Non-owners cannot list invitations."""
+    import uuid
+
+    from travel_planner.auth import get_current_user_id
+
+    owner_user = _make_user()
+    owner_member = _make_member(user=owner_user, role=MemberRole.owner)
+    trip = _make_trip(members=[owner_member])
+
+    # Override to a different user (non-owner) — the trip has only owner_member
+    other_user_id = uuid.uuid4()
+    app.dependency_overrides[get_current_user_id] = lambda: other_user_id
+
+    result_mock = MagicMock()
+    result_mock.scalar_one_or_none.return_value = trip
+    mock_db_session.execute = AsyncMock(return_value=result_mock)
+
+    try:
+        resp = client.get(f"/trips/{TRIP_ID}/invitations", headers=auth_headers)
+        assert resp.status_code == 403
+    finally:
+        app.dependency_overrides[get_current_user_id] = lambda: TEST_USER_ID
+
+
+def test_list_invitations_success(
+    client: TestClient, auth_headers: dict, override_get_db, mock_db_session
+):
+    """Owner can list invitations; returns empty list when none exist."""
+    owner_user = _make_user()
+    owner_member = _make_member(user=owner_user, role=MemberRole.owner)
+    trip = _make_trip(members=[owner_member])
+
+    # First call: get_trip_with_membership
+    result_mock1 = MagicMock()
+    result_mock1.scalar_one_or_none.return_value = trip
+
+    # Second call: select invitations — empty result
+    result_mock2 = MagicMock()
+    result_mock2.scalars.return_value.all.return_value = []
+    mock_db_session.execute = AsyncMock(side_effect=[result_mock1, result_mock2])
+
+    resp = client.get(f"/trips/{TRIP_ID}/invitations", headers=auth_headers)
+    assert resp.status_code == 200
+    assert resp.json() == []

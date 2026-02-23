@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { Calendar, Hotel, MapPin, Plane } from 'lucide-react'
 import type { TripSummary } from '../../lib/types'
+import { getEventName } from '../../lib/tripUtils'
 import { TripStatusBadge } from './TripStatusBadge'
 import { TripTypeBadge } from './TripTypeBadge'
 
@@ -29,6 +30,8 @@ function formatDateRange(startDate: string, endDate: string): string {
 
 export function TripCard({ trip }: TripCardProps) {
   const dateRange = formatDateRange(trip.start_date, trip.end_date)
+  const isEvent = trip.type === 'event'
+  const displayTitle = isEvent ? (getEventName(trip.notes) ?? trip.destination) : trip.destination
   const {
     member_count,
     member_previews = [],
@@ -58,18 +61,26 @@ export function TripCard({ trip }: TripCardProps) {
       : 0
 
   return (
-    <Link to="/trips/$tripId" params={{ tripId: trip.id }} className="block group">
-      <div className="bg-white rounded-2xl border border-cloud-200 p-5 transition-all duration-300 hover:shadow-lg hover:shadow-cloud-300/20 hover:-translate-y-0.5 hover:border-indigo-200 animate-card-enter">
+    <Link to="/trips/$tripId" params={{ tripId: trip.id }} className="block group h-full">
+      <div className="bg-white rounded-2xl border border-cloud-200 p-5 transition-all duration-300 hover:shadow-lg hover:shadow-cloud-300/20 hover:-translate-y-0.5 hover:border-indigo-200 animate-card-enter h-full flex flex-col">
         <div className="flex items-start justify-between mb-3">
           <h3 className="text-lg font-semibold text-cloud-900 group-hover:text-indigo-700 transition-colors duration-300 truncate mr-2">
-            {trip.destination}
+            {displayTitle}
           </h3>
           <TripTypeBadge type={trip.type} />
         </div>
 
-        <div className="flex items-center gap-1.5 text-sm text-cloud-500 mb-3">
-          <Calendar className="w-4 h-4 shrink-0" />
-          <span data-testid="trip-dates">{dateRange}</span>
+        <div className="flex items-center justify-between gap-2 text-sm text-cloud-500 mb-3">
+          <div className="flex items-center gap-1.5">
+            <Calendar className="w-4 h-4 shrink-0" />
+            <span data-testid="trip-dates">{dateRange}</span>
+          </div>
+          {isEvent && (
+            <div className="flex items-center gap-1 shrink-0">
+              <MapPin className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate max-w-[120px]">{trip.destination}</span>
+            </div>
+          )}
         </div>
 
         {itinerary_day_count > 0 && (
@@ -106,7 +117,7 @@ export function TripCard({ trip }: TripCardProps) {
           })}
         </div>
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mt-auto">
           <TripStatusBadge status={trip.status} />
 
           <div className="flex items-center -space-x-2" data-testid="member-count">

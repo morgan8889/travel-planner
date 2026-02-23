@@ -106,6 +106,8 @@ class TripSummary(BaseModel):
     lodging_confirmed: int = 0
     activity_total: int = 0
     activity_confirmed: int = 0
+    restaurant_total: int = 0
+    restaurant_confirmed: int = 0
     model_config = {"from_attributes": True}
 
 
@@ -132,3 +134,19 @@ class AddMemberRequest(BaseModel):
 
 class UpdateMemberRole(BaseModel):
     role: MemberRole
+
+
+class MemberInvitedResponse(BaseModel):
+    status: str
+    email: str
+    model_config = {"from_attributes": True}
+
+
+class TripInvitationResponse(BaseModel):
+    model_config = {"from_attributes": True}
+
+    id: uuid.UUID
+    trip_id: uuid.UUID
+    email: str
+    invited_by: uuid.UUID
+    created_at: datetime

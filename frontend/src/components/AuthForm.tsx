@@ -2,13 +2,16 @@ import { useState, type FormEvent } from 'react'
 import { Mail } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
+type Mode = 'password' | 'magic'
 type Status = 'idle' | 'submitting' | 'sent' | 'error'
 
 export function AuthForm() {
+  const [mode, setMode] = useState<Mode>('password')
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState('')
-  const { signInWithMagicLink } = useAuth()
+  const { signInWithMagicLink, signInWithPassword } = useAuth()
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -16,8 +19,12 @@ export function AuthForm() {
     setError('')
 
     try {
-      await signInWithMagicLink(email)
-      setStatus('sent')
+      if (mode === 'password') {
+        await signInWithPassword(email, password)
+      } else {
+        await signInWithMagicLink(email)
+        setStatus('sent')
+      }
     } catch (err) {
       setStatus('error')
       setError(err instanceof Error ? err.message : 'An error occurred')
@@ -27,6 +34,7 @@ export function AuthForm() {
   const handleReset = () => {
     setStatus('idle')
     setEmail('')
+    setPassword('')
     setError('')
   }
 
@@ -64,7 +72,33 @@ export function AuthForm() {
           <h2 className="text-3xl font-bold text-cloud-900 mb-2">
             Welcome to Travel Planner
           </h2>
-          <p className="text-cloud-600">Sign in with your email</p>
+          <p className="text-cloud-600">Sign in to your account</p>
+        </div>
+
+        {/* Mode tabs */}
+        <div className="flex rounded-lg border border-cloud-200 p-1 mb-6">
+          <button
+            type="button"
+            onClick={() => { setMode('password'); setError('') }}
+            className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
+              mode === 'password'
+                ? 'bg-indigo-600 text-white'
+                : 'text-cloud-600 hover:text-cloud-900'
+            }`}
+          >
+            Password
+          </button>
+          <button
+            type="button"
+            onClick={() => { setMode('magic'); setError('') }}
+            className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
+              mode === 'magic'
+                ? 'bg-indigo-600 text-white'
+                : 'text-cloud-600 hover:text-cloud-900'
+            }`}
+          >
+            Magic Link
+          </button>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -87,6 +121,27 @@ export function AuthForm() {
             />
           </div>
 
+          {mode === 'password' && (
+            <div className="mb-4">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-cloud-700 mb-2"
+              >
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full px-4 py-2 border border-cloud-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                placeholder="••••••••"
+                disabled={status === 'submitting'}
+              />
+            </div>
+          )}
+
           {status === 'error' && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-sm text-red-600">{error}</p>
@@ -98,7 +153,11 @@ export function AuthForm() {
             disabled={status === 'submitting'}
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 px-4 rounded-lg active:scale-[0.99] disabled:bg-cloud-400 disabled:cursor-not-allowed font-medium transition-all duration-200"
           >
-            {status === 'submitting' ? 'Sending...' : 'Send Magic Link'}
+            {status === 'submitting'
+              ? 'Signing in...'
+              : mode === 'password'
+                ? 'Sign In'
+                : 'Send Magic Link'}
           </button>
         </form>
       </div>

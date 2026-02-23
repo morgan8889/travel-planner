@@ -10,6 +10,14 @@ export interface TripMember {
   email: string
 }
 
+export interface TripInvitation {
+  id: string
+  trip_id: string
+  email: string
+  invited_by: string
+  created_at: string
+}
+
 export interface MemberPreview {
   initials: string
   color: string
@@ -37,6 +45,8 @@ export interface TripSummary {
   lodging_confirmed?: number
   activity_total?: number
   activity_confirmed?: number
+  restaurant_total?: number
+  restaurant_confirmed?: number
 }
 
 export interface Trip extends Omit<TripSummary, 'member_count'> {

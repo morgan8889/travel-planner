@@ -4,7 +4,7 @@ import { Link } from '@tanstack/react-router'
 import { useTrips } from '../hooks/useTrips'
 import { TripCard } from '../components/trips/TripCard'
 import { EmptyTripsState } from '../components/trips/EmptyTripsState'
-import type { TripStatus } from '../lib/types'
+import type { TripStatus, TripType } from '../lib/types'
 
 const statusFilters: { value: TripStatus | undefined; label: string }[] = [
   { value: undefined, label: 'All' },
@@ -13,6 +13,14 @@ const statusFilters: { value: TripStatus | undefined; label: string }[] = [
   { value: 'booked', label: 'Booked' },
   { value: 'active', label: 'Active' },
   { value: 'completed', label: 'Completed' },
+]
+
+const typeFilters: { value: TripType | undefined; label: string }[] = [
+  { value: undefined, label: 'All Types' },
+  { value: 'vacation', label: 'Vacation' },
+  { value: 'event', label: 'Event' },
+  { value: 'remote_week', label: 'Remote Week' },
+  { value: 'sabbatical', label: 'Sabbatical' },
 ]
 
 function SkeletonCard() {
@@ -36,6 +44,7 @@ function SkeletonCard() {
 
 export function TripsPage() {
   const [activeStatuses, setActiveStatuses] = useState<TripStatus[]>(['dreaming', 'planning', 'booked'])
+  const [activeTypes, setActiveTypes] = useState<TripType[]>(['vacation', 'remote_week', 'sabbatical'])
   const { data: allTrips, isLoading, error, refetch } = useTrips()
 
   function toggleStatus(value: TripStatus | undefined) {
@@ -48,10 +57,25 @@ export function TripsPage() {
     )
   }
 
-  const trips =
+  function toggleType(value: TripType | undefined) {
+    if (value === undefined) {
+      setActiveTypes([])
+      return
+    }
+    setActiveTypes((prev) =>
+      prev.includes(value) ? prev.filter((t) => t !== value) : [...prev, value]
+    )
+  }
+
+  const statusFiltered =
     activeStatuses.length === 0
       ? allTrips
       : allTrips?.filter((t) => activeStatuses.includes(t.status))
+
+  const trips =
+    activeTypes.length === 0
+      ? statusFiltered
+      : statusFiltered?.filter((t) => activeTypes.includes(t.type))
 
   return (
     <div>
@@ -67,8 +91,8 @@ export function TripsPage() {
         </Link>
       </div>
 
-      {/* Status Filter Pills */}
-      <div className="flex flex-wrap gap-2 mb-6">
+      {/* Filter Pills */}
+      <div className="flex flex-wrap gap-2 mb-6" data-testid="filter-row">
         {statusFilters.map((filter) => {
           const isActive =
             filter.value === undefined
@@ -83,6 +107,29 @@ export function TripsPage() {
                 isActive
                   ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-600/20 ring-offset-1'
                   : 'bg-white text-cloud-600 border border-cloud-200 hover:border-indigo-300 hover:text-indigo-700 hover:bg-indigo-50/50'
+              }`}
+            >
+              {filter.label}
+            </button>
+          )
+        })}
+
+        <div className="w-px h-6 bg-cloud-200 self-center mx-1" aria-hidden="true" />
+
+        {typeFilters.map((filter) => {
+          const isActive =
+            filter.value === undefined
+              ? activeTypes.length === 0
+              : activeTypes.includes(filter.value)
+          return (
+            <button
+              key={filter.label}
+              data-testid="type-filter"
+              onClick={() => toggleType(filter.value)}
+              className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${
+                isActive
+                  ? 'bg-teal-600 text-white shadow-sm ring-2 ring-teal-600/20 ring-offset-1'
+                  : 'bg-white text-cloud-600 border border-teal-200 hover:border-teal-300 hover:text-teal-700 hover:bg-teal-50/50'
               }`}
             >
               {filter.label}

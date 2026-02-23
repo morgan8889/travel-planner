@@ -46,6 +46,14 @@ const mockTrip: Trip = {
   children: [],
 }
 
+const mockEventTrip: Trip = {
+  ...mockTrip,
+  id: 'trip-event',
+  type: 'event',
+  destination: 'Austin, TX',
+  notes: '3M Half Marathon — local Austin race',
+}
+
 const mockSabbaticalTrip: Trip = {
   ...mockTrip,
   id: 'trip-sabbatical',
@@ -73,6 +81,7 @@ const mockSabbaticalTrip: Trip = {
 }
 
 const mockGetTrip = vi.fn()
+const mockGetInvitations = vi.fn()
 const mockPatch = vi.fn()
 const mockDelete = vi.fn()
 const mockItineraryListDays = vi.fn()
@@ -84,6 +93,8 @@ vi.mock('../lib/api', () => ({
     get: (url: string, ...rest: unknown[]) => {
       // TripForm calls useTrips() -> GET /trips (for parent trip dropdown)
       if (url === '/trips') return Promise.resolve({ data: [] })
+      // Invitations endpoint — separate mock so trip-level overrides don't interfere
+      if (url.endsWith('/invitations')) return mockGetInvitations(url, ...rest)
       return mockGetTrip(url, ...rest)
     },
     post: vi.fn(),
@@ -165,6 +176,7 @@ describe('TripDetailPage', () => {
     mockItineraryListDays.mockResolvedValue({ data: [] })
     mockItineraryListActivities.mockResolvedValue({ data: [] })
     mockChecklistList.mockResolvedValue({ data: [] })
+    mockGetInvitations.mockResolvedValue({ data: [] })
   })
 
   it('renders loading skeleton while fetching', async () => {
@@ -204,6 +216,24 @@ describe('TripDetailPage', () => {
     expect(testUserElements.length).toBeGreaterThanOrEqual(1)
     const otherUserElements = screen.getAllByText('Other User')
     expect(otherUserElements.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('shows pending invitation in members list when user is owner', async () => {
+    mockGetTrip.mockResolvedValue({ data: mockTrip })
+    mockGetInvitations.mockResolvedValue({
+      data: [{ id: 'inv-1', trip_id: 'trip-1', email: 'invited@example.com', created_at: '2026-01-01T00:00:00Z' }],
+    })
+    renderWithRouter()
+
+    // Wait for trip to load
+    await screen.findAllByText('Test User')
+
+    // Pending badge and invited email appear in the members list (rendered twice: mobile + desktop)
+    const pendingBadges = await screen.findAllByText('Pending')
+    expect(pendingBadges.length).toBeGreaterThanOrEqual(1)
+
+    const invitedEmails = screen.getAllByText('invited@example.com')
+    expect(invitedEmails.length).toBeGreaterThanOrEqual(1)
   })
 
   it('shows edit button and toggles edit mode', async () => {
@@ -318,6 +348,41 @@ describe('TripDetailPage', () => {
     // Click the first Cancel (header toggle) to close
     await user.click(cancelButtons[0])
     expect(await screen.findByText('Add activity')).toBeInTheDocument()
+  })
+
+  it('shows event name in h1 for event trips', async () => {
+    mockGetTrip.mockResolvedValue({ data: mockEventTrip })
+    renderWithRouter('trip-event')
+
+    expect(await screen.findByRole('heading', { name: '3M Half Marathon', level: 1 })).toBeInTheDocument()
+  })
+
+  it('shows destination as secondary line below h1 for event trips', async () => {
+    mockGetTrip.mockResolvedValue({ data: mockEventTrip })
+    renderWithRouter('trip-event')
+
+    await screen.findByRole('heading', { name: '3M Half Marathon', level: 1 })
+    const destinations = screen.getAllByText('Austin, TX')
+    expect(destinations.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('shows event name in breadcrumb for event trips', async () => {
+    mockGetTrip.mockResolvedValue({ data: mockEventTrip })
+    renderWithRouter('trip-event')
+
+    const crumb = await screen.findByText('3M Half Marathon', { selector: 'nav span' })
+    expect(crumb).toBeInTheDocument()
+  })
+
+  it('shows event name in delete confirmation dialog', async () => {
+    const user = userEvent.setup()
+    mockGetTrip.mockResolvedValue({ data: mockEventTrip })
+    renderWithRouter('trip-event')
+
+    const deleteBtn = await screen.findByText('Delete Trip')
+    await user.click(deleteBtn)
+
+    expect(screen.getByText(/Are you sure you want to delete "3M Half Marathon"/)).toBeInTheDocument()
   })
 
   it('shows drop indicator below activities in a day that has activities', async () => {
