@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
@@ -303,5 +304,51 @@ describe('DashboardPage Needs Attention', () => {
     renderDashboard()
     await screen.findByText(/welcome back/i)
     expect(screen.queryByText('View Calendar')).not.toBeInTheDocument()
+  })
+
+  it('shows only 3 trip groups by default when more than 3 have action items', async () => {
+    const trips = Array.from({ length: 4 }, (_, i) =>
+      makeTrip({
+        id: `trip-${i + 1}`,
+        destination: `City ${i + 1}`,
+        status: 'booked',
+        transport_total: 1,
+        transport_confirmed: 0,
+        start_date: `2026-0${i + 3}-01`,
+      })
+    )
+    mockUseTrips.mockReturnValue({ data: trips, isLoading: false })
+    renderDashboard()
+
+    // Wait for render; with 4 trips each having 1 unconfirmed flight,
+    // only 3 groups should render in Needs Attention (capped). Each group
+    // has exactly one "View trip" link — 3 groups → 3 links.
+    await screen.findByText(/needs attention/i)
+    expect(screen.getAllByText(/view trip/i)).toHaveLength(3)
+
+    // Show more button visible
+    expect(screen.getByRole('button', { name: /show more/i })).toBeInTheDocument()
+  })
+
+  it('shows all trip groups after clicking Show more', async () => {
+    const user = userEvent.setup()
+    const trips = Array.from({ length: 4 }, (_, i) =>
+      makeTrip({
+        id: `trip-${i + 1}`,
+        destination: `City ${i + 1}`,
+        status: 'booked',
+        transport_total: 1,
+        transport_confirmed: 0,
+        start_date: `2026-0${i + 3}-01`,
+      })
+    )
+    mockUseTrips.mockReturnValue({ data: trips, isLoading: false })
+    renderDashboard()
+
+    await user.click(await screen.findByRole('button', { name: /show more/i }))
+
+    // After expanding, all 4 groups render — 4 "View trip" links
+    expect(screen.getAllByText(/view trip/i)).toHaveLength(4)
+    expect(screen.queryByRole('button', { name: /show more/i })).not.toBeInTheDocument()
   })
 })
