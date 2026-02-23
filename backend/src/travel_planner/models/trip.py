@@ -88,3 +88,21 @@ class TripMember(Base):
 
     trip: Mapped["Trip"] = relationship(back_populates="members")
     user: Mapped["UserProfile"] = relationship()
+
+
+class TripInvitation(Base):
+    __tablename__ = "trip_invitations"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    trip_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("trips.id", ondelete="CASCADE")
+    )
+    email: Mapped[str] = mapped_column(String(255))
+    invited_by: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("user_profiles.id", ondelete="CASCADE")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )

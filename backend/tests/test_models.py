@@ -107,12 +107,13 @@ def test_remaining_models_importable():
     assert len(models) == 7
 
 
-def test_all_14_tables_exist():
+def test_all_15_tables_exist():
     table_names = set(Base.metadata.tables.keys())
     expected = {
         "user_profiles",
         "trips",
         "trip_members",
+        "trip_invitations",
         "holiday_calendars",
         "custom_days",
         "itinerary_days",

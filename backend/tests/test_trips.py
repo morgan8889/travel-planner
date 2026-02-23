@@ -653,7 +653,9 @@ def test_add_member_user_not_found(
     result_mock3 = MagicMock()
     result_mock3.fetchone.return_value = None
 
-    mock_db_session.execute = AsyncMock(side_effect=[result_mock1, result_mock2, result_mock3])
+    mock_db_session.execute = AsyncMock(
+        side_effect=[result_mock1, result_mock2, result_mock3]
+    )
 
     payload = {"email": "unknown@example.com"}
     response = client.post(
@@ -1136,3 +1138,12 @@ async def test_sync_no_commit_when_nothing_changes():
 
     db.add.assert_not_called()
     db.commit.assert_not_called()
+
+
+def test_trip_invitation_model_fields():
+    """TripInvitation has the expected fields."""
+    from travel_planner.models.trip import TripInvitation
+
+    inv = TripInvitation.__table__
+    col_names = {c.name for c in inv.columns}
+    assert col_names == {"id", "trip_id", "email", "invited_by", "created_at"}

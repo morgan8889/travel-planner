@@ -385,6 +385,12 @@ async def add_member(
     stmt = select(UserProfile).where(UserProfile.email == body.email)
     result = await db.execute(stmt)
     target_user = result.scalar_one_or_none()
+    logger.warning(
+        "add_member: local profile lookup for %s → %s, service_key_set=%s",
+        body.email,
+        target_user,
+        False,
+    )
 
     if target_user is None:
         # Fall back to auth.users — covers users who have a Supabase account
@@ -394,6 +400,9 @@ async def add_member(
             {"email": body.email},
         )
         auth_user = auth_row.fetchone()
+        logger.warning(
+            "add_member: auth.users lookup for %s → %s", body.email, auth_user
+        )
         if auth_user:
             auth_user_id = UUID(str(auth_user[0]))
             display_name = body.email.split("@")[0]
