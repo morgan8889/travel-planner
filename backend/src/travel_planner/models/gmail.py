@@ -1,20 +1,17 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, func
+from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from travel_planner.crypto import EncryptedText
-from travel_planner.models.user import Base
+from travel_planner.models.base import Base, TimestampMixin, UUIDMixin
 
 
-class GmailConnection(Base):
+class GmailConnection(Base, UUIDMixin):
     __tablename__ = "gmail_connections"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("user_profiles.id"), unique=True
     )
@@ -26,17 +23,11 @@ class GmailConnection(Base):
     )
 
 
-class ImportRecord(Base):
+class ImportRecord(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "import_records"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("user_profiles.id")
     )
     email_id: Mapped[str] = mapped_column(String(255), unique=True)
     parsed_data: Mapped[dict] = mapped_column(JSONB)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )

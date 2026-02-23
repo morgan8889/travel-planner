@@ -1,22 +1,13 @@
 import enum
 import uuid
-from datetime import date, datetime
+from datetime import date
 
-from sqlalchemy import (
-    Date,
-    DateTime,
-    Enum,
-    Float,
-    ForeignKey,
-    String,
-    Text,
-    UniqueConstraint,
-    func,
-)
+from sqlalchemy import Date, Enum, Float, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from travel_planner.models.user import Base, UserProfile
+from travel_planner.models.base import Base, TimestampMixin, UUIDMixin
+from travel_planner.models.user import UserProfile
 
 
 class TripType(enum.StrEnum):
@@ -39,12 +30,9 @@ class MemberRole(enum.StrEnum):
     member = "member"
 
 
-class Trip(Base):
+class Trip(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "trips"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
     type: Mapped[TripType] = mapped_column(Enum(TripType))
     destination: Mapped[str] = mapped_column(String(255))
     start_date: Mapped[date] = mapped_column(Date)
@@ -58,26 +46,20 @@ class Trip(Base):
     parent_trip_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("trips.id", ondelete="SET NULL"), nullable=True
     )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
 
     members: Mapped[list["TripMember"]] = relationship(
         back_populates="trip", cascade="all, delete-orphan", passive_deletes=True
     )
     children: Mapped[list["Trip"]] = relationship(back_populates="parent")
     parent: Mapped["Trip | None"] = relationship(
-        back_populates="children", remote_side=[id]
+        back_populates="children", remote_side="Trip.id"
     )
 
 
-class TripMember(Base):
+class TripMember(Base, UUIDMixin):
     __tablename__ = "trip_members"
     __table_args__ = (UniqueConstraint("trip_id", "user_id", name="uq_trip_member"),)
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
     trip_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("trips.id", ondelete="CASCADE")
     )
@@ -90,20 +72,14 @@ class TripMember(Base):
     user: Mapped["UserProfile"] = relationship()
 
 
-class TripInvitation(Base):
+class TripInvitation(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "trip_invitations"
     __table_args__ = (UniqueConstraint("trip_id", "email", name="uq_trip_invitation"),)
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
     trip_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("trips.id", ondelete="CASCADE")
     )
     email: Mapped[str] = mapped_column(String(255))
     invited_by: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("user_profiles.id", ondelete="CASCADE")
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
     )
