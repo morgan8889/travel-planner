@@ -302,9 +302,7 @@ async def scan_gmail(
     already_imported = set(imported_result.scalars().all())
 
     service = await _build_service(conn)
-    after = trip.start_date.strftime("%Y/%m/%d")
-    before = trip.end_date.strftime("%Y/%m/%d")
-    query = f"{TRAVEL_SEARCH} after:{after} before:{before}"
+    query = TRAVEL_SEARCH
     msgs_result = await asyncio.to_thread(
         lambda: (
             service.users()
