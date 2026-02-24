@@ -16,6 +16,19 @@ from sqlalchemy import Text
 from sqlalchemy.types import TypeDecorator
 
 
+def _get_encryption_key() -> str:
+    """Return TOKEN_ENCRYPTION_KEY from settings or os.environ."""
+    # Import here to avoid circular imports at module load time
+    try:
+        from travel_planner.config import settings  # noqa: PLC0415
+        if settings.token_encryption_key:
+            return settings.token_encryption_key
+    except Exception:
+        pass
+    key = os.environ.get("TOKEN_ENCRYPTION_KEY", "")
+    return key
+
+
 class EncryptedText(TypeDecorator):
     """Transparent Fernet encryption for text columns.
 
@@ -28,7 +41,7 @@ class EncryptedText(TypeDecorator):
     cache_ok = True
 
     def _fernet(self) -> Fernet:
-        key = os.environ.get("TOKEN_ENCRYPTION_KEY")
+        key = _get_encryption_key()
         if not key:
             raise ValueError(
                 "TOKEN_ENCRYPTION_KEY environment variable is not set. "
