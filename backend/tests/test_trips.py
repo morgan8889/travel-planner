@@ -1330,6 +1330,14 @@ def test_claim_invitation_case_insensitive_email(
     # Invitation was claimed despite email case mismatch
     mock_db_session.delete.assert_called_once_with(inv)
     mock_db_session.add.assert_called_once()
+    # Verify the SELECT query used the lowercased email, not the raw JWT value
+    inv_query_call = mock_db_session.execute.call_args_list[0]
+    executed_stmt = inv_query_call[0][0]
+    compiled = executed_stmt.compile()
+    assert stored_email in compiled.params.values(), (
+        f"Expected lowercased email '{stored_email}' in query params, "
+        f"got {list(compiled.params.values())}"
+    )
 
 
 def test_claim_invitation_skips_add_when_already_member(
