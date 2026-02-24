@@ -139,6 +139,77 @@ def test_list_trip_activities_filters_by_import_status(
 
 
 # ---------------------------------------------------------------------------
+# New centralized scan endpoint tests
+# ---------------------------------------------------------------------------
+
+
+def test_post_scan_returns_scan_id(
+    client, auth_headers, override_get_db, mock_db_session
+):
+    """POST /gmail/scan creates a scan_run and returns its ID."""
+    from unittest.mock import AsyncMock, MagicMock, patch
+    from uuid import uuid4
+
+    scan_run_id = uuid4()
+
+    # Mock gmail connection present
+    conn_mock = MagicMock()
+    conn_mock.scalar_one_or_none.return_value = _make_conn()
+
+    # Mock no running scan
+    running_mock = MagicMock()
+    running_mock.scalar_one_or_none.return_value = None
+
+    mock_db_session.execute.side_effect = [conn_mock, running_mock]
+
+    # db.refresh sets the scan_run.id so the response can serialize it
+    async def _mock_refresh(obj):
+        obj.id = scan_run_id
+
+    mock_db_session.refresh = AsyncMock(side_effect=_mock_refresh)
+
+    with patch("travel_planner.routers.gmail.asyncio.create_task"):
+        response = client.post(
+            "/gmail/scan",
+            json={"rescan_rejected": False},
+            headers=auth_headers,
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "scan_id" in data
+    assert mock_db_session.add.called  # ScanRun was added
+
+
+def test_post_scan_409_when_already_running(
+    client, auth_headers, override_get_db, mock_db_session
+):
+    """POST /gmail/scan returns 409 when a scan is already running for user."""
+    from unittest.mock import MagicMock, patch
+    from uuid import uuid4
+
+    conn_mock = MagicMock()
+    conn_mock.scalar_one_or_none.return_value = _make_conn()
+
+    existing_scan = MagicMock()
+    existing_scan.id = uuid4()
+    running_mock = MagicMock()
+    running_mock.scalar_one_or_none.return_value = existing_scan
+
+    mock_db_session.execute.side_effect = [conn_mock, running_mock]
+
+    with patch("travel_planner.routers.gmail.asyncio.create_task"):
+        response = client.post(
+            "/gmail/scan",
+            json={"rescan_rejected": False},
+            headers=auth_headers,
+        )
+
+    assert response.status_code == 409
+    assert "scan_id" in response.json()["detail"]
+
+
+# ---------------------------------------------------------------------------
 # _build_service — token refresh unit test
 # ---------------------------------------------------------------------------
 
