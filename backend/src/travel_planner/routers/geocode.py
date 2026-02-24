@@ -7,7 +7,7 @@ from travel_planner.auth import CurrentUserId
 from travel_planner.config import settings
 from travel_planner.schemas.geocode import GeocodeSuggestion
 
-router = APIRouter(prefix="/api/geocode", tags=["geocode"])
+router = APIRouter(prefix="/geocode", tags=["geocode"])
 
 MAPBOX_GEOCODING_URL = "https://api.mapbox.com/geocoding/v5/mapbox.places/{query}.json"
 
