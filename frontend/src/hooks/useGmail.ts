@@ -174,7 +174,7 @@ export function useGmailScan() {
               eventType = line.slice(7).trim()
             } else if (line.startsWith('data: ')) {
               dataLine = line.slice(6).trim()
-            } else if (line === '' && dataLine) {
+            } else if ((line === '' || line === '\r') && dataLine) {
               try {
                 const payload = JSON.parse(dataLine) as Record<string, unknown>
                 if (eventType === 'progress') {
