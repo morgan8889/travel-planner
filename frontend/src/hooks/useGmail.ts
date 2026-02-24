@@ -121,7 +121,24 @@ export function useGmailScan() {
       })
 
       try {
-        const { scan_id } = await gmailApi.startScan(rescanRejected)
+        // Start scan, or resume the already-running one on 409
+        let scan_id: string
+        try {
+          scan_id = (await gmailApi.startScan(rescanRejected)).scan_id
+        } catch (startErr: unknown) {
+          const axiosErr = startErr as {
+            response?: { status?: number; data?: { detail?: { scan_id?: string } } }
+          }
+          if (
+            axiosErr?.response?.status === 409 &&
+            axiosErr.response?.data?.detail?.scan_id
+          ) {
+            scan_id = axiosErr.response.data.detail.scan_id
+          } else {
+            throw startErr
+          }
+        }
+
         setState((s) => ({ ...s, scanId: scan_id }))
 
         const {
