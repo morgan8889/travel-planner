@@ -5,6 +5,7 @@ import type { ScanProgressEvent } from '../../lib/types'
 
 interface GmailScanPanelProps {
   onScanComplete: () => void
+  onScanRunningChange?: (running: boolean) => void
 }
 
 function EventRow({ event, debug }: { event: ScanProgressEvent; debug: boolean }) {
@@ -44,13 +45,15 @@ function EventRow({ event, debug }: { event: ScanProgressEvent; debug: boolean }
   )
 }
 
-export function GmailScanPanel({ onScanComplete }: GmailScanPanelProps) {
+export function GmailScanPanel({ onScanComplete, onScanRunningChange }: GmailScanPanelProps) {
   const [rescanRejected, setRescanRejected] = useState(false)
   const [debug, setDebug] = useState(false)
   const { state, startScan, cancelScan } = useGmailScan()
 
   const handleStart = async () => {
+    onScanRunningChange?.(true)
     await startScan(rescanRejected)
+    onScanRunningChange?.(false)
     onScanComplete()
   }
 
@@ -97,7 +100,7 @@ export function GmailScanPanel({ onScanComplete }: GmailScanPanelProps) {
           <div className="flex items-center gap-2 text-sm text-cloud-600">
             <Loader2 size={14} className="animate-spin" />
             <span>
-              {total} / {emailsFound > 0 ? emailsFound : '?'} emails processed
+              {total > 0 ? `${total} emails processed` : 'Starting scan...'}
             </span>
           </div>
           <button
@@ -125,14 +128,13 @@ export function GmailScanPanel({ onScanComplete }: GmailScanPanelProps) {
         </p>
       )}
 
-      <div className="max-h-48 overflow-y-auto space-y-0.5 border border-cloud-100 rounded-lg p-2 bg-cloud-50">
-        {state.events.map((ev, i) => (
-          <EventRow key={i} event={ev} debug={debug} />
-        ))}
-        {state.events.length === 0 && (
-          <p className="text-xs text-cloud-400 italic">Waiting for emails...</p>
-        )}
-      </div>
+      {state.events.length > 0 && (
+        <div className="max-h-48 overflow-y-auto space-y-0.5 border border-cloud-100 rounded-lg p-2 bg-cloud-50">
+          {state.events.map((ev, i) => (
+            <EventRow key={i} event={ev} debug={debug} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

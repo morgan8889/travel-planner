@@ -23,6 +23,7 @@ export function SettingsPage() {
   const deleteAccountMutation = useDeleteAccount()
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [scanRunning, setScanRunning] = useState(false)
   const queryClient = useQueryClient()
 
   const handleConnectGmail = async () => {
@@ -95,6 +96,7 @@ export function SettingsPage() {
           <>
             <div className="border-t border-cloud-100 pt-4 mb-4">
               <GmailScanPanel
+                onScanRunningChange={setScanRunning}
                 onScanComplete={() => {
                   queryClient.invalidateQueries({ queryKey: gmailKeys.inbox })
                   queryClient.invalidateQueries({ queryKey: gmailKeys.latestScan })
@@ -102,9 +104,11 @@ export function SettingsPage() {
               />
             </div>
 
-            <div className="border-t border-cloud-100 pt-4">
-              <GmailInbox />
-            </div>
+            {!scanRunning && (
+              <div className="border-t border-cloud-100 pt-4">
+                <GmailInbox />
+              </div>
+            )}
           </>
         )}
       </div>
