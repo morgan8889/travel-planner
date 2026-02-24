@@ -12,6 +12,20 @@ import {
 import { TripDetailPage } from '../pages/TripDetailPage'
 import type { Trip } from '../lib/types'
 
+vi.mock('../lib/supabase', () => ({
+  supabase: {
+    auth: {
+      getSession: vi.fn().mockResolvedValue({ data: { session: null } }),
+    },
+  },
+}))
+
+vi.mock('../hooks/useGmail', () => ({
+  useGmailStatus: () => ({ data: { connected: false }, isLoading: false }),
+  usePendingImportCount: () => 0,
+  useGmailInbox: () => ({ data: { pending: [], unmatched: [] }, isLoading: false }),
+}))
+
 const mockTrip: Trip = {
   id: 'trip-1',
   type: 'vacation',

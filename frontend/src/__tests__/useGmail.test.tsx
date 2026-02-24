@@ -3,15 +3,26 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createElement, type ReactNode } from 'react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 
+vi.mock('../lib/supabase', () => ({
+  supabase: {
+    auth: {
+      getSession: vi.fn().mockResolvedValue({ data: { session: null } }),
+    },
+  },
+}))
+
 vi.mock('../lib/api', () => ({
   gmailApi: {
     getStatus: vi.fn().mockResolvedValue({ connected: false, last_sync_at: null }),
     getAuthUrl: vi.fn(),
     disconnect: vi.fn().mockResolvedValue({}),
-    scan: vi.fn().mockResolvedValue({ imported_count: 2, skipped_count: 0 }),
+    startScan: vi.fn().mockResolvedValue({ scan_id: 'scan-1' }),
+    getLatestScan: vi.fn().mockResolvedValue(null),
+    getInbox: vi.fn().mockResolvedValue({ pending: [], unmatched: [] }),
+    assignUnmatched: vi.fn().mockResolvedValue({}),
+    dismissUnmatched: vi.fn().mockResolvedValue({}),
   },
   itineraryApi: {
-    listTripPendingImports: vi.fn().mockResolvedValue([]),
     updateActivity: vi.fn().mockResolvedValue({}),
     deleteActivity: vi.fn().mockResolvedValue({}),
   },

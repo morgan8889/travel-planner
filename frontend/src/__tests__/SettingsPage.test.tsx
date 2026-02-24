@@ -6,13 +6,34 @@ import { createElement, type ReactNode } from 'react'
 import { SettingsPage } from '../pages/SettingsPage'
 
 const mockUseGmailStatus = vi.fn()
+const mockUseLatestScan = vi.fn()
 const mockUseDisconnectGmail = vi.fn()
 const mockUseDeleteAccount = vi.fn()
 const mockSignOut = vi.fn()
 
 vi.mock('../hooks/useGmail', () => ({
   useGmailStatus: () => mockUseGmailStatus(),
+  useLatestScan: () => mockUseLatestScan(),
   useDisconnectGmail: () => mockUseDisconnectGmail(),
+  gmailKeys: {
+    status: ['gmail', 'status'],
+    latestScan: ['gmail', 'latestScan'],
+    inbox: ['gmail', 'inbox'],
+  },
+  useGmailScan: () => ({
+    state: { isRunning: false, summary: null, error: null, events: [], emailsFound: 0, scanId: null },
+    startScan: vi.fn(),
+    cancelScan: vi.fn(),
+  }),
+  useGmailInbox: () => ({ data: { pending: [], unmatched: [] }, isLoading: false }),
+  useConfirmImport: () => ({ mutate: vi.fn(), isPending: false }),
+  useRejectImport: () => ({ mutate: vi.fn(), isPending: false }),
+  useAssignUnmatched: () => ({ mutate: vi.fn(), isPending: false }),
+  useDismissUnmatched: () => ({ mutate: vi.fn(), isPending: false }),
+}))
+
+vi.mock('../hooks/useTrips', () => ({
+  useTrips: () => ({ data: [], isLoading: false }),
 }))
 
 vi.mock('../hooks/useAuth', () => ({
@@ -51,6 +72,7 @@ function createWrapper() {
 beforeEach(() => {
   vi.clearAllMocks()
   mockUseGmailStatus.mockReturnValue({ data: { connected: false }, isLoading: false })
+  mockUseLatestScan.mockReturnValue({ data: null })
   mockUseDisconnectGmail.mockReturnValue({ mutate: vi.fn(), isPending: false })
   mockUseDeleteAccount.mockReturnValue({
     mutateAsync: vi.fn().mockResolvedValue({}),
@@ -60,9 +82,9 @@ beforeEach(() => {
 })
 
 describe('SettingsPage', () => {
-  it('renders Integrations section with Connect Gmail when not connected', () => {
+  it('renders Gmail Import section with Connect Gmail when not connected', () => {
     render(createElement(SettingsPage), { wrapper: createWrapper() })
-    expect(screen.getByText('Integrations')).toBeInTheDocument()
+    expect(screen.getByText('Gmail Import')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /connect gmail/i })).toBeInTheDocument()
   })
 
