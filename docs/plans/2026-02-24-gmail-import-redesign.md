@@ -942,24 +942,18 @@ SSE uses `sse-starlette`. Since `EventSource` in the browser doesn't support cus
 Add to `backend/tests/test_gmail.py`:
 
 ```python
-def test_scan_stream_404_for_unknown_scan(client, auth_headers):
-    """Streaming an unknown scan_id returns 404."""
-    from unittest.mock import patch, AsyncMock, MagicMock
+def test_scan_stream_404_for_unknown_scan(client, auth_headers, override_get_db, mock_db_session):
+    """Streaming an unknown scan_id returns 404 when scan belongs to a different user."""
+    from unittest.mock import MagicMock
 
-    with patch("travel_planner.routers.gmail.async_session") as mock_factory:
-        mock_session = AsyncMock()
-        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
-        mock_session.__aexit__ = AsyncMock(return_value=False)
-        result_mock = MagicMock()
-        result_mock.scalar_one_or_none.return_value = None
-        mock_session.execute = AsyncMock(return_value=result_mock)
-        mock_factory.return_value = mock_session
+    result_mock = MagicMock()
+    result_mock.scalar_one_or_none.return_value = None
+    mock_db_session.execute.return_value = result_mock
 
-        # Pass token directly since EventSource can't send headers
-        token = auth_headers["Authorization"].split(" ")[1]
-        response = client.get(
-            f"/gmail/scan/00000000-0000-0000-0000-000000000099/stream?token={token}"
-        )
+    response = client.get(
+        "/gmail/scan/00000000-0000-0000-0000-000000000099/stream",
+        headers=auth_headers,
+    )
     assert response.status_code == 404
 ```
 
@@ -980,46 +974,43 @@ import json as _json_mod
 @router.get("/scan/{scan_id}/stream")
 async def stream_scan(
     scan_id: _uuid.UUID,
-    token: str,  # JWT passed as query param since EventSource can't send headers
+    user_id: CurrentUserId,
+    db: AsyncSession = Depends(get_db),
 ) -> EventSourceResponse:
     """SSE stream of scan_events for a running or completed scan."""
-    from travel_planner.auth import get_current_user
     from travel_planner.db import async_session
-    from fastapi.security import HTTPAuthorizationCredentials
 
-    # Verify token manually
-    try:
-        from travel_planner.auth import verify_token
-        user_id = verify_token(token)
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid token")
+    # Verify scan belongs to user before starting the SSE stream so that
+    # a missing/unauthorised scan_id returns a proper 404 HTTP status.
+    result = await db.execute(
+        select(ScanRun).where(
+            ScanRun.id == scan_id,
+            ScanRun.user_id == user_id,
+        )
+    )
+    if result.scalar_one_or_none() is None:
+        raise HTTPException(status_code=404, detail="Scan not found")
 
     async def event_generator():
-        last_event_created_at = None
         sent_ids: set[str] = set()
 
-        async with async_session() as db:
-            # Verify scan belongs to user
-            result = await db.execute(
-                select(ScanRun).where(
-                    ScanRun.id == scan_id,
-                    ScanRun.user_id == user_id,
-                )
+        async with async_session() as stream_db:
+            result = await stream_db.execute(
+                select(ScanRun).where(ScanRun.id == scan_id)
             )
             scan_run = result.scalar_one_or_none()
             if scan_run is None:
-                yield {"event": "error", "data": _json_mod.dumps({"code": "not_found"})}
                 return
 
             while True:
-                await db.refresh(scan_run)
+                await stream_db.refresh(scan_run)
 
                 # Fetch new events
                 query = select(ScanEvent).where(
                     ScanEvent.scan_run_id == scan_id,
                     ScanEvent.id.not_in(sent_ids) if sent_ids else True,
                 ).order_by(ScanEvent.created_at)
-                result = await db.execute(query)
+                result = await stream_db.execute(query)
                 new_events = result.scalars().all()
 
                 for ev in new_events:
@@ -1051,27 +1042,6 @@ async def stream_scan(
                 await asyncio.sleep(1)
 
     return EventSourceResponse(event_generator())
-```
-
-You'll also need to add a `verify_token` helper to `travel_planner/auth.py` that extracts just the `user_id` from a raw token string (without the FastAPI Request context). This is a small refactor of the existing `get_current_user` function — extract the JWT decode logic into a standalone `verify_token(token: str) -> UUID` function.
-
-In `backend/src/travel_planner/auth.py`, add:
-
-```python
-def verify_token(token: str) -> UUID:
-    """Verify a raw JWT string and return the user_id. Raises HTTPException on failure."""
-    try:
-        signing_key = jwks_client.get_signing_key_from_jwt(token)
-        payload = jwt.decode(
-            token,
-            signing_key.key,
-            algorithms=["RS256", "ES256"],
-            audience="authenticated",
-            issuer=f"{settings.supabase_url}/auth/v1",
-        )
-        return UUID(payload["sub"])
-    except Exception as e:
-        raise HTTPException(status_code=401, detail="Invalid authentication token") from e
 ```
 
 **Step 4: Run the test**
@@ -1274,6 +1244,7 @@ async def assign_unmatched(
     from travel_planner.models.itinerary import (
         Activity, ActivityCategory, ActivitySource, ImportStatus, ItineraryDay,
     )
+    from travel_planner.deps import get_trip_with_membership
     from datetime import date as _date
 
     result = await db.execute(
@@ -1285,6 +1256,10 @@ async def assign_unmatched(
     item = result.scalar_one_or_none()
     if item is None:
         raise HTTPException(status_code=404, detail="Not found")
+
+    # Verify the authenticated user is a member of the target trip before
+    # creating any itinerary resources — raises 404/403 if not authorised.
+    await get_trip_with_membership(body.trip_id, user_id, db)
 
     parsed = item.parsed_data
     try:
@@ -1537,8 +1512,9 @@ cd frontend && git add src/lib/ && git commit -m "feat: update Gmail API types a
 **Step 1: Rewrite the hook file**
 
 ```typescript
-import { useMutation, useQuery, useQueryClient, useCallback, useRef, useState } from 'react'
-import { gmailApi } from '../lib/api'
+import { useCallback, useRef, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { gmailApi, itineraryApi } from '../lib/api'
 import { supabase } from '../lib/supabase'
 import type { ScanProgressEvent, ScanRun } from '../lib/types'
 import { itineraryKeys } from './useItinerary'
@@ -1583,7 +1559,6 @@ export function useDisconnectGmail() {
 
 export function useConfirmImport() {
   const queryClient = useQueryClient()
-  const { itineraryApi } = require('../lib/api')
   return useMutation({
     mutationFn: (activityId: string) =>
       itineraryApi.updateActivity(activityId, { import_status: 'confirmed' }),
@@ -1596,7 +1571,6 @@ export function useConfirmImport() {
 
 export function useRejectImport() {
   const queryClient = useQueryClient()
-  const { itineraryApi } = require('../lib/api')
   return useMutation({
     mutationFn: (activityId: string) => itineraryApi.deleteActivity(activityId),
     onSuccess: () => {
@@ -1664,8 +1638,11 @@ export function useGmailScan() {
 
       abortRef.current = new AbortController()
       const response = await fetch(
-        `/api/gmail/scan/${scan_id}/stream?token=${encodeURIComponent(token)}`,
-        { signal: abortRef.current.signal }
+        `/api/gmail/scan/${scan_id}/stream`,
+        {
+          signal: abortRef.current.signal,
+          headers: { 'Authorization': `Bearer ${token}` },
+        }
       )
 
       if (!response.body) throw new Error('No response body')
@@ -1848,7 +1825,7 @@ export function GmailScanPanel({ onScanComplete }: GmailScanPanelProps) {
   }
 
   const total = state.events.length
-  const emailsFound = state.state?.emailsFound ?? total
+  const emailsFound = state.emailsFound ?? total
 
   return (
     <div className="space-y-3">
