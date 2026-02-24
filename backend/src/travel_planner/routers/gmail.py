@@ -3,8 +3,11 @@ import base64
 import hashlib
 import hmac
 import json as _json
+import logging
 from datetime import UTC, datetime
 from uuid import UUID
+
+logger = logging.getLogger(__name__)
 
 import anthropic as _anthropic
 from fastapi import APIRouter, Depends, HTTPException
@@ -185,10 +188,10 @@ Email:
 
 async def _build_service(conn: GmailConnection):
     """Build authenticated Gmail service, auto-refreshing token if expired."""
-    # Ensure expiry is timezone-aware — DB may store naive UTC datetimes
+    # google.auth uses naive UTC datetimes for expiry comparison; strip tzinfo
     expiry = conn.token_expiry
-    if expiry is not None and expiry.tzinfo is None:
-        expiry = expiry.replace(tzinfo=UTC)
+    if expiry is not None and expiry.tzinfo is not None:
+        expiry = expiry.astimezone(UTC).replace(tzinfo=None)
     creds = Credentials(
         token=conn.access_token,
         refresh_token=conn.refresh_token,
@@ -201,7 +204,9 @@ async def _build_service(conn: GmailConnection):
         await asyncio.to_thread(creds.refresh, Request())
         conn.access_token = creds.token
         if creds.expiry is not None:
-            conn.token_expiry = datetime.fromtimestamp(creds.expiry.timestamp(), tz=UTC)
+            # Store as naive UTC (google.auth expiry is naive UTC by convention)
+            raw = creds.expiry
+            conn.token_expiry = raw.replace(tzinfo=None) if raw.tzinfo is None else raw.astimezone(UTC).replace(tzinfo=None)
     return build("gmail", "v1", credentials=creds)
 
 
@@ -303,6 +308,7 @@ async def scan_gmail(
 
     service = await _build_service(conn)
     query = TRAVEL_SEARCH
+    logger.info("Gmail scan: query=%r trip=%s dates=%s–%s", query, body.trip_id, trip.start_date, trip.end_date)
     msgs_result = await asyncio.to_thread(
         lambda: (
             service.users()
@@ -312,6 +318,7 @@ async def scan_gmail(
         )
     )
     messages = msgs_result.get("messages", [])
+    logger.info("Gmail scan: %d messages returned by API", len(messages))
 
     imported_count = 0
     skipped_count = 0
@@ -319,6 +326,7 @@ async def scan_gmail(
     for meta in messages:
         email_id = meta["id"]
         if email_id in already_imported:
+            logger.info("Gmail scan: skip %s (already imported)", email_id)
             skipped_count += 1
             continue
 
@@ -332,22 +340,28 @@ async def scan_gmail(
         )
         content = _extract_text(msg)
         if not content:
+            logger.info("Gmail scan: skip %s (no text content)", email_id)
             skipped_count += 1
             continue
 
         parsed = await _parse_with_claude(content)
         if parsed is None:
+            logger.info("Gmail scan: skip %s (Claude returned None / not travel)", email_id)
             skipped_count += 1
             continue
+
+        logger.info("Gmail scan: %s parsed date=%s category=%s title=%r", email_id, parsed.get("date"), parsed.get("category"), parsed.get("title"))
 
         try:
             activity_date = _date.fromisoformat(parsed.get("date", ""))
         except (ValueError, TypeError):
+            logger.info("Gmail scan: skip %s (unparseable date %r)", email_id, parsed.get("date"))
             skipped_count += 1
             continue
 
         day = days_by_date.get(activity_date)
         if day is None:
+            logger.info("Gmail scan: skip %s (date %s not in trip days: %s)", email_id, activity_date, sorted(days_by_date.keys()))
             skipped_count += 1
             continue
 
@@ -375,4 +389,5 @@ async def scan_gmail(
 
     conn.last_sync_at = datetime.now(tz=UTC)
     await db.commit()
+    logger.info("Gmail scan complete: imported=%d skipped=%d", imported_count, skipped_count)
     return {"imported_count": imported_count, "skipped_count": skipped_count}
