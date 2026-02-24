@@ -409,17 +409,23 @@ async def _run_scan_background(
                 cutoff = _today_date.today() - timedelta(days=365)
             search_query = f"{TRAVEL_SEARCH} after:{cutoff.strftime('%Y/%m/%d')}"
 
-            # Fetch emails from Gmail
+            # Fetch all emails from Gmail (paginated, up to 500 per page)
             service = await _build_service(conn)
-            msgs_result = await asyncio.to_thread(
-                lambda: (
-                    service.users()
-                    .messages()
-                    .list(userId="me", q=search_query, maxResults=50)
-                    .execute()
+            messages: list[dict] = []
+            page_token: str | None = None
+            while True:
+                kwargs: dict = {"userId": "me", "q": search_query, "maxResults": 500}
+                if page_token:
+                    kwargs["pageToken"] = page_token
+                msgs_result = await asyncio.to_thread(
+                    lambda kw=kwargs: (
+                        service.users().messages().list(**kw).execute()
+                    )
                 )
-            )
-            messages = msgs_result.get("messages", [])
+                messages.extend(msgs_result.get("messages", []))
+                page_token = msgs_result.get("nextPageToken")
+                if not page_token:
+                    break
             scan_run.emails_found = len(messages)
             await db.commit()
 
