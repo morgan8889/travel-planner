@@ -107,7 +107,7 @@ def test_remaining_models_importable():
     assert len(models) == 7
 
 
-def test_all_15_tables_exist():
+def test_all_18_tables_exist():
     table_names = set(Base.metadata.tables.keys())
     expected = {
         "user_profiles",
@@ -125,5 +125,8 @@ def test_all_15_tables_exist():
         "chat_messages",
         "gmail_connections",
         "import_records",
+        "scan_runs",
+        "scan_events",
+        "unmatched_imports",
     }
     assert expected == table_names

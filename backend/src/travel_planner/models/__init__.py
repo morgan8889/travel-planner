@@ -2,7 +2,16 @@ from travel_planner.models.base import Base
 from travel_planner.models.calendar import CustomDay, HolidayCalendar
 from travel_planner.models.chat import ChatMessage, ChatRole, ChatThread
 from travel_planner.models.checklist import Checklist, ChecklistItem, ChecklistItemUser
-from travel_planner.models.gmail import GmailConnection, ImportRecord
+from travel_planner.models.gmail import (
+    GmailConnection,
+    ImportRecord,
+    ScanEvent,
+    ScanEventSkipReason,
+    ScanEventStatus,
+    ScanRun,
+    ScanRunStatus,
+    UnmatchedImport,
+)
 from travel_planner.models.itinerary import (
     Activity,
     ActivityCategory,
@@ -44,4 +53,10 @@ __all__ = [
     "ChatRole",
     "GmailConnection",
     "ImportRecord",
+    "ScanRun",
+    "ScanRunStatus",
+    "ScanEvent",
+    "ScanEventStatus",
+    "ScanEventSkipReason",
+    "UnmatchedImport",
 ]
