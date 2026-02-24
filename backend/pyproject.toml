@@ -25,6 +25,7 @@ dependencies = [
     "greenlet>=3.0.0",
     "holidays>=0.91",
     "httpx>=0.28.0",
+    "sse-starlette>=3.2.0",
 ]
 
 [project.optional-dependencies]
