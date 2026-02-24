@@ -183,8 +183,21 @@ async def gmail_disconnect(
 # ---------------------------------------------------------------------------
 
 TRAVEL_SEARCH = (
-    "subject:(booking confirmation OR reservation OR itinerary "
-    "OR e-ticket OR hotel confirmation OR flight confirmation)"
+    # Known travel sender domains
+    "(from:(airbnb.com OR booking.com OR vrbo.com OR homeaway.com"
+    " OR expedia.com OR hotels.com OR tripadvisor.com"
+    " OR united.com OR delta.com OR aa.com OR southwest.com"
+    " OR jetblue.com OR alaskaair.com OR ryanair.com OR easyjet.com"
+    " OR lufthansa.com OR britishairways.com OR qantas.com"
+    " OR marriott.com OR hilton.com OR hyatt.com OR ihg.com"
+    " OR hertz.com OR enterprise.com OR avis.com OR budget.com"
+    " OR airportshuttles.com OR viator.com OR getyourguide.com)"
+    # OR subject keywords for senders not listed above
+    " OR subject:(\"booking confirmation\" OR \"reservation confirmation\""
+    " OR \"itinerary\" OR \"e-ticket\" OR \"eticket\""
+    " OR \"check-in\" OR \"check in\" OR \"hotel confirmation\""
+    " OR \"flight confirmation\" OR \"your trip\" OR \"trip confirmation\""
+    " OR \"order confirmation\" OR \"booking reference\"))"
 )
 
 PARSE_PROMPT = """Extract travel booking details from this email.
