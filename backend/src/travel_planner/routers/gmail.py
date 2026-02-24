@@ -23,6 +23,7 @@ from sse_starlette.sse import EventSourceResponse
 from travel_planner.auth import CurrentUserId
 from travel_planner.config import settings
 from travel_planner.db import get_db
+from travel_planner.models.trip import TripMember
 from travel_planner.models.gmail import (
     GmailConnection,
     ScanEvent,
@@ -672,3 +673,163 @@ async def stream_scan(
                 await asyncio.sleep(1)
 
     return EventSourceResponse(event_generator())
+
+
+@router.get("/scan/latest", response_model=ScanRunResponse | None)
+async def get_latest_scan(
+    user_id: CurrentUserId,
+    db: AsyncSession = Depends(get_db),
+) -> ScanRun | None:
+    result = await db.execute(
+        select(ScanRun)
+        .where(ScanRun.user_id == user_id)
+        .order_by(ScanRun.started_at.desc())
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
+@router.get("/inbox")
+async def get_inbox(
+    user_id: CurrentUserId,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    from collections import defaultdict
+
+    from travel_planner.models.itinerary import Activity, ImportStatus, ItineraryDay
+    from travel_planner.models.trip import Trip
+    from travel_planner.schemas.itinerary import ActivityResponse
+
+    # Pending activities with trip info
+    result = await db.execute(
+        select(Activity, ItineraryDay.trip_id, Trip.destination)
+        .join(ItineraryDay, Activity.itinerary_day_id == ItineraryDay.id)
+        .join(Trip, ItineraryDay.trip_id == Trip.id)
+        .join(TripMember, TripMember.trip_id == Trip.id)
+        .where(
+            TripMember.user_id == user_id,
+            Activity.import_status == ImportStatus.pending_review,
+        )
+        .order_by(Trip.id, Activity.sort_order)
+    )
+    rows = result.all()
+
+    # Group by trip
+    grouped: dict[str, dict] = defaultdict(lambda: {"trip_destination": "", "activities": []})
+    for activity, trip_id, destination in rows:
+        key = str(trip_id)
+        grouped[key]["trip_id"] = key
+        grouped[key]["trip_destination"] = destination
+        grouped[key]["activities"].append(ActivityResponse.model_validate(activity).model_dump(mode="json"))
+
+    # Unmatched
+    unmatched_result = await db.execute(
+        select(UnmatchedImport)
+        .where(
+            UnmatchedImport.user_id == user_id,
+            UnmatchedImport.assigned_trip_id.is_(None),
+            UnmatchedImport.dismissed_at.is_(None),
+        )
+        .order_by(UnmatchedImport.created_at.desc())
+    )
+    unmatched = [
+        UnmatchedImportResponse.model_validate(u).model_dump(mode="json")
+        for u in unmatched_result.scalars().all()
+    ]
+
+    return {"pending": list(grouped.values()), "unmatched": unmatched}
+
+
+@router.post("/inbox/unmatched/{unmatched_id}/assign", status_code=201)
+async def assign_unmatched(
+    unmatched_id: _uuid.UUID,
+    body: AssignUnmatchedBody,
+    user_id: CurrentUserId,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    from datetime import date as _date
+
+    from travel_planner.deps import get_trip_with_membership
+    from travel_planner.models.itinerary import (
+        Activity,
+        ActivityCategory,
+        ActivitySource,
+        ImportStatus,
+        ItineraryDay,
+    )
+
+    result = await db.execute(
+        select(UnmatchedImport).where(
+            UnmatchedImport.id == unmatched_id,
+            UnmatchedImport.user_id == user_id,
+        )
+    )
+    item = result.scalar_one_or_none()
+    if item is None:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    await get_trip_with_membership(body.trip_id, user_id, db)
+
+    parsed = item.parsed_data
+    try:
+        activity_date = _date.fromisoformat(parsed.get("date", ""))
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="Cannot determine activity date")
+
+    day_result = await db.execute(
+        select(ItineraryDay).where(
+            ItineraryDay.trip_id == body.trip_id,
+            ItineraryDay.date == activity_date,
+        )
+    )
+    day = day_result.scalar_one_or_none()
+    if day is None:
+        day = ItineraryDay(trip_id=body.trip_id, date=activity_date)
+        db.add(day)
+        await db.flush()
+
+    try:
+        category = ActivityCategory(parsed.get("category", "activity"))
+    except ValueError:
+        category = ActivityCategory.activity
+
+    from travel_planner.models.gmail import ImportRecord
+    db.add(ImportRecord(user_id=user_id, email_id=item.email_id, parsed_data=parsed))
+    db.add(Activity(
+        itinerary_day_id=day.id,
+        title=parsed.get("title", "Imported booking"),
+        category=category,
+        location=parsed.get("location"),
+        confirmation_number=parsed.get("confirmation_number"),
+        notes=parsed.get("notes"),
+        source=ActivitySource.gmail_import,
+        source_ref=item.email_id,
+        import_status=ImportStatus.pending_review,
+        sort_order=999,
+    ))
+
+    item.assigned_trip_id = body.trip_id
+    await db.commit()
+    return {"status": "assigned"}
+
+
+@router.delete("/inbox/unmatched/{unmatched_id}", status_code=204)
+async def dismiss_unmatched(
+    unmatched_id: _uuid.UUID,
+    user_id: CurrentUserId,
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    result = await db.execute(
+        select(UnmatchedImport).where(
+            UnmatchedImport.id == unmatched_id,
+            UnmatchedImport.user_id == user_id,
+        )
+    )
+    item = result.scalar_one_or_none()
+    if item is None:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    from travel_planner.models.gmail import ImportRecord
+    db.add(ImportRecord(user_id=user_id, email_id=item.email_id, parsed_data=item.parsed_data))
+    item.dismissed_at = datetime.now(tz=UTC)
+    await db.commit()

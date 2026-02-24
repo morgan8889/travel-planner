@@ -210,6 +210,99 @@ def test_post_scan_409_when_already_running(
 
 
 # ---------------------------------------------------------------------------
+# Inbox and latest scan endpoints
+# ---------------------------------------------------------------------------
+
+
+def test_get_inbox_returns_grouped_pending_and_unmatched(
+    client, auth_headers, override_get_db, mock_db_session
+):
+    """GET /gmail/inbox returns pending activities grouped by trip and unmatched list."""
+    from unittest.mock import MagicMock
+    from travel_planner.models.itinerary import ActivitySource, ImportStatus
+
+    from uuid import UUID as _UUID
+    ACT_ID = _UUID("00000000-0000-0000-0000-000000000001")
+    DAY_ID = _UUID("00000000-0000-0000-0000-000000000002")
+    TRIP_ID_STR = "00000000-0000-0000-0000-000000000003"
+
+    pending_activity = MagicMock()
+    pending_activity.id = ACT_ID
+    pending_activity.itinerary_day_id = DAY_ID
+    pending_activity.title = "Flight AA123"
+    pending_activity.category = "transport"
+    pending_activity.start_time = None
+    pending_activity.end_time = None
+    pending_activity.location = "JFK"
+    pending_activity.latitude = None
+    pending_activity.longitude = None
+    pending_activity.notes = None
+    pending_activity.confirmation_number = "XYZ"
+    pending_activity.sort_order = 999
+    pending_activity.check_out_date = None
+    pending_activity.source = ActivitySource.gmail_import
+    pending_activity.source_ref = "email123"
+    pending_activity.import_status = ImportStatus.pending_review
+    from datetime import datetime, UTC
+    pending_activity.created_at = datetime(2026, 3, 1, tzinfo=UTC)
+    pending_activity.trip_id = TRIP_ID_STR
+    pending_activity.trip_destination = "Florida"
+
+    UM_ID = _UUID("00000000-0000-0000-0000-000000000004")
+    unmatched = MagicMock()
+    unmatched.id = UM_ID
+    unmatched.email_id = "email456"
+    unmatched.parsed_data = {"title": "Hotel Boston", "date": "2026-04-10"}
+    from datetime import datetime, UTC
+    unmatched.created_at = datetime(2026, 3, 1, tzinfo=UTC)
+
+    # DB calls: 1 for pending activities with trip join, 1 for unmatched
+    pending_r = MagicMock()
+    pending_r.all.return_value = [(pending_activity, TRIP_ID_STR, "Florida")]
+
+    unmatched_r = MagicMock()
+    unmatched_r.scalars.return_value.all.return_value = [unmatched]
+
+    mock_db_session.execute.side_effect = [pending_r, unmatched_r]
+
+    response = client.get("/gmail/inbox", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert "pending" in data
+    assert "unmatched" in data
+
+
+def test_get_scan_latest_returns_most_recent(
+    client, auth_headers, override_get_db, mock_db_session
+):
+    """GET /gmail/scan/latest returns the most recent scan_run."""
+    from unittest.mock import MagicMock
+    from uuid import uuid4
+    from datetime import datetime, UTC
+
+    scan = MagicMock()
+    scan.id = uuid4()
+    scan.status = "completed"
+    scan.started_at = datetime(2026, 2, 24, tzinfo=UTC)
+    scan.finished_at = datetime(2026, 2, 24, tzinfo=UTC)
+    scan.emails_found = 50
+    scan.imported_count = 3
+    scan.skipped_count = 45
+    scan.unmatched_count = 2
+    scan.rescan_rejected = False
+
+    r = MagicMock()
+    r.scalar_one_or_none.return_value = scan
+    mock_db_session.execute.return_value = r
+
+    response = client.get("/gmail/scan/latest", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["imported_count"] == 3
+    assert data["status"] == "completed"
+
+
+# ---------------------------------------------------------------------------
 # SSE stream endpoint
 # ---------------------------------------------------------------------------
 
