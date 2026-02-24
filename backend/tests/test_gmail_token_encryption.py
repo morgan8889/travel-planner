@@ -1,7 +1,5 @@
 """Tests for Gmail OAuth token encryption at rest."""
 
-import os
-
 import pytest
 
 from travel_planner.crypto import EncryptedText
@@ -65,9 +63,11 @@ def test_missing_key_raises_on_decrypt():
     enc = EncryptedText()
     ciphertext = enc.process_bind_param("token", dialect=None)
 
-    with patch("travel_planner.crypto._get_encryption_key", return_value=""):
-        with pytest.raises(ValueError, match="TOKEN_ENCRYPTION_KEY"):
-            enc.process_result_value(ciphertext, dialect=None)
+    with (
+        patch("travel_planner.crypto._get_encryption_key", return_value=""),
+        pytest.raises(ValueError, match="TOKEN_ENCRYPTION_KEY"),
+    ):
+        enc.process_result_value(ciphertext, dialect=None)
 
 
 # ---------------------------------------------------------------------------
