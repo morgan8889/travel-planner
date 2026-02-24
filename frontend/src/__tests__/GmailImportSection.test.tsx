@@ -9,7 +9,7 @@ const mockUsePendingImportCount = vi.fn()
 
 vi.mock('../hooks/useGmail', () => ({
   useGmailStatus: () => mockUseGmailStatus(),
-  usePendingImportCount: (_tripId: string) => mockUsePendingImportCount(),
+  usePendingImportCount: () => mockUsePendingImportCount(),
 }))
 
 vi.mock('@tanstack/react-router', () => ({

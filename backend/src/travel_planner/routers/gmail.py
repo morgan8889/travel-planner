@@ -661,9 +661,7 @@ async def stream_scan(
                 await stream_db.refresh(scan_run)
 
                 # Fetch new events
-                query = select(ScanEvent).where(
-                    ScanEvent.scan_run_id == scan_id
-                )
+                query = select(ScanEvent).where(ScanEvent.scan_run_id == scan_id)
                 if sent_ids:
                     query = query.where(ScanEvent.id.not_in(sent_ids))
                 query = query.order_by(ScanEvent.created_at)
