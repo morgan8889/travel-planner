@@ -148,12 +148,24 @@ export const gmailApi = {
 
   disconnect: () => api.delete('/gmail/disconnect'),
 
-  scan: (tripId: string) =>
+  startScan: (rescanRejected = false) =>
     api
-      .post<{ imported_count: number; skipped_count: number }>('/gmail/scan', {
-        trip_id: tripId,
-      })
+      .post<{ scan_id: string }>('/gmail/scan', { rescan_rejected: rescanRejected })
       .then((r) => r.data),
+
+  getLatestScan: () =>
+    api.get<import('./types').ScanRun | null>('/gmail/scan/latest').then((r) => r.data),
+
+  getInbox: () =>
+    api.get<import('./types').GmailInbox>('/gmail/inbox').then((r) => r.data),
+
+  assignUnmatched: (unmatchedId: string, tripId: string) =>
+    api
+      .post(`/gmail/inbox/unmatched/${unmatchedId}/assign`, { trip_id: tripId })
+      .then((r) => r.data),
+
+  dismissUnmatched: (unmatchedId: string) =>
+    api.delete(`/gmail/inbox/unmatched/${unmatchedId}`),
 }
 
 export const authApi = {

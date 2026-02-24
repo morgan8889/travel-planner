@@ -210,3 +210,46 @@ export interface SupportedCountry {
   code: string
   name: string
 }
+
+export interface ScanRun {
+  id: string
+  status: 'running' | 'completed' | 'failed' | 'cancelled'
+  started_at: string
+  finished_at: string | null
+  emails_found: number
+  imported_count: number
+  skipped_count: number
+  unmatched_count: number
+  rescan_rejected: boolean
+}
+
+export interface ScanProgressEvent {
+  email_id: string
+  subject: string | null
+  status: 'imported' | 'skipped' | 'unmatched'
+  skip_reason: string | null
+  trip_id: string | null
+  raw_claude_json: Record<string, unknown> | null
+}
+
+export interface UnmatchedImport {
+  id: string
+  email_id: string
+  parsed_data: {
+    title?: string
+    category?: string
+    date?: string
+    location?: string
+    confirmation_number?: string
+  }
+  created_at: string
+}
+
+export interface GmailInbox {
+  pending: Array<{
+    trip_id: string
+    trip_destination: string
+    activities: Activity[]
+  }>
+  unmatched: UnmatchedImport[]
+}
