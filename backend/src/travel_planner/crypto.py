@@ -21,6 +21,7 @@ def _get_encryption_key() -> str:
     # Import here to avoid circular imports at module load time
     try:
         from travel_planner.config import settings  # noqa: PLC0415
+
         if settings.token_encryption_key:
             return settings.token_encryption_key
     except Exception:
