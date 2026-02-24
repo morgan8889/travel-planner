@@ -1,8 +1,7 @@
 """Tests for Gmail trip matching logic."""
+
 from datetime import date
 from unittest.mock import MagicMock
-
-import pytest
 
 from travel_planner.routers._gmail_matching import match_to_trip
 
@@ -18,17 +17,22 @@ def _make_trip(trip_id: str, destination: str, start: date, end: date) -> MagicM
 
 # ------- date matching -------
 
+
 def test_single_date_match_returns_trip():
     """One trip whose range contains the parsed date → return that trip."""
     trips = [_make_trip("t1", "Florida", date(2026, 3, 11), date(2026, 3, 22))]
-    result = match_to_trip(parsed_date=date(2026, 3, 15), parsed_location="", trips=trips)
+    result = match_to_trip(
+        parsed_date=date(2026, 3, 15), parsed_location="", trips=trips
+    )
     assert result == "t1"
 
 
 def test_no_date_match_returns_none():
     """No trip covers the parsed date → return None (unmatched)."""
     trips = [_make_trip("t1", "Florida", date(2026, 3, 11), date(2026, 3, 22))]
-    result = match_to_trip(parsed_date=date(2026, 7, 1), parsed_location="", trips=trips)
+    result = match_to_trip(
+        parsed_date=date(2026, 7, 1), parsed_location="", trips=trips
+    )
     assert result is None
 
 
@@ -40,6 +44,7 @@ def test_boundary_dates_match():
 
 
 # ------- multiple trips, location tiebreaker -------
+
 
 def test_multiple_date_matches_location_tiebreaker():
     """Two trips overlap in date; location narrows it to one."""
