@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useCreateTrip } from '../../hooks/useTrips'
-import type { TripType } from '../../lib/types'
+import { LocationAutocomplete } from '../form/LocationAutocomplete'
+import type { GeocodeSuggestion, TripType } from '../../lib/types'
 
 interface SidebarTripCreateProps {
   initialStartDate: string
@@ -16,6 +17,8 @@ const TRIP_TYPES: { value: TripType; label: string }[] = [
 
 export function SidebarTripCreate({ initialStartDate, initialEndDate, onCreated }: SidebarTripCreateProps) {
   const [destination, setDestination] = useState('')
+  const [destinationLat, setDestinationLat] = useState<number | null>(null)
+  const [destinationLng, setDestinationLng] = useState<number | null>(null)
   const [tripType, setTripType] = useState<TripType>('vacation')
   const [startDate, setStartDate] = useState(initialStartDate)
   const [endDate, setEndDate] = useState(initialEndDate)
@@ -31,8 +34,8 @@ export function SidebarTripCreate({ initialStartDate, initialEndDate, onCreated 
       start_date: startDate,
       end_date: endDate,
       status: 'planning',
-      destination_latitude: null,
-      destination_longitude: null,
+      destination_latitude: destinationLat,
+      destination_longitude: destinationLng,
     })
     onCreated()
   }
@@ -45,14 +48,20 @@ export function SidebarTripCreate({ initialStartDate, initialEndDate, onCreated 
         <label htmlFor="destination" className="block text-sm font-medium text-cloud-700 mb-1">
           Destination
         </label>
-        <input
+        <LocationAutocomplete
           id="destination"
-          type="text"
           value={destination}
-          onChange={(e) => setDestination(e.target.value)}
+          onChange={(val) => {
+            setDestination(val)
+            setDestinationLat(null)
+            setDestinationLng(null)
+          }}
+          onSelect={(s: GeocodeSuggestion) => {
+            setDestinationLat(s.latitude)
+            setDestinationLng(s.longitude)
+          }}
           placeholder="e.g. Paris, France"
-          required
-          className="w-full px-3 py-2 border border-cloud-300 rounded-xl focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 bg-white placeholder:text-cloud-400 text-cloud-800"
+          disabled={createTrip.isPending}
         />
       </div>
 
