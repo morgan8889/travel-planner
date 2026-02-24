@@ -1,7 +1,5 @@
 """Tests for Gmail OAuth token encryption at rest."""
 
-import os
-
 import pytest
 
 from travel_planner.crypto import EncryptedText
@@ -50,26 +48,26 @@ def test_none_passes_through_unchanged():
 def test_missing_key_raises_on_encrypt():
     """A missing TOKEN_ENCRYPTION_KEY must raise ValueError, not
     silently store plaintext."""
-    saved = os.environ.pop("TOKEN_ENCRYPTION_KEY")
-    try:
+    from unittest.mock import patch
+
+    with patch("travel_planner.crypto._get_encryption_key", return_value=""):
         enc = EncryptedText()
         with pytest.raises(ValueError, match="TOKEN_ENCRYPTION_KEY"):
             enc.process_bind_param("token", dialect=None)
-    finally:
-        os.environ["TOKEN_ENCRYPTION_KEY"] = saved
 
 
 def test_missing_key_raises_on_decrypt():
     """A missing TOKEN_ENCRYPTION_KEY must also raise on decrypt."""
+    from unittest.mock import patch
+
     enc = EncryptedText()
     ciphertext = enc.process_bind_param("token", dialect=None)
 
-    saved = os.environ.pop("TOKEN_ENCRYPTION_KEY")
-    try:
-        with pytest.raises(ValueError, match="TOKEN_ENCRYPTION_KEY"):
-            enc.process_result_value(ciphertext, dialect=None)
-    finally:
-        os.environ["TOKEN_ENCRYPTION_KEY"] = saved
+    with (
+        patch("travel_planner.crypto._get_encryption_key", return_value=""),
+        pytest.raises(ValueError, match="TOKEN_ENCRYPTION_KEY"),
+    ):
+        enc.process_result_value(ciphertext, dialect=None)
 
 
 # ---------------------------------------------------------------------------

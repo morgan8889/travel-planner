@@ -104,7 +104,12 @@ def test_gmail_status_not_connected(
 
 def test_gmail_auth_url_not_configured(client, auth_headers):
     """Returns 503 when google credentials are empty."""
-    response = client.get("/gmail/auth-url", headers=auth_headers)
+    from unittest.mock import patch
+
+    with patch("travel_planner.routers.gmail.settings") as mock_settings:
+        mock_settings.google_client_id = ""
+        mock_settings.google_client_secret = ""
+        response = client.get("/gmail/auth-url", headers=auth_headers)
     assert response.status_code == 503
 
 
