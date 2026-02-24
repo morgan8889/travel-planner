@@ -210,6 +210,26 @@ def test_post_scan_409_when_already_running(
 
 
 # ---------------------------------------------------------------------------
+# SSE stream endpoint
+# ---------------------------------------------------------------------------
+
+
+def test_scan_stream_404_for_unknown_scan(client, auth_headers, override_get_db, mock_db_session):
+    """Streaming an unknown scan_id returns 404 when scan belongs to a different user."""
+    from unittest.mock import MagicMock
+
+    result_mock = MagicMock()
+    result_mock.scalar_one_or_none.return_value = None
+    mock_db_session.execute.return_value = result_mock
+
+    response = client.get(
+        "/gmail/scan/00000000-0000-0000-0000-000000000099/stream",
+        headers=auth_headers,
+    )
+    assert response.status_code == 404
+
+
+# ---------------------------------------------------------------------------
 # _build_service — token refresh unit test
 # ---------------------------------------------------------------------------
 

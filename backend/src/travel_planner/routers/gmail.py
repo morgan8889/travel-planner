@@ -599,3 +599,76 @@ async def _run_scan_background(
                 await db.commit()
             except Exception:
                 pass
+
+
+@router.get("/scan/{scan_id}/stream")
+async def stream_scan(
+    scan_id: _uuid.UUID,
+    user_id: CurrentUserId,
+    db: AsyncSession = Depends(get_db),
+) -> EventSourceResponse:
+    """SSE stream of scan_events for a running or completed scan."""
+    from travel_planner.db import async_session
+
+    # Verify scan belongs to user before starting the SSE stream so that
+    # a missing/unauthorised scan_id returns a proper 404 HTTP status.
+    result = await db.execute(
+        select(ScanRun).where(
+            ScanRun.id == scan_id,
+            ScanRun.user_id == user_id,
+        )
+    )
+    if result.scalar_one_or_none() is None:
+        raise HTTPException(status_code=404, detail="Scan not found")
+
+    async def event_generator():
+        sent_ids: set[str] = set()
+
+        async with async_session() as stream_db:
+            result = await stream_db.execute(
+                select(ScanRun).where(ScanRun.id == scan_id)
+            )
+            scan_run = result.scalar_one_or_none()
+            if scan_run is None:
+                return
+
+            while True:
+                await stream_db.refresh(scan_run)
+
+                # Fetch new events
+                query = select(ScanEvent).where(
+                    ScanEvent.scan_run_id == scan_id,
+                    ScanEvent.id.not_in(sent_ids) if sent_ids else True,
+                ).order_by(ScanEvent.created_at)
+                result = await stream_db.execute(query)
+                new_events = result.scalars().all()
+
+                for ev in new_events:
+                    sent_ids.add(str(ev.id))
+                    payload = {
+                        "email_id": ev.email_id,
+                        "subject": ev.gmail_subject,
+                        "status": ev.status,
+                        "skip_reason": ev.skip_reason,
+                        "trip_id": str(ev.trip_id) if ev.trip_id else None,
+                        "raw_claude_json": ev.raw_claude_json,
+                    }
+                    yield {"event": "progress", "data": _json_mod.dumps(payload)}
+
+                if scan_run.status in (
+                    ScanRunStatus.completed,
+                    ScanRunStatus.failed,
+                    ScanRunStatus.cancelled,
+                ):
+                    summary = {
+                        "imported": scan_run.imported_count,
+                        "skipped": scan_run.skipped_count,
+                        "unmatched": scan_run.unmatched_count,
+                        "status": scan_run.status,
+                    }
+                    yield {"event": "done", "data": _json_mod.dumps(summary)}
+                    break
+
+                await asyncio.sleep(1)
+
+    return EventSourceResponse(event_generator())
