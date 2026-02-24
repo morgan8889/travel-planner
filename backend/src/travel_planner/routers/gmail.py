@@ -185,13 +185,17 @@ Email:
 
 async def _build_service(conn: GmailConnection):
     """Build authenticated Gmail service, auto-refreshing token if expired."""
+    # Ensure expiry is timezone-aware — DB may store naive UTC datetimes
+    expiry = conn.token_expiry
+    if expiry is not None and expiry.tzinfo is None:
+        expiry = expiry.replace(tzinfo=UTC)
     creds = Credentials(
         token=conn.access_token,
         refresh_token=conn.refresh_token,
         token_uri="https://oauth2.googleapis.com/token",
         client_id=settings.google_client_id,
         client_secret=settings.google_client_secret,
-        expiry=conn.token_expiry,
+        expiry=expiry,
     )
     if creds.expired and creds.refresh_token:
         await asyncio.to_thread(creds.refresh, Request())
