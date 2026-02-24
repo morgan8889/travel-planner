@@ -12,14 +12,14 @@ def test_geocode_search_returns_empty_when_no_token(
     """Returns empty list when MAPBOX_ACCESS_TOKEN is not configured."""
     with patch("travel_planner.routers.geocode.settings") as mock_settings:
         mock_settings.mapbox_access_token = ""
-        response = client.get("/api/geocode/search?q=Paris", headers=auth_headers)
+        response = client.get("/geocode/search?q=Paris", headers=auth_headers)
     assert response.status_code == 200
     assert response.json() == []
 
 
 def test_geocode_search_requires_auth(client: TestClient):
     """Returns non-200 without auth."""
-    response = client.get("/api/geocode/search?q=Paris")
+    response = client.get("/geocode/search?q=Paris")
     assert response.status_code in (401, 403, 422)
 
 
@@ -53,7 +53,7 @@ def test_geocode_search_proxies_to_mapbox(client: TestClient, auth_headers: dict
         ),
     ):
         mock_settings.mapbox_access_token = "pk.test_token"
-        response = client.get("/api/geocode/search?q=Paris", headers=auth_headers)
+        response = client.get("/geocode/search?q=Paris", headers=auth_headers)
 
     assert response.status_code == 200
     results = response.json()
@@ -97,7 +97,7 @@ def test_geocode_search_skips_features_without_coordinates(
         ),
     ):
         mock_settings.mapbox_access_token = "pk.test_token"
-        response = client.get("/api/geocode/search?q=Incomplete", headers=auth_headers)
+        response = client.get("/geocode/search?q=Incomplete", headers=auth_headers)
 
     assert response.status_code == 200
     assert response.json() == []
@@ -120,7 +120,7 @@ def test_geocode_search_returns_empty_on_mapbox_error(
         ),
     ):
         mock_settings.mapbox_access_token = "pk.test_token"
-        response = client.get("/api/geocode/search?q=Paris", headers=auth_headers)
+        response = client.get("/geocode/search?q=Paris", headers=auth_headers)
 
     assert response.status_code == 200
     assert response.json() == []
