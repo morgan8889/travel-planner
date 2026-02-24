@@ -1,19 +1,19 @@
 """add scan_runs scan_events unmatched_imports
 
-Revision ID: 19c2fa95b956
+Revision ID: 53153ec3fd4c
 Revises: f8a3c9d2e1b7
-Create Date: 2026-02-24 15:53:55.995330
+Create Date: 2026-02-24 16:34:11.048756
 
 """
 from typing import Sequence, Union
 
-import sqlalchemy as sa
 from alembic import op
+import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 
 # revision identifiers, used by Alembic.
-revision: str = '19c2fa95b956'
+revision: str = '53153ec3fd4c'
 down_revision: Union[str, Sequence[str], None] = 'f8a3c9d2e1b7'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
