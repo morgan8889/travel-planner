@@ -3,7 +3,6 @@ import base64
 import hashlib
 import hmac
 import json as _json
-import json as _json_mod
 import logging
 import uuid as _uuid
 from datetime import UTC, datetime
@@ -16,14 +15,14 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
-from sqlalchemy import select, update as sa_update
+from sqlalchemy import select
+from sqlalchemy import update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sse_starlette.sse import EventSourceResponse
 
 from travel_planner.auth import CurrentUserId
 from travel_planner.config import settings
 from travel_planner.db import get_db
-from travel_planner.models.trip import TripMember
 from travel_planner.models.gmail import (
     GmailConnection,
     ScanEvent,
@@ -33,6 +32,7 @@ from travel_planner.models.gmail import (
     ScanRunStatus,
     UnmatchedImport,
 )
+from travel_planner.models.trip import TripMember
 from travel_planner.schemas.gmail import (
     AssignUnmatchedBody,
     GmailScanStart,
@@ -387,10 +387,8 @@ async def _run_scan_background(
             }
 
             # Load already-imported email IDs
-            imp_result = await db.execute(
-                select(GmailConnection.__class__).where(False)  # placeholder
-            )
             from travel_planner.models.gmail import ImportRecord
+
             imp_result = await db.execute(
                 select(ImportRecord.email_id).where(ImportRecord.user_id == user_id)
             )
@@ -425,12 +423,14 @@ async def _run_scan_background(
 
                 if email_id in already_imported:
                     skipped += 1
-                    db.add(ScanEvent(
-                        scan_run_id=scan_run_id,
-                        email_id=email_id,
-                        status=ScanEventStatus.skipped,
-                        skip_reason=ScanEventSkipReason.not_travel,
-                    ))
+                    db.add(
+                        ScanEvent(
+                            scan_run_id=scan_run_id,
+                            email_id=email_id,
+                            status=ScanEventStatus.skipped,
+                            skip_reason=ScanEventSkipReason.not_travel,
+                        )
+                    )
                     await db.commit()
                     continue
 
@@ -458,13 +458,15 @@ async def _run_scan_background(
                 content = _extract_text(msg)
                 if not content:
                     skipped += 1
-                    db.add(ScanEvent(
-                        scan_run_id=scan_run_id,
-                        email_id=email_id,
-                        gmail_subject=subject,
-                        status=ScanEventStatus.skipped,
-                        skip_reason=ScanEventSkipReason.no_text,
-                    ))
+                    db.add(
+                        ScanEvent(
+                            scan_run_id=scan_run_id,
+                            email_id=email_id,
+                            gmail_subject=subject,
+                            status=ScanEventStatus.skipped,
+                            skip_reason=ScanEventSkipReason.no_text,
+                        )
+                    )
                     await db.commit()
                     continue
 
@@ -472,25 +474,29 @@ async def _run_scan_background(
                     parsed = await _parse_with_claude(content)
                 except Exception:
                     skipped += 1
-                    db.add(ScanEvent(
-                        scan_run_id=scan_run_id,
-                        email_id=email_id,
-                        gmail_subject=subject,
-                        status=ScanEventStatus.skipped,
-                        skip_reason=ScanEventSkipReason.claude_error,
-                    ))
+                    db.add(
+                        ScanEvent(
+                            scan_run_id=scan_run_id,
+                            email_id=email_id,
+                            gmail_subject=subject,
+                            status=ScanEventStatus.skipped,
+                            skip_reason=ScanEventSkipReason.claude_error,
+                        )
+                    )
                     await db.commit()
                     continue
 
                 if parsed is None:
                     skipped += 1
-                    db.add(ScanEvent(
-                        scan_run_id=scan_run_id,
-                        email_id=email_id,
-                        gmail_subject=subject,
-                        status=ScanEventStatus.skipped,
-                        skip_reason=ScanEventSkipReason.not_travel,
-                    ))
+                    db.add(
+                        ScanEvent(
+                            scan_run_id=scan_run_id,
+                            email_id=email_id,
+                            gmail_subject=subject,
+                            status=ScanEventStatus.skipped,
+                            skip_reason=ScanEventSkipReason.not_travel,
+                        )
+                    )
                     await db.commit()
                     continue
 
@@ -498,14 +504,16 @@ async def _run_scan_background(
                     activity_date = _date.fromisoformat(parsed.get("date", ""))
                 except (ValueError, TypeError):
                     skipped += 1
-                    db.add(ScanEvent(
-                        scan_run_id=scan_run_id,
-                        email_id=email_id,
-                        gmail_subject=subject,
-                        status=ScanEventStatus.skipped,
-                        skip_reason=ScanEventSkipReason.no_date,
-                        raw_claude_json=parsed,
-                    ))
+                    db.add(
+                        ScanEvent(
+                            scan_run_id=scan_run_id,
+                            email_id=email_id,
+                            gmail_subject=subject,
+                            status=ScanEventStatus.skipped,
+                            skip_reason=ScanEventSkipReason.no_date,
+                            raw_claude_json=parsed,
+                        )
+                    )
                     await db.commit()
                     continue
 
@@ -517,19 +525,23 @@ async def _run_scan_background(
 
                 if matched_trip_id is None:
                     unmatched += 1
-                    db.add(UnmatchedImport(
-                        user_id=user_id,
-                        scan_run_id=scan_run_id,
-                        email_id=email_id,
-                        parsed_data=parsed,
-                    ))
-                    db.add(ScanEvent(
-                        scan_run_id=scan_run_id,
-                        email_id=email_id,
-                        gmail_subject=subject,
-                        status=ScanEventStatus.unmatched,
-                        raw_claude_json=parsed,
-                    ))
+                    db.add(
+                        UnmatchedImport(
+                            user_id=user_id,
+                            scan_run_id=scan_run_id,
+                            email_id=email_id,
+                            parsed_data=parsed,
+                        )
+                    )
+                    db.add(
+                        ScanEvent(
+                            scan_run_id=scan_run_id,
+                            email_id=email_id,
+                            gmail_subject=subject,
+                            status=ScanEventStatus.unmatched,
+                            raw_claude_json=parsed,
+                        )
+                    )
                     await db.commit()
                     continue
 
@@ -548,31 +560,37 @@ async def _run_scan_background(
                 except ValueError:
                     category = ActivityCategory.activity
 
-                db.add(ImportRecord(
-                    user_id=user_id,
-                    email_id=email_id,
-                    parsed_data=parsed,
-                ))
-                db.add(Activity(
-                    itinerary_day_id=day.id,
-                    title=parsed.get("title", "Imported booking"),
-                    category=category,
-                    location=parsed.get("location"),
-                    confirmation_number=parsed.get("confirmation_number"),
-                    notes=parsed.get("notes"),
-                    source=ActivitySource.gmail_import,
-                    source_ref=email_id,
-                    import_status=ImportStatus.pending_review,
-                    sort_order=999,
-                ))
-                db.add(ScanEvent(
-                    scan_run_id=scan_run_id,
-                    email_id=email_id,
-                    gmail_subject=subject,
-                    status=ScanEventStatus.imported,
-                    trip_id=_uuid.UUID(matched_trip_id),
-                    raw_claude_json=parsed,
-                ))
+                db.add(
+                    ImportRecord(
+                        user_id=user_id,
+                        email_id=email_id,
+                        parsed_data=parsed,
+                    )
+                )
+                db.add(
+                    Activity(
+                        itinerary_day_id=day.id,
+                        title=parsed.get("title", "Imported booking"),
+                        category=category,
+                        location=parsed.get("location"),
+                        confirmation_number=parsed.get("confirmation_number"),
+                        notes=parsed.get("notes"),
+                        source=ActivitySource.gmail_import,
+                        source_ref=email_id,
+                        import_status=ImportStatus.pending_review,
+                        sort_order=999,
+                    )
+                )
+                db.add(
+                    ScanEvent(
+                        scan_run_id=scan_run_id,
+                        email_id=email_id,
+                        gmail_subject=subject,
+                        status=ScanEventStatus.imported,
+                        trip_id=_uuid.UUID(matched_trip_id),
+                        raw_claude_json=parsed,
+                    )
+                )
                 imported += 1
                 await db.commit()
 
@@ -586,7 +604,10 @@ async def _run_scan_background(
             await db.commit()
             logger.info(
                 "Scan %s complete: imported=%d skipped=%d unmatched=%d",
-                scan_run_id, imported, skipped, unmatched,
+                scan_run_id,
+                imported,
+                skipped,
+                unmatched,
             )
 
         except Exception:
@@ -595,7 +616,10 @@ async def _run_scan_background(
                 await db.execute(
                     sa_update(ScanRun)
                     .where(ScanRun.id == scan_run_id)
-                    .values(status=ScanRunStatus.failed, finished_at=datetime.now(tz=UTC))
+                    .values(
+                        status=ScanRunStatus.failed,
+                        finished_at=datetime.now(tz=UTC),
+                    )
                 )
                 await db.commit()
             except Exception:
@@ -638,9 +662,11 @@ async def stream_scan(
 
                 # Fetch new events
                 query = select(ScanEvent).where(
-                    ScanEvent.scan_run_id == scan_id,
-                    ScanEvent.id.not_in(sent_ids) if sent_ids else True,
-                ).order_by(ScanEvent.created_at)
+                    ScanEvent.scan_run_id == scan_id
+                )
+                if sent_ids:
+                    query = query.where(ScanEvent.id.not_in(sent_ids))
+                query = query.order_by(ScanEvent.created_at)
                 result = await stream_db.execute(query)
                 new_events = result.scalars().all()
 
@@ -654,7 +680,7 @@ async def stream_scan(
                         "trip_id": str(ev.trip_id) if ev.trip_id else None,
                         "raw_claude_json": ev.raw_claude_json,
                     }
-                    yield {"event": "progress", "data": _json_mod.dumps(payload)}
+                    yield {"event": "progress", "data": _json.dumps(payload)}
 
                 if scan_run.status in (
                     ScanRunStatus.completed,
@@ -667,7 +693,7 @@ async def stream_scan(
                         "unmatched": scan_run.unmatched_count,
                         "status": scan_run.status,
                     }
-                    yield {"event": "done", "data": _json_mod.dumps(summary)}
+                    yield {"event": "done", "data": _json.dumps(summary)}
                     break
 
                 await asyncio.sleep(1)
@@ -715,12 +741,17 @@ async def get_inbox(
     rows = result.all()
 
     # Group by trip
-    grouped: dict[str, dict] = defaultdict(lambda: {"trip_destination": "", "activities": []})
+    def _empty_group() -> dict:
+        return {"trip_destination": "", "activities": []}
+
+    grouped: dict[str, dict] = defaultdict(_empty_group)
     for activity, trip_id, destination in rows:
         key = str(trip_id)
         grouped[key]["trip_id"] = key
         grouped[key]["trip_destination"] = destination
-        grouped[key]["activities"].append(ActivityResponse.model_validate(activity).model_dump(mode="json"))
+        grouped[key]["activities"].append(
+            ActivityResponse.model_validate(activity).model_dump(mode="json")
+        )
 
     # Unmatched
     unmatched_result = await db.execute(
@@ -749,7 +780,7 @@ async def assign_unmatched(
 ) -> dict:
     from datetime import date as _date
 
-    from travel_planner.deps import get_trip_with_membership
+    from travel_planner.deps import verify_trip_member
     from travel_planner.models.itinerary import (
         Activity,
         ActivityCategory,
@@ -768,13 +799,15 @@ async def assign_unmatched(
     if item is None:
         raise HTTPException(status_code=404, detail="Not found")
 
-    await get_trip_with_membership(body.trip_id, user_id, db)
+    await verify_trip_member(body.trip_id, db, user_id)
 
     parsed = item.parsed_data
     try:
         activity_date = _date.fromisoformat(parsed.get("date", ""))
-    except (ValueError, TypeError):
-        raise HTTPException(status_code=400, detail="Cannot determine activity date")
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(
+            status_code=400, detail="Cannot determine activity date"
+        ) from exc
 
     day_result = await db.execute(
         select(ItineraryDay).where(
@@ -794,19 +827,22 @@ async def assign_unmatched(
         category = ActivityCategory.activity
 
     from travel_planner.models.gmail import ImportRecord
+
     db.add(ImportRecord(user_id=user_id, email_id=item.email_id, parsed_data=parsed))
-    db.add(Activity(
-        itinerary_day_id=day.id,
-        title=parsed.get("title", "Imported booking"),
-        category=category,
-        location=parsed.get("location"),
-        confirmation_number=parsed.get("confirmation_number"),
-        notes=parsed.get("notes"),
-        source=ActivitySource.gmail_import,
-        source_ref=item.email_id,
-        import_status=ImportStatus.pending_review,
-        sort_order=999,
-    ))
+    db.add(
+        Activity(
+            itinerary_day_id=day.id,
+            title=parsed.get("title", "Imported booking"),
+            category=category,
+            location=parsed.get("location"),
+            confirmation_number=parsed.get("confirmation_number"),
+            notes=parsed.get("notes"),
+            source=ActivitySource.gmail_import,
+            source_ref=item.email_id,
+            import_status=ImportStatus.pending_review,
+            sort_order=999,
+        )
+    )
 
     item.assigned_trip_id = body.trip_id
     await db.commit()
@@ -830,6 +866,11 @@ async def dismiss_unmatched(
         raise HTTPException(status_code=404, detail="Not found")
 
     from travel_planner.models.gmail import ImportRecord
-    db.add(ImportRecord(user_id=user_id, email_id=item.email_id, parsed_data=item.parsed_data))
+
+    db.add(
+        ImportRecord(
+            user_id=user_id, email_id=item.email_id, parsed_data=item.parsed_data
+        )
+    )
     item.dismissed_at = datetime.now(tz=UTC)
     await db.commit()

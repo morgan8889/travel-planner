@@ -1,6 +1,5 @@
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import UUID
 
 import pytest
 
@@ -217,18 +216,19 @@ def test_post_scan_409_when_already_running(
 def test_get_inbox_returns_grouped_pending_and_unmatched(
     client, auth_headers, override_get_db, mock_db_session
 ):
-    """GET /gmail/inbox returns pending activities grouped by trip and unmatched list."""
+    """GET /gmail/inbox returns pending activities grouped by trip and unmatched."""
     from unittest.mock import MagicMock
+    from uuid import UUID
+
     from travel_planner.models.itinerary import ActivitySource, ImportStatus
 
-    from uuid import UUID as _UUID
-    ACT_ID = _UUID("00000000-0000-0000-0000-000000000001")
-    DAY_ID = _UUID("00000000-0000-0000-0000-000000000002")
-    TRIP_ID_STR = "00000000-0000-0000-0000-000000000003"
+    act_id = UUID("00000000-0000-0000-0000-000000000001")
+    day_id = UUID("00000000-0000-0000-0000-000000000002")
+    trip_id_str = "00000000-0000-0000-0000-000000000003"
 
     pending_activity = MagicMock()
-    pending_activity.id = ACT_ID
-    pending_activity.itinerary_day_id = DAY_ID
+    pending_activity.id = act_id
+    pending_activity.itinerary_day_id = day_id
     pending_activity.title = "Flight AA123"
     pending_activity.category = "transport"
     pending_activity.start_time = None
@@ -243,22 +243,20 @@ def test_get_inbox_returns_grouped_pending_and_unmatched(
     pending_activity.source = ActivitySource.gmail_import
     pending_activity.source_ref = "email123"
     pending_activity.import_status = ImportStatus.pending_review
-    from datetime import datetime, UTC
     pending_activity.created_at = datetime(2026, 3, 1, tzinfo=UTC)
-    pending_activity.trip_id = TRIP_ID_STR
+    pending_activity.trip_id = trip_id_str
     pending_activity.trip_destination = "Florida"
 
-    UM_ID = _UUID("00000000-0000-0000-0000-000000000004")
+    um_id = UUID("00000000-0000-0000-0000-000000000004")
     unmatched = MagicMock()
-    unmatched.id = UM_ID
+    unmatched.id = um_id
     unmatched.email_id = "email456"
     unmatched.parsed_data = {"title": "Hotel Boston", "date": "2026-04-10"}
-    from datetime import datetime, UTC
     unmatched.created_at = datetime(2026, 3, 1, tzinfo=UTC)
 
     # DB calls: 1 for pending activities with trip join, 1 for unmatched
     pending_r = MagicMock()
-    pending_r.all.return_value = [(pending_activity, TRIP_ID_STR, "Florida")]
+    pending_r.all.return_value = [(pending_activity, trip_id_str, "Florida")]
 
     unmatched_r = MagicMock()
     unmatched_r.scalars.return_value.all.return_value = [unmatched]
@@ -276,9 +274,9 @@ def test_get_scan_latest_returns_most_recent(
     client, auth_headers, override_get_db, mock_db_session
 ):
     """GET /gmail/scan/latest returns the most recent scan_run."""
+    from datetime import UTC, datetime
     from unittest.mock import MagicMock
     from uuid import uuid4
-    from datetime import datetime, UTC
 
     scan = MagicMock()
     scan.id = uuid4()
@@ -307,8 +305,10 @@ def test_get_scan_latest_returns_most_recent(
 # ---------------------------------------------------------------------------
 
 
-def test_scan_stream_404_for_unknown_scan(client, auth_headers, override_get_db, mock_db_session):
-    """Streaming an unknown scan_id returns 404 when scan belongs to a different user."""
+def test_scan_stream_404_for_unknown_scan(
+    client, auth_headers, override_get_db, mock_db_session
+):
+    """Unknown scan_id returns 404 (belongs to different user)."""
     from unittest.mock import MagicMock
 
     result_mock = MagicMock()
