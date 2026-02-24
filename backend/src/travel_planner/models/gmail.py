@@ -48,6 +48,7 @@ class ScanEventStatus(_enum.StrEnum):
 
 
 class ScanEventSkipReason(_enum.StrEnum):
+    already_imported = "already_imported"
     no_text = "no_text"
     not_travel = "not_travel"
     no_date = "no_date"

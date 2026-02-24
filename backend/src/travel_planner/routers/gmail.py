@@ -397,13 +397,25 @@ async def _run_scan_background(
             if rescan_rejected:
                 already_imported = set()
 
+            # Build date-bounded search query — start 90 days before earliest trip
+            from datetime import timedelta
+
+            if trips:
+                earliest = min(t.start_date for t in trips)
+                cutoff = earliest - timedelta(days=90)
+            else:
+                from datetime import date as _today_date
+
+                cutoff = _today_date.today() - timedelta(days=365)
+            search_query = f"{TRAVEL_SEARCH} after:{cutoff.strftime('%Y/%m/%d')}"
+
             # Fetch emails from Gmail
             service = await _build_service(conn)
             msgs_result = await asyncio.to_thread(
                 lambda: (
                     service.users()
                     .messages()
-                    .list(userId="me", q=TRAVEL_SEARCH, maxResults=50)
+                    .list(userId="me", q=search_query, maxResults=50)
                     .execute()
                 )
             )
@@ -428,7 +440,7 @@ async def _run_scan_background(
                             scan_run_id=scan_run_id,
                             email_id=email_id,
                             status=ScanEventStatus.skipped,
-                            skip_reason=ScanEventSkipReason.not_travel,
+                            skip_reason=ScanEventSkipReason.already_imported,
                         )
                     )
                     await db.commit()
