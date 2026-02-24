@@ -6,7 +6,6 @@ import pytest
 from fastapi.testclient import TestClient
 
 from tests.conftest import create_test_token
-
 from travel_planner.main import app
 from travel_planner.models.trip import (
     MemberRole,
@@ -1336,7 +1335,7 @@ def test_claim_invitation_case_insensitive_email(
 def test_claim_invitation_skips_add_when_already_member(
     client: TestClient, auth_headers: dict, override_get_db, mock_db_session
 ):
-    """When the user is already a member, the invitation is deleted but no new member is added."""
+    """Invitation is deleted but no new member added when user is already a member."""
     from travel_planner.models.trip import TripInvitation as TripInvitationModel
 
     inv = MagicMock(spec=TripInvitationModel)
@@ -1371,7 +1370,7 @@ def test_claim_invitation_skips_add_when_already_member(
 def test_claim_invitation_skips_when_no_email(
     client: TestClient, override_get_db, mock_db_session
 ):
-    """_claim_pending_invitations returns early when user has no email (anonymous users)."""
+    """_claim_pending_invitations returns early for users with no email."""
     # Anonymous / email-less user
     token = create_test_token(str(TEST_USER_ID), "")
     headers = {"Authorization": f"Bearer {token}"}
