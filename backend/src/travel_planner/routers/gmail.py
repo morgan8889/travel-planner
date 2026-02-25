@@ -1059,6 +1059,29 @@ async def dismiss_unmatched(
             )
         )
     item.dismissed_at = datetime.now(tz=UTC)
+
+    # Also dismiss duplicates sharing the same dedup key (date+location)
+    # so they don't surface after this item is removed from the dedup set
+    pd = item.parsed_data or {}
+    dedup_date = pd.get("date") or pd.get("email_date") or ""
+    dedup_loc = (pd.get("location") or "").lower().strip()
+    if dedup_date or dedup_loc:
+        dupes_result = await db.execute(
+            select(UnmatchedImport).where(
+                UnmatchedImport.user_id == user_id,
+                UnmatchedImport.id != item.id,
+                UnmatchedImport.assigned_trip_id.is_(None),
+                UnmatchedImport.dismissed_at.is_(None),
+            )
+        )
+        now = datetime.now(tz=UTC)
+        for dupe in dupes_result.scalars().all():
+            dpd = dupe.parsed_data or {}
+            d_date = dpd.get("date") or dpd.get("email_date") or ""
+            d_loc = (dpd.get("location") or "").lower().strip()
+            if d_date == dedup_date and d_loc == dedup_loc:
+                dupe.dismissed_at = now
+
     await db.commit()
 
 
