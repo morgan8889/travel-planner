@@ -87,6 +87,16 @@ export function useDismissUnmatched() {
   })
 }
 
+export function useDismissAllUnmatched() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => gmailApi.dismissAllUnmatched(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: gmailKeys.inbox })
+    },
+  })
+}
+
 // SSE-based scan hook
 export interface ScanState {
   scanId: string | null

@@ -91,7 +91,6 @@ export function GmailScanPanel({ onScanComplete, onScanRunningChange }: GmailSca
   }
 
   const total = state.events.length
-  const emailsFound = state.emailsFound > 0 ? state.emailsFound : total
 
   return (
     <div className="space-y-3">

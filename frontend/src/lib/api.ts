@@ -166,6 +166,7 @@ export const gmailApi = {
 
   dismissUnmatched: (unmatchedId: string) =>
     api.delete(`/gmail/inbox/unmatched/${unmatchedId}`),
+  dismissAllUnmatched: () => api.delete('/gmail/inbox/unmatched'),
 }
 
 export const authApi = {

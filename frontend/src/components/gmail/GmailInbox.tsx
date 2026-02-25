@@ -3,6 +3,7 @@ import { CheckCircle, HelpCircle, XCircle } from 'lucide-react'
 import {
   useAssignUnmatched,
   useConfirmImport,
+  useDismissAllUnmatched,
   useDismissUnmatched,
   useGmailInbox,
   useRejectImport,
@@ -99,6 +100,32 @@ function UnmatchedRow({ item }: { item: UnmatchedImport }) {
   )
 }
 
+function UnmatchedSection({ items }: { items: UnmatchedImport[] }) {
+  const dismissAllMutation = useDismissAllUnmatched()
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-xs font-semibold text-cloud-600 uppercase tracking-wide">
+          Needs trip assignment
+        </h3>
+        <button
+          onClick={() => dismissAllMutation.mutate()}
+          disabled={dismissAllMutation.isPending}
+          className="text-xs text-cloud-400 hover:text-cloud-600 disabled:opacity-50 transition-colors"
+        >
+          Clear all
+        </button>
+      </div>
+      <div className="space-y-1.5">
+        {items.map((item) => (
+          <UnmatchedRow key={item.id} item={item} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function GmailInbox() {
   const { data: inbox, isLoading } = useGmailInbox()
 
@@ -138,16 +165,7 @@ export function GmailInbox() {
       )}
 
       {hasUnmatched && (
-        <div>
-          <h3 className="text-xs font-semibold text-cloud-600 uppercase tracking-wide mb-2">
-            Needs trip assignment
-          </h3>
-          <div className="space-y-1.5">
-            {inbox!.unmatched.map((item) => (
-              <UnmatchedRow key={item.id} item={item} />
-            ))}
-          </div>
-        </div>
+        <UnmatchedSection items={inbox!.unmatched} />
       )}
     </div>
   )
