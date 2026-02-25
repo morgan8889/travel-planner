@@ -668,7 +668,6 @@ async def _run_scan_background(
                             user_id=user_id,
                             scan_run_id=scan_run_id,
                             email_id=email_id,
-                            gmail_subject=subject or parsed.get("title", ""),
                             parsed_data=parsed,
                         )
                     )
