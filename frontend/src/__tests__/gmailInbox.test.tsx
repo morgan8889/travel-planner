@@ -9,6 +9,7 @@ const mockUseConfirmImport = vi.fn()
 const mockUseRejectImport = vi.fn()
 const mockUseAssignUnmatched = vi.fn()
 const mockUseDismissUnmatched = vi.fn()
+const mockUseDismissAllUnmatched = vi.fn()
 const mockUseTrips = vi.fn()
 
 vi.mock('../hooks/useGmail', () => ({
@@ -17,6 +18,7 @@ vi.mock('../hooks/useGmail', () => ({
   useRejectImport: () => mockUseRejectImport(),
   useAssignUnmatched: () => mockUseAssignUnmatched(),
   useDismissUnmatched: () => mockUseDismissUnmatched(),
+  useDismissAllUnmatched: () => mockUseDismissAllUnmatched(),
 }))
 
 vi.mock('../hooks/useTrips', () => ({
@@ -36,6 +38,7 @@ beforeEach(() => {
   mockUseRejectImport.mockReturnValue({ mutate: vi.fn(), isPending: false })
   mockUseAssignUnmatched.mockReturnValue({ mutate: vi.fn(), isPending: false })
   mockUseDismissUnmatched.mockReturnValue({ mutate: vi.fn(), isPending: false })
+  mockUseDismissAllUnmatched.mockReturnValue({ mutate: vi.fn(), isPending: false })
 })
 
 describe('GmailInbox', () => {
