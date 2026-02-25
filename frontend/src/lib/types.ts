@@ -239,6 +239,7 @@ export interface UnmatchedImport {
     title?: string
     category?: string
     date?: string
+    email_date?: string
     location?: string
     confirmation_number?: string
   }

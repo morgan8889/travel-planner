@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { gmailApi, itineraryApi } from '../lib/api'
 import { supabase } from '../lib/supabase'
-import type { ScanProgressEvent, ScanRun } from '../lib/types'
+import type { GmailInbox, ScanProgressEvent, ScanRun } from '../lib/types'
 import { itineraryKeys } from './useItinerary'
 
 export const gmailKeys = {
@@ -70,7 +70,23 @@ export function useAssignUnmatched() {
   return useMutation({
     mutationFn: ({ unmatchedId, tripId }: { unmatchedId: string; tripId: string }) =>
       gmailApi.assignUnmatched(unmatchedId, tripId),
-    onSuccess: () => {
+    onMutate: async ({ unmatchedId }) => {
+      await queryClient.cancelQueries({ queryKey: gmailKeys.inbox })
+      const previous = queryClient.getQueryData<GmailInbox>(gmailKeys.inbox)
+      if (previous) {
+        queryClient.setQueryData<GmailInbox>(gmailKeys.inbox, {
+          ...previous,
+          unmatched: previous.unmatched.filter((u) => u.id !== unmatchedId),
+        })
+      }
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(gmailKeys.inbox, context.previous)
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: gmailKeys.inbox })
       queryClient.invalidateQueries({ queryKey: itineraryKeys.all })
     },
@@ -81,7 +97,23 @@ export function useDismissUnmatched() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (unmatchedId: string) => gmailApi.dismissUnmatched(unmatchedId),
-    onSuccess: () => {
+    onMutate: async (unmatchedId) => {
+      await queryClient.cancelQueries({ queryKey: gmailKeys.inbox })
+      const previous = queryClient.getQueryData<GmailInbox>(gmailKeys.inbox)
+      if (previous) {
+        queryClient.setQueryData<GmailInbox>(gmailKeys.inbox, {
+          ...previous,
+          unmatched: previous.unmatched.filter((u) => u.id !== unmatchedId),
+        })
+      }
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(gmailKeys.inbox, context.previous)
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: gmailKeys.inbox })
     },
   })
@@ -91,7 +123,23 @@ export function useDismissAllUnmatched() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: () => gmailApi.dismissAllUnmatched(),
-    onSuccess: () => {
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: gmailKeys.inbox })
+      const previous = queryClient.getQueryData<GmailInbox>(gmailKeys.inbox)
+      if (previous) {
+        queryClient.setQueryData<GmailInbox>(gmailKeys.inbox, {
+          ...previous,
+          unmatched: [],
+        })
+      }
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(gmailKeys.inbox, context.previous)
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: gmailKeys.inbox })
     },
   })

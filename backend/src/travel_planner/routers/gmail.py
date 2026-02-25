@@ -561,13 +561,22 @@ async def _run_scan_background(
                     skipped += 1
                     continue
 
-                # Extract subject and sender for display/logging
+                # Extract subject, sender, and date for display/logging
                 headers = {
                     h["name"].lower(): h["value"]
                     for h in msg.get("payload", {}).get("headers", [])
                 }
                 subject = headers.get("subject")
                 sender = headers.get("from", "")
+                email_date_str: str | None = None
+                if raw_date := headers.get("date"):
+                    import contextlib
+                    from email.utils import parsedate_to_datetime
+
+                    with contextlib.suppress(ValueError, TypeError):
+                        email_date_str = parsedate_to_datetime(raw_date).strftime(
+                            "%Y-%m-%d"
+                        )
 
                 # Skip known non-travel senders (gym, food delivery, etc.)
                 if _sender_is_blocked(sender):
@@ -655,7 +664,9 @@ async def _run_scan_background(
                     activity_date = None
 
                 if activity_date is None:
-                    # No date — save as unmatched so user can still review
+                    # No date — save as unmatched with email date fallback
+                    if email_date_str:
+                        parsed["email_date"] = email_date_str
                     logger.info(
                         "  [no_date→unmatched] %s from=%s parsed=%s",
                         subject,

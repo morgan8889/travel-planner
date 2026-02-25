@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CheckCircle, HelpCircle, XCircle } from 'lucide-react'
+import { CheckCircle, Loader2, XCircle } from 'lucide-react'
 import {
   useAssignUnmatched,
   useConfirmImport,
@@ -10,6 +10,11 @@ import {
 } from '../../hooks/useGmail'
 import { useTrips } from '../../hooks/useTrips'
 import type { Activity, UnmatchedImport } from '../../lib/types'
+
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
 
 function PendingActivityRow({ activity }: { activity: Activity }) {
   const confirmMutation = useConfirmImport()
@@ -52,6 +57,12 @@ function UnmatchedRow({ item }: { item: UnmatchedImport }) {
   const dismissMutation = useDismissUnmatched()
   const { data: trips = [] } = useTrips()
 
+  const dateDisplay = item.parsed_data.date
+    ? formatDate(item.parsed_data.date)
+    : item.parsed_data.email_date
+      ? `${formatDate(item.parsed_data.email_date)} (sent)`
+      : null
+
   return (
     <div className="py-2 px-3 rounded-lg bg-cloud-50 border border-cloud-200">
       <div className="flex items-start justify-between gap-3">
@@ -61,11 +72,10 @@ function UnmatchedRow({ item }: { item: UnmatchedImport }) {
           </p>
           <p className="text-xs text-cloud-500">
             {item.parsed_data.category ?? 'unknown'}
-            {item.parsed_data.date ? ` · ${item.parsed_data.date}` : ''}
+            {dateDisplay ? ` · ${dateDisplay}` : ''}
             {item.parsed_data.location ? ` · ${item.parsed_data.location}` : ''}
           </p>
         </div>
-        <HelpCircle size={14} className="text-cloud-400 shrink-0 mt-0.5" />
       </div>
       <div className="flex items-center gap-2 mt-2">
         <select
@@ -84,15 +94,17 @@ function UnmatchedRow({ item }: { item: UnmatchedImport }) {
         <button
           onClick={() => assignMutation.mutate({ unmatchedId: item.id, tripId })}
           disabled={!tripId || assignMutation.isPending}
-          className="text-xs px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+          className="flex items-center gap-1 text-xs px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 transition-colors"
         >
+          {assignMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : null}
           Assign
         </button>
         <button
           onClick={() => dismissMutation.mutate(item.id)}
           disabled={dismissMutation.isPending}
-          className="text-xs px-2 py-1 text-cloud-500 hover:text-cloud-700 transition-colors"
+          className="flex items-center gap-1 text-xs px-2 py-1 bg-cloud-100 text-cloud-600 rounded hover:bg-cloud-200 disabled:opacity-50 transition-colors"
         >
+          {dismissMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : null}
           Dismiss
         </button>
       </div>
@@ -112,8 +124,9 @@ function UnmatchedSection({ items }: { items: UnmatchedImport[] }) {
         <button
           onClick={() => dismissAllMutation.mutate()}
           disabled={dismissAllMutation.isPending}
-          className="text-xs text-cloud-400 hover:text-cloud-600 disabled:opacity-50 transition-colors"
+          className="flex items-center gap-1 text-xs text-cloud-400 hover:text-cloud-600 disabled:opacity-50 transition-colors"
         >
+          {dismissAllMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : null}
           Clear all
         </button>
       </div>
