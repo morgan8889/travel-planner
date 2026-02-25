@@ -193,27 +193,72 @@ TRAVEL_SEARCH = (
     " OR hertz.com OR enterprise.com OR avis.com OR budget.com"
     " OR airportshuttles.com OR viator.com OR getyourguide.com)"
     # OR subject keywords for senders not listed above
-    " OR subject:(\"booking confirmation\" OR \"reservation confirmation\""
-    " OR \"itinerary\" OR \"e-ticket\" OR \"eticket\""
-    " OR \"check-in\" OR \"check in\" OR \"hotel confirmation\""
-    " OR \"flight confirmation\" OR \"your trip\" OR \"trip confirmation\""
-    " OR \"order confirmation\" OR \"booking reference\"))"
+    ' OR subject:("booking confirmation" OR "reservation confirmation"'
+    ' OR "itinerary" OR "e-ticket" OR "eticket"'
+    ' OR "check-in" OR "check in" OR "hotel confirmation"'
+    ' OR "flight confirmation" OR "your trip" OR "trip confirmation"'
+    ' OR "order confirmation" OR "booking reference"))'
 )
 
+# Sender domains to skip — not travel bookings, just noise from broad search
+_SKIP_SENDER_DOMAINS = {
+    "doordash.com",  # food delivery
+    "opentable.com",  # restaurant reservations
+    "rocketmoney.com",  # finance app
+    "email.rocketmoney.com",
+    "garmin.com",  # electronics orders
+    "orders.garmin.com",
+    "rapha.cc",  # cycling clothing
+    "mail.rapha.cc",
+    "roka.com",  # eyewear
+}
+
+
+def _sender_is_blocked(sender: str) -> bool:
+    """Check if the sender's domain is in the blocklist."""
+    # Extract email from "Name <email@domain>" format
+    import re
+
+    match = re.search(r"<([^>]+)>", sender)
+    email = match.group(1) if match else sender
+    domain = email.split("@")[-1].lower().strip()
+    return domain in _SKIP_SENDER_DOMAINS
+
+
 PARSE_PROMPT = """Extract travel booking details from this email.
-Return ONLY valid JSON with these fields:
-- title: string (e.g. "Flight AA123 JFK→LAX" or "Marriott hotel check-in")
+
+TRAVEL emails include:
+- Flight bookings (PNR/booking codes, flight numbers, airports)
+- Hotel/Airbnb/VRBO reservations (check-in, property, booking ref)
+- Car rental confirmations (pick-up date, location, conf number)
+- Train/bus/ferry tickets
+- Tour/activity bookings with a specific date and location
+
+NOT TRAVEL: schedule changes, flight credits, status updates,
+security alerts, TOS emails, loyalty programs,
+recurring gym/fitness class reservations
+(e.g. yoga, spin, pilates at a local gym),
+food delivery orders, restaurant reservations,
+or anything without a specific booking date.
+Exception: special one-off events at venues like Life Time
+(concerts, competitions, races) ARE travel/activity.
+
+For travel emails, return ONLY valid JSON with these fields:
+- title: string (e.g. "Flight UA1234 DEN→AUS" or "Airbnb Boulder 3-night stay")
 - category: "transport", "lodging", or "activity"
-- date: "YYYY-MM-DD" for the travel/check-in date
+- date: "YYYY-MM-DD" for the travel/check-in/departure date
 - start_time: "HH:MM" or null
 - end_time: "HH:MM" or null
-- location: city, hotel name, or airport code
-- confirmation_number: booking reference or null
+- location: destination city, hotel name, or airport code
+- confirmation_number: PNR, booking reference, or confirmation number (or null)
 - notes: any extra relevant details or null
 
-If this is NOT a travel confirmation email, return exactly: {{"not_travel": true}}
+If this is NOT a travel booking confirmation, return exactly: {{"not_travel": true}}
 
-Email:
+Subject: {subject}
+From: {sender}
+
+Email body:
 {content}"""
 
 
@@ -246,41 +291,74 @@ async def _build_service(conn: GmailConnection):
 
 
 def _extract_text(msg: dict) -> str:
-    """Extract plain text body from a Gmail message."""
-    import base64
+    """Extract text body from a Gmail message.
 
-    def _walk(part: dict) -> str:
-        if part.get("mimeType") == "text/plain":
-            data = part.get("body", {}).get("data", "")
-            if data:
-                decoded = base64.urlsafe_b64decode(data + "==")
-                return decoded.decode("utf-8", errors="replace")
+    Prefers plain text, falls back to stripped HTML.
+    """
+    import base64
+    import re
+
+    def _decode_data(data: str) -> str:
+        if not data:
+            return ""
+        return base64.urlsafe_b64decode(data + "==").decode("utf-8", errors="replace")
+
+    def _walk(part: dict, mime_type: str) -> str:
+        if part.get("mimeType") == mime_type:
+            return _decode_data(part.get("body", {}).get("data", ""))
         for sub in part.get("parts", []):
-            result = _walk(sub)
+            result = _walk(sub, mime_type)
             if result:
                 return result
         return ""
 
-    payload = msg.get("payload", {})
-    text = _walk(payload)
-    if not text:
-        import base64
+    def _strip_html(html: str) -> str:
+        """Rough HTML-to-text: remove tags, decode common entities."""
+        text = re.sub(r"<style[^>]*>.*?</style>", "", html, flags=re.S)
+        text = re.sub(r"<script[^>]*>.*?</script>", "", text, flags=re.S)
+        text = re.sub(r"<br\s*/?>|</p>|</div>|</tr>|</li>", "\n", text, flags=re.I)
+        text = re.sub(r"<[^>]+>", " ", text)
+        text = text.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
+        text = text.replace("&nbsp;", " ").replace("&#39;", "'").replace("&quot;", '"')
+        text = re.sub(r"[ \t]+", " ", text)
+        text = re.sub(r"\n{3,}", "\n\n", text)
+        return text.strip()
 
-        data = payload.get("body", {}).get("data", "")
-        if data:
-            decoded = base64.urlsafe_b64decode(data + "==")
-            text = decoded.decode("utf-8", errors="replace")
+    payload = msg.get("payload", {})
+
+    # 1. Try text/plain first
+    text = _walk(payload, "text/plain")
+    if not text:
+        text = _decode_data(payload.get("body", {}).get("data", ""))
+
+    # 2. Fall back to text/html (strip tags)
+    if not text:
+        html = _walk(payload, "text/html")
+        if html:
+            text = _strip_html(html)
+
     return text
 
 
-async def _parse_with_claude(content: str) -> dict | None:
+async def _parse_with_claude(
+    content: str,
+    subject: str | None = None,
+    sender: str = "",
+) -> dict | None:
     """Use Claude Haiku to extract structured booking data from email text."""
     client = _anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
     msg = await client.messages.create(
         model="claude-haiku-4-5-20251001",
         max_tokens=512,
         messages=[
-            {"role": "user", "content": PARSE_PROMPT.format(content=content[:3000])}
+            {
+                "role": "user",
+                "content": PARSE_PROMPT.format(
+                    subject=subject or "(no subject)",
+                    sender=sender or "(unknown)",
+                    content=content[:6000],
+                ),
+            }
         ],
     )
     block = msg.content[0]
@@ -431,9 +509,7 @@ async def _run_scan_background(
                 if page_token:
                     kwargs["pageToken"] = page_token
                 msgs_result = await asyncio.to_thread(
-                    lambda kw=kwargs: (
-                        service.users().messages().list(**kw).execute()
-                    )
+                    lambda kw=kwargs: service.users().messages().list(**kw).execute()
                 )
                 messages.extend(msgs_result.get("messages", []))
                 page_token = msgs_result.get("nextPageToken")
@@ -441,6 +517,12 @@ async def _run_scan_background(
                     break
             scan_run.emails_found = len(messages)
             await db.commit()
+            logger.info(
+                "Scan %s: search=%r found %d emails",
+                scan_run_id,
+                search_query,
+                len(messages),
+            )
 
             imported = skipped = unmatched = 0
 
@@ -479,16 +561,42 @@ async def _run_scan_background(
                     skipped += 1
                     continue
 
-                # Extract subject for display
+                # Extract subject and sender for display/logging
                 headers = {
                     h["name"].lower(): h["value"]
                     for h in msg.get("payload", {}).get("headers", [])
                 }
                 subject = headers.get("subject")
+                sender = headers.get("from", "")
+
+                # Skip known non-travel senders (gym, food delivery, etc.)
+                if _sender_is_blocked(sender):
+                    skipped += 1
+                    logger.info(
+                        "  [blocked_sender] %s from=%s",
+                        subject,
+                        sender,
+                    )
+                    db.add(
+                        ScanEvent(
+                            scan_run_id=scan_run_id,
+                            email_id=email_id,
+                            gmail_subject=subject,
+                            status=ScanEventStatus.skipped,
+                            skip_reason=ScanEventSkipReason.not_travel,
+                        )
+                    )
+                    await db.commit()
+                    continue
 
                 content = _extract_text(msg)
                 if not content:
                     skipped += 1
+                    logger.info(
+                        "  [no_text] %s from=%s",
+                        subject,
+                        sender,
+                    )
                     db.add(
                         ScanEvent(
                             scan_run_id=scan_run_id,
@@ -502,9 +610,14 @@ async def _run_scan_background(
                     continue
 
                 try:
-                    parsed = await _parse_with_claude(content)
+                    parsed = await _parse_with_claude(content, subject, sender)
                 except Exception:
                     skipped += 1
+                    logger.exception(
+                        "  [claude_error] %s from=%s",
+                        subject,
+                        sender,
+                    )
                     db.add(
                         ScanEvent(
                             scan_run_id=scan_run_id,
@@ -519,6 +632,11 @@ async def _run_scan_background(
 
                 if parsed is None:
                     skipped += 1
+                    logger.info(
+                        "  [not_travel] %s from=%s",
+                        subject,
+                        sender,
+                    )
                     db.add(
                         ScanEvent(
                             scan_run_id=scan_run_id,
@@ -534,15 +652,24 @@ async def _run_scan_background(
                 try:
                     activity_date = _date.fromisoformat(parsed.get("date", ""))
                 except (ValueError, TypeError):
-                    skipped += 1
+                    activity_date = None
+
+                if activity_date is None:
+                    # No date — save as unmatched so user can still review
+                    logger.info(
+                        "  [no_date→unmatched] %s from=%s parsed=%s",
+                        subject,
+                        sender,
+                        parsed,
+                    )
+                    unmatched += 1
                     db.add(
-                        ScanEvent(
+                        UnmatchedImport(
+                            user_id=user_id,
                             scan_run_id=scan_run_id,
                             email_id=email_id,
-                            gmail_subject=subject,
-                            status=ScanEventStatus.skipped,
-                            skip_reason=ScanEventSkipReason.no_date,
-                            raw_claude_json=parsed,
+                            gmail_subject=subject or parsed.get("title", ""),
+                            parsed_data=parsed,
                         )
                     )
                     await db.commit()
@@ -555,6 +682,13 @@ async def _run_scan_background(
                 )
 
                 if matched_trip_id is None:
+                    logger.info(
+                        "  [unmatched] %s from=%s date=%s loc=%s",
+                        subject,
+                        sender,
+                        activity_date,
+                        parsed.get("location"),
+                    )
                     unmatched += 1
                     db.add(
                         UnmatchedImport(
@@ -782,7 +916,7 @@ async def get_inbox(
             ActivityResponse.model_validate(activity).model_dump(mode="json")
         )
 
-    # Unmatched
+    # Unmatched — deduplicate by (date, location), keeping the latest
     unmatched_result = await db.execute(
         select(UnmatchedImport)
         .where(
@@ -792,10 +926,18 @@ async def get_inbox(
         )
         .order_by(UnmatchedImport.created_at.desc())
     )
-    unmatched = [
-        UnmatchedImportResponse.model_validate(u).model_dump(mode="json")
-        for u in unmatched_result.scalars().all()
-    ]
+    seen_keys: set[str] = set()
+    unmatched: list[dict] = []
+    for u in unmatched_result.scalars().all():
+        pd = u.parsed_data or {}
+        loc = (pd.get("location") or "").lower().strip()
+        dedup_key = f"{pd.get('date') or ''}|{loc}"
+        if dedup_key in seen_keys:
+            continue
+        seen_keys.add(dedup_key)
+        unmatched.append(
+            UnmatchedImportResponse.model_validate(u).model_dump(mode="json")
+        )
 
     return {"pending": list(grouped.values()), "unmatched": unmatched}
 
@@ -896,10 +1038,32 @@ async def dismiss_unmatched(
 
     from travel_planner.models.gmail import ImportRecord
 
-    db.add(
-        ImportRecord(
-            user_id=user_id, email_id=item.email_id, parsed_data=item.parsed_data
-        )
+    # Check if already imported (e.g. from a previous scan)
+    existing = await db.execute(
+        select(ImportRecord).where(ImportRecord.email_id == item.email_id)
     )
+    if existing.scalar_one_or_none() is None:
+        db.add(
+            ImportRecord(
+                user_id=user_id, email_id=item.email_id, parsed_data=item.parsed_data
+            )
+        )
     item.dismissed_at = datetime.now(tz=UTC)
+    await db.commit()
+
+
+@router.delete("/inbox/unmatched", status_code=204)
+async def dismiss_all_unmatched(
+    user_id: CurrentUserId,
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    await db.execute(
+        sa_update(UnmatchedImport)
+        .where(
+            UnmatchedImport.user_id == user_id,
+            UnmatchedImport.assigned_trip_id.is_(None),
+            UnmatchedImport.dismissed_at.is_(None),
+        )
+        .values(dismissed_at=datetime.now(tz=UTC))
+    )
     await db.commit()
