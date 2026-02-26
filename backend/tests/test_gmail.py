@@ -1,14 +1,11 @@
 from datetime import UTC, datetime
-from datetime import date as _date
 from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import UUID
 
 import pytest
 
 from travel_planner.models.itinerary import ActivitySource, ImportStatus
 from travel_planner.schemas.itinerary import ActivityResponse
 
-TRIP_ID = UUID("00000000-0000-0000-0000-000000000001")
 EMAIL_ID = "gmail_msg_abc123"
 
 
@@ -22,23 +19,6 @@ def _make_conn():
     conn.token_expiry = datetime(2030, 1, 1, tzinfo=UTC)
     conn.last_sync_at = None
     return conn
-
-
-def _make_scan_db(mock_db_session, conn, trip, days=None, already_imported=None):
-    """Wire up the 4 DB execute calls that scan_gmail makes."""
-    conn_r = MagicMock()
-    conn_r.scalar_one_or_none.return_value = conn
-
-    trip_r = MagicMock()
-    trip_r.scalar_one_or_none.return_value = trip
-
-    day_r = MagicMock()
-    day_r.scalars.return_value.all.return_value = days or []
-
-    imp_r = MagicMock()
-    imp_r.scalars.return_value.all.return_value = already_imported or []
-
-    mock_db_session.execute.side_effect = [conn_r, trip_r, day_r, imp_r]
 
 
 def _make_service_mock(messages=None):
@@ -126,40 +106,6 @@ def test_gmail_disconnect_when_not_connected(
     assert response.status_code == 404
 
 
-def test_scan_requires_gmail_connected(
-    client, auth_headers, override_get_db, mock_db_session
-):
-    """Scan returns 400 when Gmail is not connected."""
-    from unittest.mock import MagicMock
-
-    from tests.conftest import make_member, make_trip, make_user
-
-    # Trip creation query
-    owner_user = make_user()
-    owner_member = make_member(user=owner_user)
-    trip = make_trip(members=[owner_member])
-    trip.start_date = datetime(2026, 6, 1).date()
-    trip.end_date = datetime(2026, 6, 7).date()
-
-    # First call: gmail_status check → not connected
-    gmail_mock = MagicMock()
-    gmail_mock.scalar_one_or_none.return_value = None
-
-    # Second call: verify_trip_member → return trip
-    trip_mock = MagicMock()
-    trip_mock.scalar_one_or_none.return_value = trip
-
-    mock_db_session.execute.side_effect = [gmail_mock, trip_mock]
-
-    response = client.post(
-        "/gmail/scan",
-        json={"trip_id": "00000000-0000-0000-0000-000000000001"},
-        headers=auth_headers,
-    )
-    assert response.status_code == 400
-    assert "Gmail not connected" in response.json()["detail"]
-
-
 def test_list_trip_activities_filters_by_import_status(
     client, auth_headers, override_get_db, mock_db_session
 ):
@@ -192,226 +138,188 @@ def test_list_trip_activities_filters_by_import_status(
 
 
 # ---------------------------------------------------------------------------
-# scan_gmail — behaviour tests
+# New centralized scan endpoint tests
 # ---------------------------------------------------------------------------
 
 
-def _make_itinerary_day(day_date: _date) -> MagicMock:
-    day = MagicMock()
-    day.date = day_date
-    day.id = UUID("00000000-0000-0000-0000-000000000099")
-    return day
+def test_post_scan_returns_scan_id(
+    client, auth_headers, override_get_db, mock_db_session
+):
+    """POST /gmail/scan creates a scan_run and returns its ID."""
+    from unittest.mock import AsyncMock, MagicMock, patch
+    from uuid import uuid4
+
+    scan_run_id = uuid4()
+
+    # Mock gmail connection present
+    conn_mock = MagicMock()
+    conn_mock.scalar_one_or_none.return_value = _make_conn()
+
+    # Mock no running scan
+    running_mock = MagicMock()
+    running_mock.scalar_one_or_none.return_value = None
+
+    mock_db_session.execute.side_effect = [conn_mock, running_mock]
+
+    # db.refresh sets the scan_run.id so the response can serialize it
+    async def _mock_refresh(obj):
+        obj.id = scan_run_id
+
+    mock_db_session.refresh = AsyncMock(side_effect=_mock_refresh)
+
+    with patch("travel_planner.routers.gmail.asyncio.create_task"):
+        response = client.post(
+            "/gmail/scan",
+            json={"rescan_rejected": False},
+            headers=auth_headers,
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "scan_id" in data
+    assert mock_db_session.add.called  # ScanRun was added
 
 
-def _base_scan_setup(mock_db_session, *, days=None, already_imported=None):
-    """Return (conn, trip) after wiring DB mocks for scan_gmail."""
-    from tests.conftest import make_member, make_trip, make_user
+def test_post_scan_409_when_already_running(
+    client, auth_headers, override_get_db, mock_db_session
+):
+    """POST /gmail/scan returns 409 when a scan is already running for user."""
+    from unittest.mock import MagicMock, patch
+    from uuid import uuid4
 
-    conn = _make_conn()
-    owner_member = make_member(user=make_user())
-    trip = make_trip(members=[owner_member])
-    trip.start_date = _date(2026, 6, 1)
-    trip.end_date = _date(2026, 6, 7)
-    _make_scan_db(
-        mock_db_session, conn, trip, days=days, already_imported=already_imported
+    conn_mock = MagicMock()
+    conn_mock.scalar_one_or_none.return_value = _make_conn()
+
+    existing_scan = MagicMock()
+    existing_scan.id = uuid4()
+    running_mock = MagicMock()
+    running_mock.scalar_one_or_none.return_value = existing_scan
+
+    mock_db_session.execute.side_effect = [conn_mock, running_mock]
+
+    with patch("travel_planner.routers.gmail.asyncio.create_task"):
+        response = client.post(
+            "/gmail/scan",
+            json={"rescan_rejected": False},
+            headers=auth_headers,
+        )
+
+    assert response.status_code == 409
+    assert "scan_id" in response.json()["detail"]
+
+
+# ---------------------------------------------------------------------------
+# Inbox and latest scan endpoints
+# ---------------------------------------------------------------------------
+
+
+def test_get_inbox_returns_grouped_pending_and_unmatched(
+    client, auth_headers, override_get_db, mock_db_session
+):
+    """GET /gmail/inbox returns pending activities grouped by trip and unmatched."""
+    from unittest.mock import MagicMock
+    from uuid import UUID
+
+    from travel_planner.models.itinerary import ActivitySource, ImportStatus
+
+    act_id = UUID("00000000-0000-0000-0000-000000000001")
+    day_id = UUID("00000000-0000-0000-0000-000000000002")
+    trip_id_str = "00000000-0000-0000-0000-000000000003"
+
+    pending_activity = MagicMock()
+    pending_activity.id = act_id
+    pending_activity.itinerary_day_id = day_id
+    pending_activity.title = "Flight AA123"
+    pending_activity.category = "transport"
+    pending_activity.start_time = None
+    pending_activity.end_time = None
+    pending_activity.location = "JFK"
+    pending_activity.latitude = None
+    pending_activity.longitude = None
+    pending_activity.notes = None
+    pending_activity.confirmation_number = "XYZ"
+    pending_activity.sort_order = 999
+    pending_activity.check_out_date = None
+    pending_activity.source = ActivitySource.gmail_import
+    pending_activity.source_ref = "email123"
+    pending_activity.import_status = ImportStatus.pending_review
+    pending_activity.created_at = datetime(2026, 3, 1, tzinfo=UTC)
+    pending_activity.trip_id = trip_id_str
+    pending_activity.trip_destination = "Florida"
+
+    um_id = UUID("00000000-0000-0000-0000-000000000004")
+    unmatched = MagicMock()
+    unmatched.id = um_id
+    unmatched.email_id = "email456"
+    unmatched.parsed_data = {"title": "Hotel Boston", "date": "2026-04-10"}
+    unmatched.created_at = datetime(2026, 3, 1, tzinfo=UTC)
+
+    # DB calls: 1 for pending activities with trip join, 1 for unmatched
+    pending_r = MagicMock()
+    pending_r.all.return_value = [(pending_activity, trip_id_str, "Florida")]
+
+    unmatched_r = MagicMock()
+    unmatched_r.scalars.return_value.all.return_value = [unmatched]
+
+    mock_db_session.execute.side_effect = [pending_r, unmatched_r]
+
+    response = client.get("/gmail/inbox", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert "pending" in data
+    assert "unmatched" in data
+
+
+def test_get_scan_latest_returns_most_recent(
+    client, auth_headers, override_get_db, mock_db_session
+):
+    """GET /gmail/scan/latest returns the most recent scan_run."""
+    from datetime import UTC, datetime
+    from unittest.mock import MagicMock
+    from uuid import uuid4
+
+    scan = MagicMock()
+    scan.id = uuid4()
+    scan.status = "completed"
+    scan.started_at = datetime(2026, 2, 24, tzinfo=UTC)
+    scan.finished_at = datetime(2026, 2, 24, tzinfo=UTC)
+    scan.emails_found = 50
+    scan.imported_count = 3
+    scan.skipped_count = 45
+    scan.unmatched_count = 2
+    scan.rescan_rejected = False
+
+    r = MagicMock()
+    r.scalar_one_or_none.return_value = scan
+    mock_db_session.execute.return_value = r
+
+    response = client.get("/gmail/scan/latest", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["imported_count"] == 3
+    assert data["status"] == "completed"
+
+
+# ---------------------------------------------------------------------------
+# SSE stream endpoint
+# ---------------------------------------------------------------------------
+
+
+def test_scan_stream_404_for_unknown_scan(
+    client, auth_headers, override_get_db, mock_db_session
+):
+    """Unknown scan_id returns 404 (belongs to different user)."""
+    from unittest.mock import MagicMock
+
+    result_mock = MagicMock()
+    result_mock.scalar_one_or_none.return_value = None
+    mock_db_session.execute.return_value = result_mock
+
+    response = client.get(
+        "/gmail/scan/00000000-0000-0000-0000-000000000099/stream",
+        headers=auth_headers,
     )
-    return conn, trip
-
-
-def test_scan_skips_already_imported_email(
-    client, auth_headers, override_get_db, mock_db_session
-):
-    """scan_gmail skips emails whose id is already in ImportRecord."""
-    _base_scan_setup(mock_db_session, already_imported=[EMAIL_ID])
-    svc = _make_service_mock(messages=[{"id": EMAIL_ID}])
-
-    with (
-        patch(
-            "travel_planner.routers.gmail._build_service",
-            new=AsyncMock(return_value=svc),
-        ),
-        patch(
-            "asyncio.to_thread",
-            new=AsyncMock(return_value={"messages": [{"id": EMAIL_ID}]}),
-        ),
-    ):
-        response = client.post(
-            "/gmail/scan",
-            json={"trip_id": str(TRIP_ID)},
-            headers=auth_headers,
-        )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["skipped_count"] == 1
-    assert data["imported_count"] == 0
-
-
-def test_scan_skips_when_claude_returns_none(
-    client, auth_headers, override_get_db, mock_db_session
-):
-    """scan_gmail skips emails when Claude returns None (non-travel content)."""
-    day = _make_itinerary_day(_date(2026, 6, 3))
-    _base_scan_setup(mock_db_session, days=[day])
-    svc = _make_service_mock(messages=[{"id": EMAIL_ID}])
-    msg_body = {"payload": {"body": {"data": ""}, "parts": []}}
-
-    with (
-        patch(
-            "travel_planner.routers.gmail._build_service",
-            new=AsyncMock(return_value=svc),
-        ),
-        patch(
-            "asyncio.to_thread",
-            new=AsyncMock(
-                side_effect=[
-                    {"messages": [{"id": EMAIL_ID}]},
-                    msg_body,
-                ]
-            ),
-        ),
-        patch(
-            "travel_planner.routers.gmail._parse_with_claude",
-            new=AsyncMock(return_value=None),
-        ),
-    ):
-        response = client.post(
-            "/gmail/scan",
-            json={"trip_id": str(TRIP_ID)},
-            headers=auth_headers,
-        )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["skipped_count"] == 1
-    assert data["imported_count"] == 0
-
-
-def test_scan_skips_invalid_date_from_claude(
-    client, auth_headers, override_get_db, mock_db_session
-):
-    """scan_gmail skips emails when Claude returns an unparseable date."""
-    day = _make_itinerary_day(_date(2026, 6, 3))
-    _base_scan_setup(mock_db_session, days=[day])
-    svc = _make_service_mock(messages=[{"id": EMAIL_ID}])
-    msg_body = {"payload": {"body": {"data": ""}, "parts": []}}
-    bad_parse = {"title": "Flight", "category": "transport", "date": "not-a-date"}
-
-    with (
-        patch(
-            "travel_planner.routers.gmail._build_service",
-            new=AsyncMock(return_value=svc),
-        ),
-        patch(
-            "asyncio.to_thread",
-            new=AsyncMock(side_effect=[{"messages": [{"id": EMAIL_ID}]}, msg_body]),
-        ),
-        patch(
-            "travel_planner.routers.gmail._parse_with_claude",
-            new=AsyncMock(return_value=bad_parse),
-        ),
-    ):
-        response = client.post(
-            "/gmail/scan",
-            json={"trip_id": str(TRIP_ID)},
-            headers=auth_headers,
-        )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["skipped_count"] == 1
-    assert data["imported_count"] == 0
-
-
-def test_scan_skips_date_outside_trip_range(
-    client, auth_headers, override_get_db, mock_db_session
-):
-    """scan_gmail skips emails whose activity date is not in days_by_date."""
-    day = _make_itinerary_day(_date(2026, 6, 3))
-    _base_scan_setup(mock_db_session, days=[day])
-    svc = _make_service_mock(messages=[{"id": EMAIL_ID}])
-    msg_body = {"payload": {"body": {"data": ""}, "parts": []}}
-    # Parsed date is July, outside the June trip
-    outside_parse = {"title": "Hotel", "category": "lodging", "date": "2026-07-15"}
-
-    with (
-        patch(
-            "travel_planner.routers.gmail._build_service",
-            new=AsyncMock(return_value=svc),
-        ),
-        patch(
-            "asyncio.to_thread",
-            new=AsyncMock(side_effect=[{"messages": [{"id": EMAIL_ID}]}, msg_body]),
-        ),
-        patch(
-            "travel_planner.routers.gmail._parse_with_claude",
-            new=AsyncMock(return_value=outside_parse),
-        ),
-    ):
-        response = client.post(
-            "/gmail/scan",
-            json={"trip_id": str(TRIP_ID)},
-            headers=auth_headers,
-        )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["skipped_count"] == 1
-    assert data["imported_count"] == 0
-
-
-def test_scan_imports_valid_booking(
-    client, auth_headers, override_get_db, mock_db_session
-):
-    """scan_gmail imports an email when Claude returns a valid travel booking."""
-    import base64
-
-    trip_date = _date(2026, 6, 3)
-    day = _make_itinerary_day(trip_date)
-    _base_scan_setup(mock_db_session, days=[day])
-    svc = _make_service_mock(messages=[{"id": EMAIL_ID}])
-    encoded = base64.urlsafe_b64encode(b"Flight AA123 booking confirmation").decode()
-    msg_body = {
-        "payload": {
-            "mimeType": "text/plain",
-            "body": {"data": encoded},
-            "parts": [],
-        }
-    }
-    valid_parse = {
-        "title": "Flight AA123",
-        "category": "transport",
-        "date": "2026-06-03",
-        "location": "JFK",
-        "confirmation_number": "XYZ789",
-    }
-
-    with (
-        patch(
-            "travel_planner.routers.gmail._build_service",
-            new=AsyncMock(return_value=svc),
-        ),
-        patch(
-            "asyncio.to_thread",
-            new=AsyncMock(side_effect=[{"messages": [{"id": EMAIL_ID}]}, msg_body]),
-        ),
-        patch(
-            "travel_planner.routers.gmail._parse_with_claude",
-            new=AsyncMock(return_value=valid_parse),
-        ),
-    ):
-        response = client.post(
-            "/gmail/scan",
-            json={"trip_id": str(TRIP_ID)},
-            headers=auth_headers,
-        )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["imported_count"] == 1
-    assert data["skipped_count"] == 0
-    # Two db.add calls: ImportRecord + Activity
-    assert mock_db_session.add.call_count == 2
+    assert response.status_code == 404
 
 
 # ---------------------------------------------------------------------------
@@ -448,3 +356,320 @@ async def test_build_service_refreshes_expired_token():
 
     assert conn.access_token == "new_token"
     mock_asyncio.to_thread.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# _sender_is_blocked unit tests
+# ---------------------------------------------------------------------------
+
+
+def test_sender_is_blocked_with_angle_brackets():
+    from travel_planner.routers.gmail import _sender_is_blocked
+
+    assert _sender_is_blocked("Resy <noreply@doordash.com>") is True
+
+
+def test_sender_not_blocked_travel_domain():
+    from travel_planner.routers.gmail import _sender_is_blocked
+
+    assert _sender_is_blocked("Airbnb <noreply@airbnb.com>") is False
+
+
+def test_sender_is_blocked_bare_email():
+    from travel_planner.routers.gmail import _sender_is_blocked
+
+    assert _sender_is_blocked("noreply@doordash.com") is True
+
+
+def test_sender_is_blocked_case_insensitive():
+    from travel_planner.routers.gmail import _sender_is_blocked
+
+    assert _sender_is_blocked("DoorDash <noreply@DOORDASH.COM>") is True
+
+
+def test_sender_blocked_subdomain():
+    from travel_planner.routers.gmail import _sender_is_blocked
+
+    assert _sender_is_blocked("Resy <noreply@email.rocketmoney.com>") is True
+
+
+# ---------------------------------------------------------------------------
+# _extract_text unit tests
+# ---------------------------------------------------------------------------
+
+
+def test_extract_text_prefers_plain_text():
+    import base64
+
+    from travel_planner.routers.gmail import _extract_text
+
+    plain = base64.urlsafe_b64encode(b"Hello plain text").decode()
+    msg = {
+        "payload": {
+            "mimeType": "multipart/alternative",
+            "parts": [
+                {"mimeType": "text/plain", "body": {"data": plain}},
+                {
+                    "mimeType": "text/html",
+                    "body": {"data": base64.urlsafe_b64encode(b"<b>HTML</b>").decode()},
+                },
+            ],
+        }
+    }
+    result = _extract_text(msg)
+    assert "Hello plain text" in result
+
+
+def test_extract_text_falls_back_to_html():
+    import base64
+
+    from travel_planner.routers.gmail import _extract_text
+
+    html = base64.urlsafe_b64encode(
+        b"<html><body><p>Booking confirmed</p></body></html>"
+    ).decode()
+    msg = {
+        "payload": {
+            "mimeType": "multipart/alternative",
+            "parts": [
+                {"mimeType": "text/html", "body": {"data": html}},
+            ],
+        }
+    }
+    result = _extract_text(msg)
+    assert "Booking confirmed" in result
+
+
+def test_extract_text_strips_style_and_script():
+    import base64
+
+    from travel_planner.routers.gmail import _extract_text
+
+    html_content = (
+        b"<html><head><style>body{color:red}</style></head>"
+        b"<body><script>alert(1)</script><p>Travel info</p></body></html>"
+    )
+    html = base64.urlsafe_b64encode(html_content).decode()
+    # Use multipart structure so the HTML goes through _walk → _strip_html
+    msg = {
+        "payload": {
+            "mimeType": "multipart/alternative",
+            "body": {},
+            "parts": [
+                {
+                    "mimeType": "text/html",
+                    "body": {"data": html},
+                }
+            ],
+        }
+    }
+    result = _extract_text(msg)
+    assert "Travel info" in result
+    assert "alert" not in result
+    assert "color:red" not in result
+
+
+def test_extract_text_returns_empty_for_no_content():
+    from travel_planner.routers.gmail import _extract_text
+
+    msg = {"payload": {"mimeType": "multipart/mixed", "parts": []}}
+    result = _extract_text(msg)
+    assert result == ""
+
+
+# ---------------------------------------------------------------------------
+# Cancel scan endpoint
+# ---------------------------------------------------------------------------
+
+
+def test_cancel_scan_success(client, auth_headers, override_get_db, mock_db_session):
+    """POST /gmail/scan/{id}/cancel sets status to cancelled."""
+    from travel_planner.models.gmail import ScanRunStatus
+
+    scan = MagicMock()
+    scan.id = "00000000-0000-0000-0000-000000000010"
+    scan.status = ScanRunStatus.running
+
+    result_mock = MagicMock()
+    result_mock.scalar_one_or_none.return_value = scan
+    mock_db_session.execute.return_value = result_mock
+
+    response = client.post(
+        "/gmail/scan/00000000-0000-0000-0000-000000000010/cancel",
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    assert scan.status == ScanRunStatus.cancelled
+
+
+def test_cancel_scan_404_unknown(
+    client, auth_headers, override_get_db, mock_db_session
+):
+    """POST /gmail/scan/{id}/cancel returns 404 for unknown scan."""
+    result_mock = MagicMock()
+    result_mock.scalar_one_or_none.return_value = None
+    mock_db_session.execute.return_value = result_mock
+
+    response = client.post(
+        "/gmail/scan/00000000-0000-0000-0000-000000000010/cancel",
+        headers=auth_headers,
+    )
+    assert response.status_code == 404
+
+
+def test_cancel_scan_409_not_running(
+    client, auth_headers, override_get_db, mock_db_session
+):
+    """POST /gmail/scan/{id}/cancel returns 409 when scan is already completed."""
+    from travel_planner.models.gmail import ScanRunStatus
+
+    scan = MagicMock()
+    scan.id = "00000000-0000-0000-0000-000000000010"
+    scan.status = ScanRunStatus.completed
+
+    result_mock = MagicMock()
+    result_mock.scalar_one_or_none.return_value = scan
+    mock_db_session.execute.return_value = result_mock
+
+    response = client.post(
+        "/gmail/scan/00000000-0000-0000-0000-000000000010/cancel",
+        headers=auth_headers,
+    )
+    assert response.status_code == 409
+
+
+# ---------------------------------------------------------------------------
+# Assign unmatched endpoint
+# ---------------------------------------------------------------------------
+
+
+def test_assign_unmatched_success(
+    client, auth_headers, override_get_db, mock_db_session
+):
+    """POST /gmail/inbox/unmatched/{id}/assign creates activity and sets trip."""
+    from uuid import UUID
+
+    from tests.conftest import make_member, make_trip, make_user
+
+    item = MagicMock()
+    item.id = UUID("00000000-0000-0000-0000-000000000020")
+    item.user_id = UUID("123e4567-e89b-12d3-a456-426614174000")
+    item.email_id = "email_123"
+    item.parsed_data = {
+        "title": "Flight AA123",
+        "category": "transport",
+        "date": "2026-04-15",
+        "location": "JFK",
+    }
+
+    # find unmatched item
+    item_result = MagicMock()
+    item_result.scalar_one_or_none.return_value = item
+
+    # verify_trip_member — trip membership check
+    owner = make_user()
+    member = make_member(user=owner)
+    trip = make_trip(members=[member])
+    trip_result = MagicMock()
+    trip_result.scalar_one_or_none.return_value = trip
+
+    # itinerary day lookup — not found (will create new)
+    day_result = MagicMock()
+    day_result.scalar_one_or_none.return_value = None
+
+    mock_db_session.execute.side_effect = [item_result, trip_result, day_result]
+
+    # flush assigns an id to the new day
+    async def _mock_flush():
+        pass
+
+    mock_db_session.flush = AsyncMock(side_effect=_mock_flush)
+
+    response = client.post(
+        "/gmail/inbox/unmatched/00000000-0000-0000-0000-000000000020/assign",
+        json={"trip_id": "333e4567-e89b-12d3-a456-426614174002"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 201
+    assert response.json()["status"] == "assigned"
+
+
+def test_assign_unmatched_404_not_found(
+    client, auth_headers, override_get_db, mock_db_session
+):
+    """Returns 404 when unmatched item doesn't belong to user."""
+    result_mock = MagicMock()
+    result_mock.scalar_one_or_none.return_value = None
+    mock_db_session.execute.return_value = result_mock
+
+    response = client.post(
+        "/gmail/inbox/unmatched/00000000-0000-0000-0000-000000000020/assign",
+        json={"trip_id": "333e4567-e89b-12d3-a456-426614174002"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Dismiss unmatched endpoint
+# ---------------------------------------------------------------------------
+
+
+def test_dismiss_unmatched_success(
+    client, auth_headers, override_get_db, mock_db_session
+):
+    """DELETE /gmail/inbox/unmatched/{id} dismisses the item."""
+    from uuid import UUID
+
+    item = MagicMock()
+    item.id = UUID("00000000-0000-0000-0000-000000000020")
+    item.user_id = UUID("123e4567-e89b-12d3-a456-426614174000")
+    item.email_id = "email_456"
+    item.parsed_data = {"title": "Hotel", "date": "2026-04-10", "location": "Boston"}
+    item.dismissed_at = None
+
+    # find item
+    item_result = MagicMock()
+    item_result.scalar_one_or_none.return_value = item
+
+    # check ImportRecord — not already imported
+    import_result = MagicMock()
+    import_result.scalar_one_or_none.return_value = None
+
+    # find duplicates — none
+    dupes_result = MagicMock()
+    dupes_result.scalars.return_value.all.return_value = []
+
+    mock_db_session.execute.side_effect = [item_result, import_result, dupes_result]
+
+    response = client.delete(
+        "/gmail/inbox/unmatched/00000000-0000-0000-0000-000000000020",
+        headers=auth_headers,
+    )
+    assert response.status_code == 204
+    assert item.dismissed_at is not None
+
+
+def test_dismiss_unmatched_404(client, auth_headers, override_get_db, mock_db_session):
+    """Returns 404 when unmatched item doesn't belong to user."""
+    result_mock = MagicMock()
+    result_mock.scalar_one_or_none.return_value = None
+    mock_db_session.execute.return_value = result_mock
+
+    response = client.delete(
+        "/gmail/inbox/unmatched/00000000-0000-0000-0000-000000000020",
+        headers=auth_headers,
+    )
+    assert response.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Dismiss all unmatched endpoint
+# ---------------------------------------------------------------------------
+
+
+def test_dismiss_all_unmatched(client, auth_headers, override_get_db, mock_db_session):
+    """DELETE /gmail/inbox/unmatched dismisses all unmatched items."""
+    response = client.delete("/gmail/inbox/unmatched", headers=auth_headers)
+    assert response.status_code == 204
+    assert mock_db_session.execute.called

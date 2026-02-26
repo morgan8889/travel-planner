@@ -1,19 +1,30 @@
 import { useState } from 'react'
-import { Mail, User, Database } from 'lucide-react'
-import { useGmailStatus, useDisconnectGmail } from '../hooks/useGmail'
+import { Database, Mail, User } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
+import {
+  gmailKeys,
+  useDisconnectGmail,
+  useGmailStatus,
+  useLatestScan,
+} from '../hooks/useGmail'
 import { useDeleteAccount } from '../hooks/useAuth'
 import { useAuth } from '../contexts/AuthContext'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { GmailScanPanel } from '../components/gmail/GmailScanPanel'
+import { GmailInbox } from '../components/gmail/GmailInbox'
 import { gmailApi } from '../lib/api'
 import { DevSeedContent } from '../components/dev/DevSeedContent'
 
 export function SettingsPage() {
   const { user, signOut } = useAuth()
   const { data: gmailStatus } = useGmailStatus()
+  const { data: latestScan } = useLatestScan()
   const disconnectMutation = useDisconnectGmail()
   const deleteAccountMutation = useDeleteAccount()
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [scanRunning, setScanRunning] = useState(false)
+  const queryClient = useQueryClient()
 
   const handleConnectGmail = async () => {
     const { url } = await gmailApi.getAuthUrl()
@@ -32,24 +43,35 @@ export function SettingsPage() {
     }
   }
 
+  const lastScanSummary = latestScan
+    ? `Last scan: ${new Date(latestScan.started_at).toLocaleString()} — ${latestScan.imported_count} imported, ${latestScan.skipped_count} skipped`
+    : null
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold text-cloud-900">Settings</h1>
 
-      {/* Integrations */}
+      {/* Gmail Import */}
       <div className="bg-white rounded-xl shadow-sm border border-cloud-200 p-6">
         <h2 className="text-lg font-semibold text-cloud-900 mb-4 flex items-center gap-2">
           <Mail className="w-4 h-4" />
-          Integrations
+          Gmail Import
         </h2>
-        <div className="flex items-center justify-between">
+
+        {/* Connection row */}
+        <div className="flex items-center justify-between mb-4">
           <div>
-            <p className="text-sm font-medium text-cloud-800">Gmail</p>
-            <p className="text-xs text-cloud-500 mt-0.5">
-              {gmailStatus?.connected
-                ? 'Connected — scan travel emails from any trip'
-                : 'Connect to import travel bookings from confirmation emails'}
+            <p className="text-sm font-medium text-cloud-800">
+              {gmailStatus?.connected ? 'Connected' : 'Not connected'}
             </p>
+            {lastScanSummary && (
+              <p className="text-xs text-cloud-500 mt-0.5">{lastScanSummary}</p>
+            )}
+            {!gmailStatus?.connected && (
+              <p className="text-xs text-cloud-500 mt-0.5">
+                Connect to import travel bookings from confirmation emails
+              </p>
+            )}
           </div>
           {gmailStatus?.connected ? (
             <button
@@ -68,6 +90,27 @@ export function SettingsPage() {
             </button>
           )}
         </div>
+
+        {/* Scan controls + inbox */}
+        {gmailStatus?.connected && (
+          <>
+            <div className="border-t border-cloud-100 pt-4 mb-4">
+              <GmailScanPanel
+                onScanRunningChange={setScanRunning}
+                onScanComplete={() => {
+                  queryClient.invalidateQueries({ queryKey: gmailKeys.inbox })
+                  queryClient.invalidateQueries({ queryKey: gmailKeys.latestScan })
+                }}
+              />
+            </div>
+
+            {!scanRunning && (
+              <div className="border-t border-cloud-100 pt-4">
+                <GmailInbox />
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Account */}

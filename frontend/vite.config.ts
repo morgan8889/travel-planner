@@ -12,6 +12,14 @@ export default defineConfig({
   },
   server: {
     proxy: {
+      // SSE stream — disable timeout so long-lived connections aren't cut
+      "/api/gmail/scan": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ""),
+        timeout: 0,
+        proxyTimeout: 0,
+      },
       "/api": {
         target: "http://localhost:8000",
         changeOrigin: true,

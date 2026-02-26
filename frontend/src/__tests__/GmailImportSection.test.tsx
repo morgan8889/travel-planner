@@ -1,22 +1,15 @@
 import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createElement, type ReactNode } from 'react'
 import { GmailImportSection } from '../components/trips/GmailImportSection'
 
 const mockUseGmailStatus = vi.fn()
-const mockUseScanGmail = vi.fn()
-const mockUsePendingImports = vi.fn()
-const mockUseConfirmImport = vi.fn()
-const mockUseRejectImport = vi.fn()
+const mockUsePendingImportCount = vi.fn()
 
 vi.mock('../hooks/useGmail', () => ({
   useGmailStatus: () => mockUseGmailStatus(),
-  useScanGmail: () => mockUseScanGmail(),
-  usePendingImports: () => mockUsePendingImports(),
-  useConfirmImport: () => mockUseConfirmImport(),
-  useRejectImport: () => mockUseRejectImport(),
+  usePendingImportCount: () => mockUsePendingImportCount(),
 }))
 
 vi.mock('@tanstack/react-router', () => ({
@@ -33,92 +26,36 @@ function createWrapper() {
 
 beforeEach(() => {
   mockUseGmailStatus.mockReturnValue({ data: { connected: false }, isLoading: false })
-  mockUseScanGmail.mockReturnValue({ mutate: vi.fn(), isPending: false, data: undefined })
-  mockUsePendingImports.mockReturnValue({ data: [], isLoading: false })
-  mockUseConfirmImport.mockReturnValue({ mutate: vi.fn(), isPending: false })
-  mockUseRejectImport.mockReturnValue({ mutate: vi.fn(), isPending: false })
+  mockUsePendingImportCount.mockReturnValue(0)
 })
 
 describe('GmailImportSection', () => {
-  it('shows "Connect in Settings" link when not connected', () => {
-    render(createElement(GmailImportSection, { tripId: 'trip-1' }), { wrapper: createWrapper() })
-    expect(screen.getByRole('link', { name: /connect in settings/i })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /connect in settings/i })).toHaveAttribute(
-      'href',
-      '/settings',
-    )
-  })
-
-  it('shows scan button when connected', () => {
-    mockUseGmailStatus.mockReturnValue({ data: { connected: true }, isLoading: false })
-    render(createElement(GmailImportSection, { tripId: 'trip-1' }), { wrapper: createWrapper() })
-    expect(screen.getByRole('button', { name: /scan emails/i })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /disconnect/i })).not.toBeInTheDocument()
-  })
-
-  it('renders pending activity with confirm and reject buttons', () => {
-    mockUseGmailStatus.mockReturnValue({ data: { connected: true }, isLoading: false })
-    mockUsePendingImports.mockReturnValue({
-      data: [
-        {
-          id: 'act-1',
-          title: 'Flight AA123',
-          category: 'transport',
-          confirmation_number: 'XYZ789',
-          import_status: 'pending_review',
-          itinerary_day_id: 'd-1',
-          start_time: null,
-          end_time: null,
-          location: null,
-          latitude: null,
-          longitude: null,
-          notes: null,
-          sort_order: 0,
-          check_out_date: null,
-          source: 'gmail_import',
-          source_ref: 'msg-1',
-          created_at: '2026-01-01T00:00:00Z',
-        },
-      ],
-      isLoading: false,
+  it('renders nothing when gmail is not connected', () => {
+    mockUseGmailStatus.mockReturnValue({ data: { connected: false } })
+    const { container } = render(createElement(GmailImportSection, { tripId: 'trip-1' }), {
+      wrapper: createWrapper(),
     })
-    render(createElement(GmailImportSection, { tripId: 'trip-1' }), { wrapper: createWrapper() })
-    expect(screen.getByText('Flight AA123')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /confirm/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /reject/i })).toBeInTheDocument()
+    expect(container.firstChild).toBeNull()
   })
 
-  it('calls confirm mutation on confirm click', async () => {
-    const confirmMutate = vi.fn()
-    mockUseGmailStatus.mockReturnValue({ data: { connected: true }, isLoading: false })
-    mockUseConfirmImport.mockReturnValue({ mutate: confirmMutate, isPending: false })
-    mockUsePendingImports.mockReturnValue({
-      data: [
-        {
-          id: 'act-1',
-          title: 'Hotel',
-          category: 'lodging',
-          confirmation_number: null,
-          import_status: 'pending_review',
-          itinerary_day_id: 'd-1',
-          start_time: null,
-          end_time: null,
-          location: null,
-          latitude: null,
-          longitude: null,
-          notes: null,
-          sort_order: 0,
-          check_out_date: null,
-          source: 'gmail_import',
-          source_ref: 'msg-1',
-          created_at: '2026-01-01T00:00:00Z',
-        },
-      ],
-      isLoading: false,
-    })
-    const user = userEvent.setup()
+  it('shows scan link when connected with no pending imports', () => {
+    mockUseGmailStatus.mockReturnValue({ data: { connected: true } })
+    mockUsePendingImportCount.mockReturnValue(0)
     render(createElement(GmailImportSection, { tripId: 'trip-1' }), { wrapper: createWrapper() })
-    await user.click(screen.getByRole('button', { name: /confirm/i }))
-    expect(confirmMutate).toHaveBeenCalledWith('act-1')
+    expect(screen.getByText(/scan all trips in settings/i)).toBeInTheDocument()
+  })
+
+  it('shows pending count link when there are pending imports', () => {
+    mockUseGmailStatus.mockReturnValue({ data: { connected: true } })
+    mockUsePendingImportCount.mockReturnValue(3)
+    render(createElement(GmailImportSection, { tripId: 'trip-1' }), { wrapper: createWrapper() })
+    expect(screen.getByText(/3 pending gmail imports/i)).toBeInTheDocument()
+    expect(screen.getByText(/review in settings/i)).toBeInTheDocument()
+  })
+
+  it('link points to /settings', () => {
+    mockUseGmailStatus.mockReturnValue({ data: { connected: true } })
+    render(createElement(GmailImportSection, { tripId: 'trip-1' }), { wrapper: createWrapper() })
+    expect(screen.getByRole('link')).toHaveAttribute('href', '/settings')
   })
 })
