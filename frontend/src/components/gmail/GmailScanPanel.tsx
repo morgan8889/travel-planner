@@ -52,9 +52,14 @@ export function GmailScanPanel({ onScanComplete, onScanRunningChange }: GmailSca
 
   const handleStart = async () => {
     onScanRunningChange?.(true)
-    await startScan(rescanRejected)
-    onScanRunningChange?.(false)
-    onScanComplete()
+    try {
+      const success = await startScan(rescanRejected)
+      if (success) {
+        onScanComplete()
+      }
+    } finally {
+      onScanRunningChange?.(false)
+    }
   }
 
   if (!state.isRunning && !state.summary && !state.error) {
@@ -123,7 +128,9 @@ export function GmailScanPanel({ onScanComplete, onScanRunningChange }: GmailSca
         <p className="text-sm text-red-600">
           {state.error === 'gmail_auth_failed'
             ? 'Gmail disconnected — please reconnect'
-            : 'Scan failed — try again'}
+            : state.error === 'timeout'
+              ? 'Scan is taking longer than expected — it may still be running in the background'
+              : 'Scan failed — try again'}
         </p>
       )}
 

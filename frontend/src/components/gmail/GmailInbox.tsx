@@ -140,9 +140,12 @@ function UnmatchedSection({ items }: { items: UnmatchedImport[] }) {
 }
 
 export function GmailInbox() {
-  const { data: inbox, isLoading } = useGmailInbox()
+  const { data: inbox, isLoading, isError } = useGmailInbox()
 
   if (isLoading) return null
+  if (isError) {
+    return <p className="text-sm text-red-600">Failed to load inbox. Please try refreshing the page.</p>
+  }
 
   const hasPending = (inbox?.pending.length ?? 0) > 0
   const hasUnmatched = (inbox?.unmatched.length ?? 0) > 0

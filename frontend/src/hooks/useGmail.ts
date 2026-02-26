@@ -158,6 +158,7 @@ export interface ScanState {
 export function useGmailScan() {
   const queryClient = useQueryClient()
   const abortRef = useRef<AbortController | null>(null)
+  const scanIdRef = useRef<string | null>(null)
   const [state, setState] = useState<ScanState>({
     scanId: null,
     isRunning: false,
@@ -168,7 +169,7 @@ export function useGmailScan() {
   })
 
   const startScan = useCallback(
-    async (rescanRejected = false) => {
+    async (rescanRejected = false): Promise<boolean> => {
       setState({
         scanId: null,
         isRunning: true,
@@ -177,6 +178,8 @@ export function useGmailScan() {
         error: null,
         emailsFound: 0,
       })
+
+      let success = false
 
       try {
         // Start scan, or resume the already-running one on 409
@@ -197,6 +200,7 @@ export function useGmailScan() {
           }
         }
 
+        scanIdRef.current = scan_id
         setState((s) => ({ ...s, scanId: scan_id }))
 
         const {
@@ -211,10 +215,16 @@ export function useGmailScan() {
           headers: { Authorization: `Bearer ${token}` },
         })
 
+        if (!response.ok) {
+          const errorCode = response.status === 401 ? 'gmail_auth_failed' : 'scan_failed'
+          setState((s) => ({ ...s, isRunning: false, error: errorCode }))
+          return false
+        }
         if (!response.body) throw new Error('No response body')
         const reader = response.body.getReader()
         const decoder = new TextDecoder()
         let buffer = ''
+        let receivedTerminalEvent = false
 
         while (true) {
           const { done, value } = await reader.read()
@@ -241,6 +251,8 @@ export function useGmailScan() {
                     events: [...s.events, payload as unknown as ScanProgressEvent],
                   }))
                 } else if (eventType === 'done') {
+                  receivedTerminalEvent = true
+                  success = true
                   setState((s) => ({
                     ...s,
                     isRunning: false,
@@ -249,30 +261,56 @@ export function useGmailScan() {
                   queryClient.invalidateQueries({ queryKey: gmailKeys.inbox })
                   queryClient.invalidateQueries({ queryKey: gmailKeys.latestScan })
                 } else if (eventType === 'error') {
+                  receivedTerminalEvent = true
                   setState((s) => ({
                     ...s,
                     isRunning: false,
                     error: (payload.code as string) ?? 'scan_failed',
                   }))
                 }
-              } catch {
-                // ignore parse errors
+              } catch (parseErr) {
+                console.error('[GmailScan] Failed to parse SSE event:', eventType, dataLine, parseErr)
+                if (eventType === 'done') {
+                  receivedTerminalEvent = true
+                  setState((s) => ({ ...s, isRunning: false, error: 'scan_failed' }))
+                }
               }
               eventType = ''
               dataLine = ''
             }
           }
         }
+
+        // Stream ended — clean up if we never got a terminal event
+        if (!receivedTerminalEvent) {
+          setState((s) => {
+            if (s.isRunning) {
+              return { ...s, isRunning: false, error: 'scan_failed' }
+            }
+            return s
+          })
+        }
       } catch (err: unknown) {
-        if (err instanceof Error && err.name === 'AbortError') return
+        if (err instanceof Error && err.name === 'AbortError') return false
         setState((s) => ({ ...s, isRunning: false, error: 'scan_failed' }))
       }
+
+      return success
     },
     [queryClient],
   )
 
   const cancelScan = useCallback(() => {
     abortRef.current?.abort()
+    const scanId = scanIdRef.current
+    if (scanId) {
+      gmailApi.cancelScan(scanId).catch((err: unknown) => {
+        const status = (err as { response?: { status?: number } })?.response?.status
+        if (status !== 404 && status !== 409) {
+          console.error('[GmailScan] Failed to cancel scan on server:', err)
+        }
+      })
+    }
     setState((s) => ({ ...s, isRunning: false }))
   }, [])
 

@@ -164,6 +164,9 @@ export const gmailApi = {
       .post(`/gmail/inbox/unmatched/${unmatchedId}/assign`, { trip_id: tripId })
       .then((r) => r.data),
 
+  cancelScan: (scanId: string) =>
+    api.post(`/gmail/scan/${scanId}/cancel`).then((r) => r.data),
+
   dismissUnmatched: (unmatchedId: string) =>
     api.delete(`/gmail/inbox/unmatched/${unmatchedId}`),
   dismissAllUnmatched: () => api.delete('/gmail/inbox/unmatched'),
