@@ -46,6 +46,7 @@ describe('GmailInbox', () => {
     mockUseGmailInbox.mockReturnValue({
       data: { pending: [], unmatched: [] },
       isLoading: false,
+      isError: false,
     })
 
     render(createElement(GmailInbox, {}), { wrapper: createWrapper() })
@@ -85,6 +86,7 @@ describe('GmailInbox', () => {
         unmatched: [],
       },
       isLoading: false,
+      isError: false,
     })
 
     render(createElement(GmailInbox, {}), { wrapper: createWrapper() })
@@ -92,6 +94,17 @@ describe('GmailInbox', () => {
     expect(screen.getByText('Florida')).toBeInTheDocument()
     expect(screen.getByText('Accept')).toBeInTheDocument()
     expect(screen.getByText('Reject')).toBeInTheDocument()
+  })
+
+  it('shows error message when inbox query fails', () => {
+    mockUseGmailInbox.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+    })
+
+    render(createElement(GmailInbox, {}), { wrapper: createWrapper() })
+    expect(screen.getByText(/failed to load inbox/i)).toBeInTheDocument()
   })
 
   it('renders unmatched imports with assign and dismiss buttons', () => {
@@ -113,6 +126,7 @@ describe('GmailInbox', () => {
         ],
       },
       isLoading: false,
+      isError: false,
     })
 
     render(createElement(GmailInbox, {}), { wrapper: createWrapper() })

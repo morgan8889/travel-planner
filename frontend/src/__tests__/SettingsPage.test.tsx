@@ -25,11 +25,12 @@ vi.mock('../hooks/useGmail', () => ({
     startScan: vi.fn(),
     cancelScan: vi.fn(),
   }),
-  useGmailInbox: () => ({ data: { pending: [], unmatched: [] }, isLoading: false }),
+  useGmailInbox: () => ({ data: { pending: [], unmatched: [] }, isLoading: false, isError: false }),
   useConfirmImport: () => ({ mutate: vi.fn(), isPending: false }),
   useRejectImport: () => ({ mutate: vi.fn(), isPending: false }),
   useAssignUnmatched: () => ({ mutate: vi.fn(), isPending: false }),
   useDismissUnmatched: () => ({ mutate: vi.fn(), isPending: false }),
+  useDismissAllUnmatched: () => ({ mutate: vi.fn(), isPending: false }),
 }))
 
 vi.mock('../hooks/useTrips', () => ({
@@ -47,6 +48,7 @@ vi.mock('../contexts/AuthContext', () => ({
 vi.mock('../lib/api', () => ({
   gmailApi: {
     getAuthUrl: vi.fn().mockResolvedValue({ url: 'https://accounts.google.com' }),
+    cancelScan: vi.fn().mockResolvedValue({}),
   },
   authApi: { deleteAccount: vi.fn().mockResolvedValue({}) },
 }))

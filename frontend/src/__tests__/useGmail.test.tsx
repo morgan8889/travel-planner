@@ -21,6 +21,7 @@ vi.mock('../lib/api', () => ({
     getInbox: vi.fn().mockResolvedValue({ pending: [], unmatched: [] }),
     assignUnmatched: vi.fn().mockResolvedValue({}),
     dismissUnmatched: vi.fn().mockResolvedValue({}),
+    cancelScan: vi.fn().mockResolvedValue({}),
   },
   itineraryApi: {
     updateActivity: vi.fn().mockResolvedValue({}),
