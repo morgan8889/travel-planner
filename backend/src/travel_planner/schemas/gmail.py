@@ -3,6 +3,8 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from travel_planner.models.gmail import ScanRunStatus
+
 
 class GmailScanStart(BaseModel):
     rescan_rejected: bool = False
@@ -16,7 +18,7 @@ class ScanRunResponse(BaseModel):
     model_config = {"from_attributes": True}
 
     id: UUID
-    status: str
+    status: ScanRunStatus
     started_at: datetime
     finished_at: datetime | None
     emails_found: int

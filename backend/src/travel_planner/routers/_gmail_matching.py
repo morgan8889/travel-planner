@@ -6,12 +6,13 @@ trip ID, or None if ambiguous / no match.
 
 from collections.abc import Sequence
 from datetime import date
+from typing import Any
 
 
 def match_to_trip(
     parsed_date: date,
     parsed_location: str,
-    trips: Sequence,
+    trips: Sequence[Any],
 ) -> str | None:
     """Return trip.id of the best matching trip, or None if unmatched/ambiguous."""
     # Step 1: filter by date range

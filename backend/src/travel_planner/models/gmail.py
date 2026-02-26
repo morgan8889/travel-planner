@@ -49,11 +49,10 @@ class ScanEventStatus(_enum.StrEnum):
 
 class ScanEventSkipReason(_enum.StrEnum):
     already_imported = "already_imported"
+    fetch_error = "fetch_error"
     no_text = "no_text"
     not_travel = "not_travel"
     no_date = "no_date"
-    no_matching_trip = "no_matching_trip"
-    ambiguous_trip = "ambiguous_trip"
     claude_error = "claude_error"
 
 
@@ -63,7 +62,7 @@ class ScanRun(Base, UUIDMixin):
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("user_profiles.id")
     )
-    status: Mapped[str] = mapped_column(String(20), default="running")
+    status: Mapped[str] = mapped_column(String(20), default=ScanRunStatus.running)
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

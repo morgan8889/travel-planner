@@ -1,20 +1,26 @@
 import asyncio
 import base64
+import contextlib
 import hashlib
 import hmac
 import json as _json
 import logging
+import re
+import time
 import uuid as _uuid
 from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
 from uuid import UUID
 
 import anthropic as _anthropic
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
+from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 from sqlalchemy import select
 from sqlalchemy import update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -45,6 +51,9 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/gmail", tags=["gmail"])
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
+
+# Store references to background tasks to prevent garbage collection
+_background_tasks: set[asyncio.Task[None]] = set()
 
 
 def _make_flow() -> Flow:
@@ -217,8 +226,6 @@ _SKIP_SENDER_DOMAINS = {
 def _sender_is_blocked(sender: str) -> bool:
     """Check if the sender's domain is in the blocklist."""
     # Extract email from "Name <email@domain>" format
-    import re
-
     match = re.search(r"<([^>]+)>", sender)
     email = match.group(1) if match else sender
     domain = email.split("@")[-1].lower().strip()
@@ -295,8 +302,6 @@ def _extract_text(msg: dict) -> str:
 
     Prefers plain text, falls back to stripped HTML.
     """
-    import base64
-    import re
 
     def _decode_data(data: str) -> str:
         if not data:
@@ -363,15 +368,18 @@ async def _parse_with_claude(
     )
     block = msg.content[0]
     if not isinstance(block, _anthropic.types.TextBlock):
+        logger.debug("Claude returned non-text block type: %s", type(block).__name__)
         return None
     text = block.text.strip()
     start, end = text.find("{"), text.rfind("}") + 1
     if start == -1 or end == 0:
+        logger.debug("Claude response contained no JSON: %.200s", text)
         return None
     try:
         data = _json.loads(text[start:end])
         return None if data.get("not_travel") else data
     except _json.JSONDecodeError:
+        logger.debug("Claude returned malformed JSON: %.200s", text[start:end])
         return None
 
 
@@ -413,9 +421,11 @@ async def start_scan(
     await db.refresh(scan_run)
 
     # Spawn background task (runs in the same event loop)
-    asyncio.create_task(
+    task = asyncio.create_task(
         _run_scan_background(scan_run.id, user_id, body.rescan_rejected)
     )
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
 
     return ScanStartResponse(scan_id=scan_run.id)
 
@@ -557,8 +567,43 @@ async def _run_scan_background(
                             .execute()
                         )
                     )
-                except Exception:
+                except (RefreshError, HttpError) as exc:
+                    if isinstance(exc, RefreshError) or (
+                        isinstance(exc, HttpError) and exc.resp.status in (401, 403)
+                    ):
+                        logger.error(
+                            "Gmail auth failed mid-scan for email %s — aborting",
+                            email_id,
+                        )
+                        raise
+                    logger.exception(
+                        "  [fetch_error] Failed to fetch email %s", email_id
+                    )
                     skipped += 1
+                    db.add(
+                        ScanEvent(
+                            scan_run_id=scan_run_id,
+                            email_id=email_id,
+                            status=ScanEventStatus.skipped,
+                            skip_reason=ScanEventSkipReason.fetch_error,
+                        )
+                    )
+                    await db.commit()
+                    continue
+                except Exception:
+                    logger.exception(
+                        "  [fetch_error] Failed to fetch email %s", email_id
+                    )
+                    skipped += 1
+                    db.add(
+                        ScanEvent(
+                            scan_run_id=scan_run_id,
+                            email_id=email_id,
+                            status=ScanEventStatus.skipped,
+                            skip_reason=ScanEventSkipReason.fetch_error,
+                        )
+                    )
+                    await db.commit()
                     continue
 
                 # Extract subject, sender, and date for display/logging
@@ -570,9 +615,6 @@ async def _run_scan_background(
                 sender = headers.get("from", "")
                 email_date_str: str | None = None
                 if raw_date := headers.get("date"):
-                    import contextlib
-                    from email.utils import parsedate_to_datetime
-
                     with contextlib.suppress(ValueError, TypeError):
                         email_date_str = parsedate_to_datetime(raw_date).strftime(
                             "%Y-%m-%d"
@@ -680,6 +722,16 @@ async def _run_scan_background(
                             scan_run_id=scan_run_id,
                             email_id=email_id,
                             parsed_data=parsed,
+                        )
+                    )
+                    db.add(
+                        ScanEvent(
+                            scan_run_id=scan_run_id,
+                            email_id=email_id,
+                            gmail_subject=subject,
+                            status=ScanEventStatus.unmatched,
+                            skip_reason=ScanEventSkipReason.no_date,
+                            raw_claude_json=parsed,
                         )
                     )
                     await db.commit()
@@ -798,7 +850,11 @@ async def _run_scan_background(
                 )
                 await db.commit()
             except Exception:
-                pass
+                logger.exception(
+                    "Failed to mark scan %s as failed in database — "
+                    "scan may be stuck in 'running' state",
+                    scan_run_id,
+                )
 
 
 @router.get("/scan/{scan_id}/stream")
@@ -822,7 +878,10 @@ async def stream_scan(
         raise HTTPException(status_code=404, detail="Scan not found")
 
     async def event_generator():
-        sent_ids: set[str] = set()
+        max_duration = 300  # 5 minutes
+        start_time = time.monotonic()
+        last_created_at: datetime | None = None
+        last_batch_ids: set[str] = set()
 
         async with async_session() as stream_db:
             result = await stream_db.execute(
@@ -830,21 +889,34 @@ async def stream_scan(
             )
             scan_run = result.scalar_one_or_none()
             if scan_run is None:
+                yield {
+                    "event": "error",
+                    "data": _json.dumps({"code": "scan_not_found"}),
+                }
                 return
 
             while True:
+                if time.monotonic() - start_time > max_duration:
+                    yield {
+                        "event": "error",
+                        "data": _json.dumps({"code": "timeout"}),
+                    }
+                    break
+
                 await stream_db.refresh(scan_run)
 
-                # Fetch new events
+                # Fetch new events using cursor-based pagination
                 query = select(ScanEvent).where(ScanEvent.scan_run_id == scan_id)
-                if sent_ids:
-                    query = query.where(ScanEvent.id.not_in(sent_ids))
-                query = query.order_by(ScanEvent.created_at)
+                if last_created_at is not None:
+                    query = query.where(ScanEvent.created_at >= last_created_at)
+                query = query.order_by(ScanEvent.created_at, ScanEvent.id)
                 result = await stream_db.execute(query)
-                new_events = result.scalars().all()
+                all_events = result.scalars().all()
+
+                # Deduplicate against the last batch to handle identical timestamps
+                new_events = [e for e in all_events if str(e.id) not in last_batch_ids]
 
                 for ev in new_events:
-                    sent_ids.add(str(ev.id))
                     payload = {
                         "email_id": ev.email_id,
                         "subject": ev.gmail_subject,
@@ -854,6 +926,12 @@ async def stream_scan(
                         "raw_claude_json": ev.raw_claude_json,
                     }
                     yield {"event": "progress", "data": _json.dumps(payload)}
+
+                if new_events:
+                    last_created_at = new_events[-1].created_at
+                    last_batch_ids = {
+                        str(e.id) for e in new_events if e.created_at == last_created_at
+                    }
 
                 if scan_run.status in (
                     ScanRunStatus.completed,
@@ -869,9 +947,36 @@ async def stream_scan(
                     yield {"event": "done", "data": _json.dumps(summary)}
                     break
 
+                # Keepalive comment to prevent proxy timeouts
+                yield {"comment": "keepalive"}
                 await asyncio.sleep(1)
 
     return EventSourceResponse(event_generator())
+
+
+@router.post("/scan/{scan_id}/cancel", status_code=200)
+async def cancel_scan(
+    scan_id: _uuid.UUID,
+    user_id: CurrentUserId,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Cancel a running scan."""
+    result = await db.execute(
+        select(ScanRun).where(
+            ScanRun.id == scan_id,
+            ScanRun.user_id == user_id,
+        )
+    )
+    scan_run = result.scalar_one_or_none()
+    if scan_run is None:
+        raise HTTPException(status_code=404, detail="Scan not found")
+    if scan_run.status != ScanRunStatus.running:
+        raise HTTPException(status_code=409, detail="Scan is not running")
+
+    scan_run.status = ScanRunStatus.cancelled
+    scan_run.finished_at = datetime.now(tz=UTC)
+    await db.commit()
+    return {"status": "cancelled"}
 
 
 @router.get("/scan/latest", response_model=ScanRunResponse | None)
