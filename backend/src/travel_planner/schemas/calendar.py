@@ -48,14 +48,3 @@ class HolidaysResponse(BaseModel):
     holidays: list[HolidayEntry]
     custom_days: list[CustomDayResponse]
     enabled_countries: list[HolidayCalendarResponse]
-
-
-class TripSummaryForCalendar(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: uuid.UUID
-    type: str
-    destination: str
-    start_date: date
-    end_date: date
-    status: str

@@ -1,8 +1,6 @@
 from travel_planner.models import (
     Activity,
     Base,
-    ChatMessage,
-    ChatThread,
     Checklist,
     ChecklistItem,
     ChecklistItemUser,
@@ -99,15 +97,13 @@ def test_remaining_models_importable():
         Checklist,
         ChecklistItem,
         ChecklistItemUser,
-        ChatThread,
-        ChatMessage,
         GmailConnection,
         ImportRecord,
     ]
-    assert len(models) == 7
+    assert len(models) == 5
 
 
-def test_all_18_tables_exist():
+def test_all_16_tables_exist():
     table_names = set(Base.metadata.tables.keys())
     expected = {
         "user_profiles",
@@ -121,8 +117,6 @@ def test_all_18_tables_exist():
         "checklists",
         "checklist_items",
         "checklist_item_users",
-        "chat_threads",
-        "chat_messages",
         "gmail_connections",
         "import_records",
         "scan_runs",
