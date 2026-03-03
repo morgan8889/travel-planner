@@ -1,6 +1,7 @@
 import { Component, useState, useRef, useCallback, useEffect, type ReactNode } from 'react'
 import Map, { type MapRef } from 'react-map-gl'
 import { MapPin } from 'lucide-react'
+import 'mapbox-gl/dist/mapbox-gl.css'
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined
 

@@ -1,9 +1,11 @@
+import { lazy, Suspense } from 'react'
 import { Link } from '@tanstack/react-router'
 import { ArrowRight, Trash2 } from 'lucide-react'
 import { TripStatusBadge } from '../trips/TripStatusBadge'
-import { MapView } from '../map/MapView'
 import { TripMarker } from '../map/TripMarker'
 import type { TripSummary } from '../../lib/types'
+
+const MapView = lazy(() => import('../map/MapView').then((m) => ({ default: m.MapView })))
 
 interface SidebarTripDetailProps {
   trip: TripSummary
@@ -33,20 +35,22 @@ export function SidebarTripDetail({ trip, onDelete }: SidebarTripDetailProps) {
 
       {trip.destination_latitude != null && trip.destination_longitude != null && (
         <div className="rounded-xl overflow-hidden border border-cloud-200" style={{ height: '200px' }}>
-          <MapView
-            center={[trip.destination_longitude, trip.destination_latitude]}
-            zoom={8}
-            interactive={false}
-            className="h-full w-full"
-          >
-            <TripMarker
-              tripId={trip.id}
-              longitude={trip.destination_longitude}
-              latitude={trip.destination_latitude}
-              destination={trip.destination}
-              status={trip.status}
-            />
-          </MapView>
+          <Suspense fallback={<div className="h-full w-full bg-cloud-100 animate-pulse" />}>
+            <MapView
+              center={[trip.destination_longitude, trip.destination_latitude]}
+              zoom={8}
+              interactive={false}
+              className="h-full w-full"
+            >
+              <TripMarker
+                tripId={trip.id}
+                longitude={trip.destination_longitude}
+                latitude={trip.destination_latitude}
+                destination={trip.destination}
+                status={trip.status}
+              />
+            </MapView>
+          </Suspense>
         </div>
       )}
 
