@@ -6,7 +6,6 @@ export const itineraryKeys = {
   all: ['itinerary'] as const,
   days: (tripId: string) => [...itineraryKeys.all, 'days', tripId] as const,
   activities: (dayId: string) => [...itineraryKeys.all, 'activities', dayId] as const,
-  pendingImports: (tripId: string) => [...itineraryKeys.all, tripId, 'pending-imports'] as const,
   tripActivities: (tripId: string, hasLocation = false) =>
     [...itineraryKeys.all, 'trip-activities', tripId, { hasLocation }] as const,
 }
@@ -33,17 +32,6 @@ export function useItineraryDays(tripId: string) {
   })
 }
 
-export function useActivities(dayId: string) {
-  return useQuery({
-    queryKey: itineraryKeys.activities(dayId),
-    queryFn: async () => {
-      const { data } = await itineraryApi.listActivities(dayId)
-      return data
-    },
-    enabled: !!dayId,
-  })
-}
-
 export function useCreateDay(tripId: string) {
   const queryClient = useQueryClient()
   return useMutation({
@@ -52,20 +40,6 @@ export function useCreateDay(tripId: string) {
       return day
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: itineraryKeys.days(tripId) })
-    },
-  })
-}
-
-export function useCreateActivity(dayId: string, tripId: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async (data: CreateActivity) => {
-      const { data: activity } = await itineraryApi.createActivity(dayId, data)
-      return activity
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: itineraryKeys.activities(dayId) })
       queryClient.invalidateQueries({ queryKey: itineraryKeys.days(tripId) })
     },
   })
@@ -94,19 +68,6 @@ export function useDeleteActivity(tripId: string) {
     onSuccess: (_data, { dayId }) => {
       queryClient.invalidateQueries({ queryKey: itineraryKeys.activities(dayId) })
       queryClient.invalidateQueries({ queryKey: itineraryKeys.days(tripId) })
-    },
-  })
-}
-
-export function useReorderActivities(dayId: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async (activityIds: string[]) => {
-      const { data } = await itineraryApi.reorderActivities(dayId, activityIds)
-      return data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: itineraryKeys.activities(dayId) })
     },
   })
 }

@@ -5,7 +5,6 @@ import type { CreateChecklist, CreateChecklistItem } from '../lib/types'
 export const checklistKeys = {
   all: ['checklists'] as const,
   lists: (tripId: string) => [...checklistKeys.all, 'list', tripId] as const,
-  detail: (checklistId: string) => [...checklistKeys.all, 'detail', checklistId] as const,
 }
 
 export function useChecklists(tripId: string) {

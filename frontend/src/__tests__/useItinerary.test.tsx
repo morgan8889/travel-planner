@@ -34,11 +34,8 @@ vi.mock('../lib/api', () => ({
 
 import {
   useItineraryDays,
-  useActivities,
   useCreateDay,
-  useCreateActivity,
   useDeleteActivity,
-  useReorderActivities,
   useDeleteDay,
   useGenerateDays,
   useMoveActivity,
@@ -71,23 +68,6 @@ describe('useItineraryDays', () => {
   })
 })
 
-describe('useActivities', () => {
-  beforeEach(() => { vi.clearAllMocks() })
-
-  it('fetches activities for a day', async () => {
-    const activities = [
-      { id: 'act-1', itinerary_day_id: 'day-1', title: 'Visit Museum', category: 'activity', sort_order: 0 },
-      { id: 'act-2', itinerary_day_id: 'day-1', title: 'Lunch', category: 'food', sort_order: 1 },
-    ]
-    mockGet.mockResolvedValue({ data: activities })
-
-    const { result } = renderHook(() => useActivities('day-1'), { wrapper: createWrapper() })
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(result.current.data).toEqual(activities)
-    expect(mockGet).toHaveBeenCalledWith('/itinerary/days/day-1/activities')
-  })
-})
-
 describe('useCreateDay', () => {
   beforeEach(() => { vi.clearAllMocks() })
 
@@ -103,21 +83,6 @@ describe('useCreateDay', () => {
   })
 })
 
-describe('useCreateActivity', () => {
-  beforeEach(() => { vi.clearAllMocks() })
-
-  it('creates an activity', async () => {
-    const newActivity = { id: 'act-1', itinerary_day_id: 'day-1', title: 'Visit Museum', category: 'activity', sort_order: 0 }
-    mockPost.mockResolvedValue({ data: newActivity })
-
-    const { result } = renderHook(() => useCreateActivity('day-1', 'trip-1'), { wrapper: createWrapper() })
-    result.current.mutate({ title: 'Visit Museum', category: 'activity' })
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(result.current.data).toEqual(newActivity)
-    expect(mockPost).toHaveBeenCalledWith('/itinerary/days/day-1/activities', { title: 'Visit Museum', category: 'activity' })
-  })
-})
-
 describe('useDeleteActivity', () => {
   beforeEach(() => { vi.clearAllMocks() })
 
@@ -128,24 +93,6 @@ describe('useDeleteActivity', () => {
     result.current.mutate({ activityId: 'act-1', dayId: 'day-1' })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(mockDelete).toHaveBeenCalledWith('/itinerary/activities/act-1')
-  })
-})
-
-describe('useReorderActivities', () => {
-  beforeEach(() => { vi.clearAllMocks() })
-
-  it('reorders activities', async () => {
-    const reordered = [
-      { id: 'act-2', sort_order: 0 },
-      { id: 'act-1', sort_order: 1 },
-    ]
-    mockPatch.mockResolvedValue({ data: reordered })
-
-    const { result } = renderHook(() => useReorderActivities('day-1'), { wrapper: createWrapper() })
-    result.current.mutate(['act-2', 'act-1'])
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(result.current.data).toEqual(reordered)
-    expect(mockPatch).toHaveBeenCalledWith('/itinerary/days/day-1/reorder', { activity_ids: ['act-2', 'act-1'] })
   })
 })
 

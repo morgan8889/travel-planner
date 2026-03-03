@@ -68,14 +68,3 @@ export function useCreateCustomDay(year: number) {
   })
 }
 
-export function useDeleteCustomDay(year: number) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async (id: string) => {
-      await calendarApi.deleteCustomDay(id)
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: holidayKeys.year(year) })
-    },
-  })
-}

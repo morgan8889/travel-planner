@@ -131,7 +131,6 @@ vi.mock('../lib/api', () => ({
     deleteDay: vi.fn(),
     generateDays: vi.fn(),
     moveActivity: vi.fn(),
-    listTripPendingImports: vi.fn().mockResolvedValue([]),
   },
   checklistApi: {
     list: (tripId: string) => mockChecklistList(tripId),
