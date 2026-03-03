@@ -4,7 +4,6 @@ from unittest.mock import patch
 import pytest
 from pydantic import ValidationError
 
-
 VALID_ENV = {
     "SUPABASE_URL": "https://test.supabase.co",
     "DATABASE_URL": "postgresql+asyncpg://localhost:5432/test",
