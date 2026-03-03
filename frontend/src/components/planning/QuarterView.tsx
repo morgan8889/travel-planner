@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { DayCell } from './DayCell'
 import { TripSpan } from './TripSpan'
 import type { TripSummary, HolidayEntry, CustomDay } from '../../lib/types'
+import { formatDate } from '../../lib/dateUtils'
 
 interface QuarterViewProps {
   year: number
@@ -20,10 +21,6 @@ const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
 ]
-
-function formatDate(y: number, m: number, d: number): string {
-  return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-}
 
 function getMiniGrid(year: number, month: number) {
   const firstDay = new Date(year, month, 1)

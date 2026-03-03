@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { Calendar, Hotel, MapPin, Plane } from 'lucide-react'
 import type { TripSummary } from '../../lib/types'
 import { getEventName } from '../../lib/tripUtils'
+import { formatDateRangeShort } from '../../lib/dateUtils'
 import { TripStatusBadge } from './TripStatusBadge'
 import { TripTypeBadge } from './TripTypeBadge'
 
@@ -9,27 +10,8 @@ interface TripCardProps {
   trip: TripSummary
 }
 
-function formatDateRange(startDate: string, endDate: string): string {
-  const start = new Date(startDate + 'T00:00:00')
-  const end = new Date(endDate + 'T00:00:00')
-
-  const startMonth = start.toLocaleDateString('en-US', { month: 'short' })
-  const startDay = start.getDate()
-  const endMonth = end.toLocaleDateString('en-US', { month: 'short' })
-  const endDay = end.getDate()
-  const endYear = end.getFullYear()
-
-  if (startMonth === endMonth && start.getFullYear() === end.getFullYear()) {
-    return `${startMonth} ${startDay} - ${endDay}, ${endYear}`
-  }
-  if (start.getFullYear() === end.getFullYear()) {
-    return `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${endYear}`
-  }
-  return `${startMonth} ${startDay}, ${start.getFullYear()} - ${endMonth} ${endDay}, ${endYear}`
-}
-
 export function TripCard({ trip }: TripCardProps) {
-  const dateRange = formatDateRange(trip.start_date, trip.end_date)
+  const dateRange = formatDateRangeShort(trip.start_date, trip.end_date)
   const isEvent = trip.type === 'event'
   const displayTitle = isEvent ? (getEventName(trip.notes) ?? trip.destination) : trip.destination
   const {

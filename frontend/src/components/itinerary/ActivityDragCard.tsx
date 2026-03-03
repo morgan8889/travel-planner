@@ -1,12 +1,5 @@
-import { Plane, Utensils, MapPin, Hotel, type LucideIcon } from 'lucide-react'
-import type { Activity, ActivityCategory } from '../../lib/types'
-
-const CATEGORY_ICONS: Record<ActivityCategory, LucideIcon> = {
-  transport: Plane,
-  food: Utensils,
-  activity: MapPin,
-  lodging: Hotel,
-}
+import type { Activity } from '../../lib/types'
+import { CATEGORY_ICONS } from '../../lib/activityConstants'
 
 interface ActivityDragCardProps {
   activity: Activity
