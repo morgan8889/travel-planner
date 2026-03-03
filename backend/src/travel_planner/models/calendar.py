@@ -24,7 +24,7 @@ class HolidayCalendar(Base, UUIDMixin, TimestampMixin):
     )
 
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("user_profiles.id")
+        UUID(as_uuid=True), ForeignKey("user_profiles.id", ondelete="CASCADE")
     )
     country_code: Mapped[str] = mapped_column(String(10))
     year: Mapped[int] = mapped_column(Integer)
@@ -35,7 +35,7 @@ class CustomDay(Base, UUIDMixin, TimestampMixin):
     __table_args__ = (Index("ix_custom_days_user_id", "user_id"),)
 
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("user_profiles.id")
+        UUID(as_uuid=True), ForeignKey("user_profiles.id", ondelete="CASCADE")
     )
     name: Mapped[str] = mapped_column(String(255))
     date: Mapped[dt.date] = mapped_column(Date)

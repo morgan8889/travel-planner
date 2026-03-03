@@ -14,7 +14,9 @@ class GmailConnection(Base, UUIDMixin):
     __tablename__ = "gmail_connections"
 
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("user_profiles.id"), unique=True
+        UUID(as_uuid=True),
+        ForeignKey("user_profiles.id", ondelete="CASCADE"),
+        unique=True,
     )
     access_token: Mapped[str] = mapped_column(EncryptedText)
     refresh_token: Mapped[str] = mapped_column(EncryptedText)
@@ -28,7 +30,7 @@ class ImportRecord(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "import_records"
 
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("user_profiles.id")
+        UUID(as_uuid=True), ForeignKey("user_profiles.id", ondelete="CASCADE")
     )
     email_id: Mapped[str] = mapped_column(String(255), unique=True)
     parsed_data: Mapped[dict] = mapped_column(JSONB)
@@ -60,7 +62,7 @@ class ScanRun(Base, UUIDMixin):
     __tablename__ = "scan_runs"
 
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("user_profiles.id")
+        UUID(as_uuid=True), ForeignKey("user_profiles.id", ondelete="CASCADE")
     )
     status: Mapped[str] = mapped_column(String(20), default=ScanRunStatus.running)
     started_at: Mapped[datetime] = mapped_column(
@@ -97,7 +99,7 @@ class UnmatchedImport(Base, UUIDMixin):
     __tablename__ = "unmatched_imports"
 
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("user_profiles.id")
+        UUID(as_uuid=True), ForeignKey("user_profiles.id", ondelete="CASCADE")
     )
     scan_run_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("scan_runs.id", ondelete="CASCADE")
