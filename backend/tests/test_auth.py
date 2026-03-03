@@ -207,8 +207,10 @@ def test_delete_account_calls_supabase_admin_when_key_set(
     mock_db_session.execute.side_effect = [
         owned_trips_mock,
         MagicMock(),  # delete TripMembers
-        MagicMock(),  # delete GmailConnections
+        MagicMock(),  # delete UnmatchedImports
+        MagicMock(),  # delete ScanRuns
         MagicMock(),  # delete ImportRecords
+        MagicMock(),  # delete GmailConnections
         MagicMock(),  # delete HolidayCalendars
         MagicMock(),  # delete CustomDays
         MagicMock(),  # delete UserProfile
@@ -239,8 +241,10 @@ def test_delete_account_commits_only_after_supabase_succeeds(
     mock_db_session.execute.side_effect = [
         owned_trips_mock,
         MagicMock(),  # delete TripMembers
-        MagicMock(),  # delete GmailConnections
+        MagicMock(),  # delete UnmatchedImports
+        MagicMock(),  # delete ScanRuns
         MagicMock(),  # delete ImportRecords
+        MagicMock(),  # delete GmailConnections
         MagicMock(),  # delete HolidayCalendars
         MagicMock(),  # delete CustomDays
         MagicMock(),  # delete UserProfile
@@ -259,8 +263,8 @@ def test_delete_account_commits_only_after_supabase_succeeds(
             response = client.delete("/auth/me", headers=auth_headers)
 
     assert response.status_code == 204
-    # 7 executes: 1 select + 6 deletes (no owned trips → no Trip delete)
-    assert mock_db_session.execute.call_count == 7
+    # 9 executes: 1 select + 8 deletes (no owned trips → no Trip delete)
+    assert mock_db_session.execute.call_count == 9
     mock_db_session.commit.assert_called_once()
 
 
@@ -273,8 +277,10 @@ def test_delete_account_supabase_failure_returns_500_and_no_commit(
     mock_db_session.execute.side_effect = [
         owned_trips_mock,
         MagicMock(),  # delete TripMembers
-        MagicMock(),  # delete GmailConnections
+        MagicMock(),  # delete UnmatchedImports
+        MagicMock(),  # delete ScanRuns
         MagicMock(),  # delete ImportRecords
+        MagicMock(),  # delete GmailConnections
         MagicMock(),  # delete HolidayCalendars
         MagicMock(),  # delete CustomDays
         MagicMock(),  # delete UserProfile
@@ -309,8 +315,10 @@ def test_delete_account_deletes_owned_trips(
         owned_trips_mock,
         MagicMock(),  # delete owned Trip rows
         MagicMock(),  # delete TripMembers
-        MagicMock(),  # delete GmailConnections
+        MagicMock(),  # delete UnmatchedImports
+        MagicMock(),  # delete ScanRuns
         MagicMock(),  # delete ImportRecords
+        MagicMock(),  # delete GmailConnections
         MagicMock(),  # delete HolidayCalendars
         MagicMock(),  # delete CustomDays
         MagicMock(),  # delete UserProfile
@@ -329,6 +337,6 @@ def test_delete_account_deletes_owned_trips(
             response = client.delete("/auth/me", headers=auth_headers)
 
     assert response.status_code == 204
-    # 1 select + 1 delete trips + 6 other deletes = 8
-    assert mock_db_session.execute.call_count == 8
+    # 1 select + 1 delete trips + 8 other deletes = 10
+    assert mock_db_session.execute.call_count == 10
     mock_db_session.commit.assert_called_once()

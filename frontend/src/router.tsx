@@ -29,7 +29,7 @@ const newTripRoute = createRoute({
   component: NewTripPage,
 })
 
-export const tripDetailRoute = createRoute({
+const tripDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/trips/$tripId',
   component: TripDetailPage,

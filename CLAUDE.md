@@ -40,7 +40,7 @@ Monorepo with two main directories:
 - `frontend/src/components/map/TripMarker.tsx` — Trip destination pin
 - `frontend/src/components/map/ActivityMarker.tsx` — Activity location pin (category-colored)
 - `frontend/src/components/map/MarkerPopup.tsx` — Popup for clicked markers
-- `frontend/src/pages/DevSeedPage.tsx` — Dev tool: seed comprehensive test data at `/dev/seed`
+- `frontend/src/components/dev/DevSeedContent.tsx` — Dev seed tool (rendered inside Settings page)
 
 ## Environment
 
@@ -154,9 +154,9 @@ JWKS-based JWT verification. Accepts both RS256 and ES256 algorithms. Anonymous 
 
 Dashboard shows all trips with coordinates on a world map. Trip detail shows the destination pin plus activity location pins with category-colored icons.
 
-### Dev Seed Page — `frontend/src/pages/DevSeedPage.tsx`
+### Dev Seed — `frontend/src/components/dev/DevSeedContent.tsx`
 
-Available at `/dev/seed`. Seeds comprehensive test data (8 trips, 17 activities, 6 checklists, 22 calendar blocks) using the current user's session. "Seed Everything" runs in sequence (trips first, then dependent data). "Clear All Data" deletes all trips (cascades to itineraries/checklists) and calendar blocks.
+Rendered inside the Settings page (dev mode only). Seeds comprehensive test data (8 trips, 17 activities, 6 checklists, 22 calendar blocks) using the current user's session. "Seed Everything" runs in sequence (trips first, then dependent data). "Clear All Data" deletes all trips (cascades to itineraries/checklists) and calendar blocks.
 
 ### Supabase Project Ref
 

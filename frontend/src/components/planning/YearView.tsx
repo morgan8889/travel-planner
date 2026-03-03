@@ -3,6 +3,7 @@ import { DayCell } from './DayCell'
 import { TripSpan } from './TripSpan'
 import type { TripSummary, HolidayEntry, CustomDay } from '../../lib/types'
 import { formatDate, formatShortDate } from '../../lib/dateUtils'
+import { getEventName } from '../../lib/tripUtils'
 
 interface YearViewProps {
   year: number
@@ -51,12 +52,6 @@ const EVENTS_DEFAULT = 5
 type PanelEventItem =
   | { kind: 'trip'; trip: TripSummary; date: string }
   | { kind: 'custom'; cd: CustomDay & { resolvedDate: string }; date: string }
-
-function getEventName(notes: string | null | undefined): string | null {
-  if (!notes) return null
-  const dashIdx = notes.indexOf(' — ')
-  return dashIdx !== -1 ? notes.slice(0, dashIdx) : notes.slice(0, 60)
-}
 
 type InventoryItem =
   | { type: 'trip'; trip: TripSummary }

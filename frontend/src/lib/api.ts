@@ -80,12 +80,6 @@ export const itineraryApi = {
       params: hasLocation ? { has_location: true } : undefined,
     }),
 
-  listTripPendingImports: (tripId: string) =>
-    api
-      .get<Activity[]>(`/itinerary/trips/${tripId}/activities`, {
-        params: { import_status: 'pending_review' },
-      })
-      .then((r) => r.data),
 }
 
 export const checklistApi = {

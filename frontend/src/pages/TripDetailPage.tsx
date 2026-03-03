@@ -26,24 +26,54 @@ import { ChecklistCard } from '../components/checklist/ChecklistCard'
 import { AddChecklistModal } from '../components/checklist/AddChecklistModal'
 import { GmailImportSection } from '../components/trips/GmailImportSection'
 import { getEventName } from '../lib/tripUtils'
-import { getDaysUntil } from '../lib/dateUtils'
-import type { TripCreate, TripStatus, TripUpdate } from '../lib/types'
+import { formatDateRangeLong, getDaysUntil } from '../lib/dateUtils'
+import type { TripCreate, TripMember, TripInvitation, TripStatus, TripUpdate } from '../lib/types'
 
-function formatDateRange(startDate: string, endDate: string): string {
-  const start = new Date(startDate + 'T00:00:00')
-  const end = new Date(endDate + 'T00:00:00')
+interface MembersCardProps {
+  members: TripMember[]
+  invitations: TripInvitation[]
+  isOwner: boolean
+  onAdd: () => void
+  onRemove: (memberId: string) => void
+  onUpdateRole: (memberId: string, role: 'owner' | 'member') => void
+  isMutating: boolean
+}
 
-  const startFormatted = start.toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-  })
-  const endFormatted = end.toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  })
+function MembersCard({ members, invitations, isOwner, onAdd, onRemove, onUpdateRole, isMutating }: MembersCardProps) {
+  return (
+    <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-cloud-200 p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-cloud-900">
+          Members
+          <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-cloud-100 text-cloud-600">
+            {members.length}
+          </span>
+        </h2>
+        {isOwner && (
+          <button
+            onClick={onAdd}
+            className="text-sm text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
+          >
+            + Add
+          </button>
+        )}
+      </div>
 
-  return `${startFormatted} - ${endFormatted}`
+      <TripMembersList
+        members={members}
+        invitations={invitations}
+        isOwner={isOwner}
+        onRemove={onRemove}
+        onUpdateRole={onUpdateRole}
+      />
+
+      {isMutating && (
+        <div className="flex items-center justify-center py-2">
+          <LoadingSpinner size="sm" />
+        </div>
+      )}
+    </div>
+  )
 }
 
 function DetailSkeleton() {
@@ -371,7 +401,7 @@ export function TripDetailPage() {
               {/* Dates */}
               <div className="flex items-center gap-3 text-cloud-600 mb-4">
                 <Calendar className="w-5 h-5 text-cloud-400 shrink-0" />
-                <span>{formatDateRange(trip.start_date, trip.end_date)}</span>
+                <span>{formatDateRangeLong(trip.start_date, trip.end_date)}</span>
                 <span className="text-sm text-cloud-400">
                   ({getDaysUntil(trip.start_date)})
                 </span>
@@ -587,82 +617,30 @@ export function TripDetailPage() {
             {mapSection}
 
             {/* Members */}
-            <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-cloud-200 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-cloud-900">
-                  Members
-                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-cloud-100 text-cloud-600">
-                    {trip.members.length}
-                  </span>
-                </h2>
-                {isOwner && (
-                  <button
-                    onClick={() => {
-                      setAddMemberError(null)
-                      setShowAddMember(true)
-                    }}
-                    className="text-sm text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
-                  >
-                    + Add
-                  </button>
-                )}
-              </div>
-
-              <TripMembersList
-                members={trip.members}
-                invitations={invitations}
-                isOwner={isOwner}
-                onRemove={handleRemoveMember}
-                onUpdateRole={handleUpdateRole}
-              />
-
-              {(removeMember.isPending || updateMemberRole.isPending) && (
-                <div className="flex items-center justify-center py-2">
-                  <LoadingSpinner size="sm" />
-                </div>
-              )}
-            </div>
+            <MembersCard
+              members={trip.members}
+              invitations={invitations}
+              isOwner={isOwner}
+              onAdd={() => { setAddMemberError(null); setShowAddMember(true) }}
+              onRemove={handleRemoveMember}
+              onUpdateRole={handleUpdateRole}
+              isMutating={removeMember.isPending || updateMemberRole.isPending}
+            />
           </div>
         </div>
       </div>
 
       {/* Mobile members section (below content) */}
       <div className="lg:hidden mt-4">
-        <div className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border border-cloud-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-cloud-900">
-              Members
-              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-cloud-100 text-cloud-600">
-                {trip.members.length}
-              </span>
-            </h2>
-            {isOwner && (
-              <button
-                onClick={() => {
-                  setAddMemberError(null)
-                  setShowAddMember(true)
-                }}
-                className="text-sm text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
-              >
-                + Add
-              </button>
-            )}
-          </div>
-
-          <TripMembersList
-            members={trip.members}
-            invitations={invitations}
-            isOwner={isOwner}
-            onRemove={handleRemoveMember}
-            onUpdateRole={handleUpdateRole}
-          />
-
-          {(removeMember.isPending || updateMemberRole.isPending) && (
-            <div className="flex items-center justify-center py-2">
-              <LoadingSpinner size="sm" />
-            </div>
-          )}
-        </div>
+        <MembersCard
+          members={trip.members}
+          invitations={invitations}
+          isOwner={isOwner}
+          onAdd={() => { setAddMemberError(null); setShowAddMember(true) }}
+          onRemove={handleRemoveMember}
+          onUpdateRole={handleUpdateRole}
+          isMutating={removeMember.isPending || updateMemberRole.isPending}
+        />
       </div>
 
       {/* Modals */}

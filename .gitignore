@@ -34,3 +34,7 @@ htmlcov/
 
 # Worktrees
 .worktrees/
+
+# Screenshots and browser automation artifacts
+*.png
+.playwright-mcp/

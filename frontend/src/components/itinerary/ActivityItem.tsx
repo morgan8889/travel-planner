@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { GripVertical, Trash2, Plane, Utensils, MapPin, Hotel, type LucideIcon } from 'lucide-react'
+import { GripVertical, Trash2 } from 'lucide-react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import type { Activity, ActivityCategory } from '../../lib/types'
+import type { Activity } from '../../lib/types'
+import { CATEGORY_ICONS } from '../../lib/activityConstants'
 import { useDeleteActivity, useUpdateActivity } from '../../hooks/useItinerary'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { ActivityForm } from './ActivityForm'
@@ -10,13 +11,6 @@ import { ActivityForm } from './ActivityForm'
 interface ActivityItemProps {
   activity: Activity
   tripId: string
-}
-
-const CATEGORY_ICONS: Record<ActivityCategory, LucideIcon> = {
-  transport: Plane,
-  food: Utensils,
-  activity: MapPin,
-  lodging: Hotel,
 }
 
 export function ActivityItem({ activity, tripId }: ActivityItemProps) {

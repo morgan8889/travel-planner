@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { gmailApi, itineraryApi } from '../lib/api'
 import { supabase } from '../lib/supabase'
-import type { GmailInbox, ScanProgressEvent, ScanRun } from '../lib/types'
+import type { GmailInbox, ScanProgressEvent } from '../lib/types'
 import { itineraryKeys } from './useItinerary'
 
 export const gmailKeys = {
@@ -146,7 +146,7 @@ export function useDismissAllUnmatched() {
 }
 
 // SSE-based scan hook
-export interface ScanState {
+interface ScanState {
   scanId: string | null
   isRunning: boolean
   events: ScanProgressEvent[]
@@ -324,8 +324,3 @@ export function usePendingImportCount(tripId: string) {
   return group?.activities.length ?? 0
 }
 
-// Legacy alias kept for backward compat with GmailImportSection
-export { useGmailStatus as useGmailConnection }
-
-// Re-export ScanRun type for consumers
-export type { ScanRun }

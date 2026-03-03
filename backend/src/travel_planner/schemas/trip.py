@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, EmailStr, Field, model_validator
 
 from travel_planner.models.trip import MemberRole, TripStatus, TripType
 
@@ -129,7 +129,7 @@ class TripResponse(BaseModel):
 
 
 class AddMemberRequest(BaseModel):
-    email: str = Field(..., min_length=1)
+    email: EmailStr
 
 
 class UpdateMemberRole(BaseModel):

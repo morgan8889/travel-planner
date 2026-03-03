@@ -502,7 +502,7 @@ async def add_member(
 
         if settings.supabase_service_role_key:
             try:
-                async with httpx.AsyncClient() as http_client:
+                async with httpx.AsyncClient(timeout=10.0) as http_client:
                     resp = await http_client.post(
                         f"{settings.supabase_url}/auth/v1/invite",
                         headers={
