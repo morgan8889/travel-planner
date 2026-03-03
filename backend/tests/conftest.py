@@ -1,8 +1,13 @@
 import os
 
-# CRITICAL: Set test environment variables BEFORE any other imports
-# This must be done before importing anything from travel_planner
+from cryptography.fernet import Fernet
+
+# CRITICAL: Set test environment variables BEFORE any other imports.
+# config.py runs Settings() at module level, which validates these vars.
+# TOKEN_ENCRYPTION_KEY must be a valid Fernet key for encryption tests.
 os.environ["SUPABASE_URL"] = "http://test.supabase.co"
+os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://localhost:5432/test")
+os.environ.setdefault("TOKEN_ENCRYPTION_KEY", Fernet.generate_key().decode())
 
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime, timedelta
@@ -11,7 +16,6 @@ from uuid import UUID
 
 import jwt
 import pytest
-from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi.testclient import TestClient
@@ -29,12 +33,6 @@ OTHER_USER_ID = UUID("223e4567-e89b-12d3-a456-426614174001")
 OTHER_USER_EMAIL = "other@example.com"
 TRIP_ID = UUID("333e4567-e89b-12d3-a456-426614174002")
 MEMBER_ID = UUID("443e4567-e89b-12d3-a456-426614174003")
-
-
-def pytest_configure(config):
-    """Set TOKEN_ENCRYPTION_KEY before any test module is imported."""
-    if "TOKEN_ENCRYPTION_KEY" not in os.environ:
-        os.environ["TOKEN_ENCRYPTION_KEY"] = Fernet.generate_key().decode()
 
 
 def make_user(
