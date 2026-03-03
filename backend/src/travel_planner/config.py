@@ -20,8 +20,15 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def check_required(self) -> "Settings":
+        missing = []
         if not self.supabase_url:
-            raise ValueError("supabase_url is required (set SUPABASE_URL env var)")
+            missing.append("SUPABASE_URL")
+        if not self.database_url:
+            missing.append("DATABASE_URL")
+        if not self.token_encryption_key:
+            missing.append("TOKEN_ENCRYPTION_KEY")
+        if missing:
+            raise ValueError(f"Required env vars not set: {', '.join(missing)}")
         return self
 
 

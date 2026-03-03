@@ -9,7 +9,12 @@ from travel_planner.auth import CurrentUser, CurrentUserId
 from travel_planner.config import settings
 from travel_planner.db import get_db
 from travel_planner.models.calendar import CustomDay, HolidayCalendar
-from travel_planner.models.gmail import GmailConnection, ImportRecord
+from travel_planner.models.gmail import (
+    GmailConnection,
+    ImportRecord,
+    ScanRun,
+    UnmatchedImport,
+)
 from travel_planner.models.trip import MemberRole, Trip, TripMember
 from travel_planner.models.user import UserProfile
 from travel_planner.schemas.auth import ProfileCreate, ProfileResponse
@@ -86,11 +91,15 @@ async def delete_account(
     # 3. Remove membership in trips the user doesn't own
     await db.execute(sa_delete(TripMember).where(TripMember.user_id == user_id))
 
-    # 4. Delete gmail data
+    # 4. Delete gmail data (child tables first to avoid FK violations)
+    await db.execute(
+        sa_delete(UnmatchedImport).where(UnmatchedImport.user_id == user_id)
+    )
+    await db.execute(sa_delete(ScanRun).where(ScanRun.user_id == user_id))
+    await db.execute(sa_delete(ImportRecord).where(ImportRecord.user_id == user_id))
     await db.execute(
         sa_delete(GmailConnection).where(GmailConnection.user_id == user_id)
     )
-    await db.execute(sa_delete(ImportRecord).where(ImportRecord.user_id == user_id))
 
     # 5. Delete calendar records
     await db.execute(
@@ -103,7 +112,7 @@ async def delete_account(
 
     # 7. Delete Supabase auth user first — if this fails, we abort before committing DB
     #    changes, so data is preserved and the user can retry.
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=10.0) as client:
         resp = await client.delete(
             f"{settings.supabase_url}/auth/v1/admin/users/{user_id}",
             headers={
