@@ -192,7 +192,92 @@ The backend automatically generates interactive API documentation:
 - 🔲 Gmail OAuth + AI-powered booking parsing + import review UI
 
 ### Phase 7: Integration & Deployment
-- 🔲 End-to-end integration tests + Docker + deployment config
+- ✅ Docker images + GitHub Actions build/push pipeline
+- 🔲 End-to-end integration tests + deployment config
+
+## Docker Deployment
+
+Docker images are built and pushed to GitHub Container Registry automatically on every merge to `main`, after CI passes.
+
+### Images
+
+| Image | Registry path |
+|---|---|
+| Backend (FastAPI/uvicorn) | `ghcr.io/morgan8889/travel-planner-backend` |
+| Frontend (nginx, static) | `ghcr.io/morgan8889/travel-planner-frontend` |
+
+Each image is tagged with:
+- `latest` — most recent build from `main`
+- `sha-<7-char>` — pinned to a specific commit (e.g. `sha-2ba6830`)
+
+### Required GitHub secrets
+
+Set these as repository secrets before the workflow will produce a working frontend image:
+
+| Secret | Description |
+|---|---|
+| `VITE_SUPABASE_URL` | Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anon/public key |
+| `VITE_MAPBOX_TOKEN` | Mapbox GL access token |
+
+> These are baked into the frontend image at build time (Vite replaces them at compile). The backend reads its config from runtime environment variables — no build-time secrets needed.
+
+### Pull an image
+
+```bash
+# Authenticate with GitHub Container Registry
+echo $GITHUB_TOKEN | docker login ghcr.io -u <your-github-username> --password-stdin
+
+docker pull ghcr.io/morgan8889/travel-planner-backend:latest
+docker pull ghcr.io/morgan8889/travel-planner-frontend:latest
+
+# Or pin to a specific commit
+docker pull ghcr.io/morgan8889/travel-planner-backend:sha-2ba6830
+```
+
+### Run with Docker Compose
+
+```yaml
+services:
+  backend:
+    image: ghcr.io/morgan8889/travel-planner-backend:latest
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://user:password@db:5432/travel_planner
+      SUPABASE_URL: https://your-project.supabase.co
+      SUPABASE_KEY: your-anon-key
+
+  frontend:
+    image: ghcr.io/morgan8889/travel-planner-frontend:latest
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+```
+
+```bash
+docker compose up
+```
+
+> The frontend proxies `/api` requests to the backend. In production you'll need a reverse proxy (nginx, Caddy, etc.) routing `/api` to the backend container on port `8000`.
+
+### Database migrations
+
+Migrations are not run automatically on container start. Run them before deploying a new backend version:
+
+```bash
+docker run --rm \
+  -e DATABASE_URL=postgresql+asyncpg://user:password@host:5432/travel_planner \
+  ghcr.io/morgan8889/travel-planner-backend:latest \
+  uv run alembic upgrade head
+```
+
+### CI/CD pipeline
+
+Defined in `.github/workflows/docker.yml`. Triggers via `workflow_run` after the **CI** workflow completes successfully on `main`. Backend and frontend images build in parallel. `GITHUB_TOKEN` is used automatically — no extra registry credentials needed.
+
+---
 
 ## Contributing
 
