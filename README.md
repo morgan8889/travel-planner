@@ -192,7 +192,155 @@ The backend automatically generates interactive API documentation:
 - 🔲 Gmail OAuth + AI-powered booking parsing + import review UI
 
 ### Phase 7: Integration & Deployment
-- 🔲 End-to-end integration tests + Docker + deployment config
+- ✅ Docker images + GitHub Actions build/push pipeline
+- 🔲 End-to-end integration tests + deployment config
+
+## Docker Deployment
+
+Docker images are built and pushed to GitHub Container Registry automatically on every merge to `main`, after CI passes.
+
+### Images
+
+| Image | Registry path |
+|---|---|
+| Backend (FastAPI/uvicorn) | `ghcr.io/morgan8889/travel-planner-backend` |
+| Frontend (nginx, static) | `ghcr.io/morgan8889/travel-planner-frontend` |
+
+Each image is tagged with:
+- `latest` — most recent build from `main`
+- `sha-<7-char>` — pinned to a specific commit (e.g. `sha-2ba6830`)
+
+Both images are multi-platform manifests supporting `linux/amd64` and `linux/arm64` (Apple Silicon).
+
+### Required GitHub secrets
+
+Set these as repository secrets before running the workflow. The Supabase secrets are required; the Mapbox token is optional:
+
+| Secret | Description |
+|---|---|
+| `VITE_SUPABASE_URL` | Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anon/public key |
+| `VITE_MAPBOX_TOKEN` | Mapbox GL access token (optional — map shows a placeholder if omitted) |
+
+> These are baked into the frontend image at build time (Vite replaces them at compile). The backend reads its config from runtime environment variables — no build-time secrets needed.
+
+### Authenticating with GHCR
+
+Docker images on `ghcr.io` are private by default. Pulling without authentication produces:
+
+```
+unauthorized: unauthenticated: User cannot be authenticated with the token provided
+```
+
+To fix this, create a GitHub Personal Access Token and use it to log in:
+
+1. Go to **GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)**
+2. Generate a new token with the **`read:packages`** scope (add `write:packages` if you also need to push)
+3. Copy the token, then run:
+
+```bash
+export GITHUB_TOKEN=ghp_your_token_here
+
+echo $GITHUB_TOKEN | docker login ghcr.io -u <your-github-username> --password-stdin
+# Login Succeeded
+```
+
+Credentials are stored in `~/.docker/config.json` and reused automatically for subsequent `docker pull` and `docker compose` commands.
+
+### Pull an image
+
+```bash
+docker pull ghcr.io/morgan8889/travel-planner-backend:latest
+docker pull ghcr.io/morgan8889/travel-planner-frontend:latest
+
+# Or pin to a specific commit
+docker pull ghcr.io/morgan8889/travel-planner-backend:sha-2ba6830
+```
+
+### Run with Docker Compose
+
+```yaml
+services:
+  backend:
+    image: ghcr.io/morgan8889/travel-planner-backend:latest
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://user:password@your-db-host:5432/travel_planner
+      SUPABASE_URL: https://your-project.supabase.co
+      SUPABASE_KEY: your-anon-key
+
+  frontend:
+    image: ghcr.io/morgan8889/travel-planner-frontend:latest
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+```
+
+```bash
+docker compose up
+```
+
+> The frontend proxies `/api` requests to the backend. In production you'll need a reverse proxy (nginx, Caddy, etc.) routing `/api` to the backend container on port `8000`.
+
+### Database migrations
+
+Migrations are not run automatically on container start. Run them before deploying a new backend version:
+
+```bash
+docker run --rm \
+  -e DATABASE_URL=postgresql+asyncpg://user:password@host:5432/travel_planner \
+  ghcr.io/morgan8889/travel-planner-backend:latest \
+  uv run alembic upgrade head
+```
+
+### Working with running containers
+
+**View logs**
+```bash
+docker compose logs -f backend    # stream backend logs
+docker compose logs -f frontend   # stream nginx access logs
+docker compose logs --tail 50     # last 50 lines from all services
+```
+
+**Open a shell inside a container**
+```bash
+docker compose exec backend sh    # backend (Python/uv environment)
+docker compose exec frontend sh   # frontend (nginx:alpine)
+```
+
+**Run a one-off command without starting a persistent container**
+```bash
+# Check the installed package versions
+docker run --rm ghcr.io/morgan8889/travel-planner-backend:latest uv pip list
+
+# Inspect the built frontend files
+docker run --rm ghcr.io/morgan8889/travel-planner-frontend:latest ls /usr/share/nginx/html
+```
+
+**Restart a single service**
+```bash
+docker compose restart backend
+```
+
+**Stop everything and remove containers**
+```bash
+docker compose down           # stop and remove containers
+docker compose down -v        # also remove named volumes (wipes DB data)
+```
+
+**Check container health**
+```bash
+docker compose ps             # shows status of each service
+docker inspect <container-id> --format '{{.State.Health}}'
+```
+
+### CI/CD pipeline
+
+Defined in `.github/workflows/docker.yml`. Triggers via `workflow_run` after the **CI** workflow completes successfully on `main`. Backend and frontend images build in parallel. `GITHUB_TOKEN` is used automatically — no extra registry credentials needed.
+
+---
 
 ## Contributing
 
