@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env*
+*.md
+__tests__/
+*.test.tsx
+*.test.ts
+playwright-report/
+test-results/
