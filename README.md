@@ -210,6 +210,8 @@ Each image is tagged with:
 - `latest` — most recent build from `main`
 - `sha-<7-char>` — pinned to a specific commit (e.g. `sha-2ba6830`)
 
+Both images are multi-platform manifests supporting `linux/amd64` and `linux/arm64` (Apple Silicon).
+
 ### Required GitHub secrets
 
 Set these as repository secrets before the workflow will produce a working frontend image:
