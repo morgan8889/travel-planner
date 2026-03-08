@@ -214,13 +214,13 @@ Both images are multi-platform manifests supporting `linux/amd64` and `linux/arm
 
 ### Required GitHub secrets
 
-Set these as repository secrets before the workflow will produce a working frontend image:
+Set these as repository secrets before running the workflow. The Supabase secrets are required; the Mapbox token is optional:
 
 | Secret | Description |
 |---|---|
 | `VITE_SUPABASE_URL` | Supabase project URL |
 | `VITE_SUPABASE_ANON_KEY` | Supabase anon/public key |
-| `VITE_MAPBOX_TOKEN` | Mapbox GL access token |
+| `VITE_MAPBOX_TOKEN` | Mapbox GL access token (optional — map shows a placeholder if omitted) |
 
 > These are baked into the frontend image at build time (Vite replaces them at compile). The backend reads its config from runtime environment variables — no build-time secrets needed.
 
@@ -266,7 +266,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql+asyncpg://user:password@db:5432/travel_planner
+      DATABASE_URL: postgresql+asyncpg://user:password@your-db-host:5432/travel_planner
       SUPABASE_URL: https://your-project.supabase.co
       SUPABASE_KEY: your-anon-key
 
