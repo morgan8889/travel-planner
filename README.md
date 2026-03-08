@@ -273,6 +273,47 @@ docker run --rm \
   uv run alembic upgrade head
 ```
 
+### Working with running containers
+
+**View logs**
+```bash
+docker compose logs -f backend    # stream backend logs
+docker compose logs -f frontend   # stream nginx access logs
+docker compose logs --tail 50     # last 50 lines from all services
+```
+
+**Open a shell inside a container**
+```bash
+docker compose exec backend sh    # backend (Python/uv environment)
+docker compose exec frontend sh   # frontend (nginx:alpine)
+```
+
+**Run a one-off command without starting a persistent container**
+```bash
+# Check the installed package versions
+docker run --rm ghcr.io/morgan8889/travel-planner-backend:latest uv pip list
+
+# Inspect the built frontend files
+docker run --rm ghcr.io/morgan8889/travel-planner-frontend:latest ls /usr/share/nginx/html
+```
+
+**Restart a single service**
+```bash
+docker compose restart backend
+```
+
+**Stop everything and remove containers**
+```bash
+docker compose down           # stop and remove containers
+docker compose down -v        # also remove named volumes (wipes DB data)
+```
+
+**Check container health**
+```bash
+docker compose ps             # shows status of each service
+docker inspect <container-id> --format '{{.State.Health}}'
+```
+
 ### CI/CD pipeline
 
 Defined in `.github/workflows/docker.yml`. Triggers via `workflow_run` after the **CI** workflow completes successfully on `main`. Backend and frontend images build in parallel. `GITHUB_TOKEN` is used automatically — no extra registry credentials needed.
