@@ -222,12 +222,32 @@ Set these as repository secrets before the workflow will produce a working front
 
 > These are baked into the frontend image at build time (Vite replaces them at compile). The backend reads its config from runtime environment variables — no build-time secrets needed.
 
+### Authenticating with GHCR
+
+Docker images on `ghcr.io` are private by default. Pulling without authentication produces:
+
+```
+unauthorized: unauthenticated: User cannot be authenticated with the token provided
+```
+
+To fix this, create a GitHub Personal Access Token and use it to log in:
+
+1. Go to **GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)**
+2. Generate a new token with the **`read:packages`** scope (add `write:packages` if you also need to push)
+3. Copy the token, then run:
+
+```bash
+export GITHUB_TOKEN=ghp_your_token_here
+
+echo $GITHUB_TOKEN | docker login ghcr.io -u <your-github-username> --password-stdin
+# Login Succeeded
+```
+
+Credentials are stored in `~/.docker/config.json` and reused automatically for subsequent `docker pull` and `docker compose` commands.
+
 ### Pull an image
 
 ```bash
-# Authenticate with GitHub Container Registry
-echo $GITHUB_TOKEN | docker login ghcr.io -u <your-github-username> --password-stdin
-
 docker pull ghcr.io/morgan8889/travel-planner-backend:latest
 docker pull ghcr.io/morgan8889/travel-planner-frontend:latest
 
