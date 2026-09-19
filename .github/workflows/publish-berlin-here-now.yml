@@ -1,0 +1,40 @@
+name: Publish Berlin guide to here.now
+
+on:
+  push:
+    branches:
+      - publish-berlin-marathon-2026
+    paths:
+      - ".github/workflows/publish-berlin-here-now.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout publishing branch
+        uses: actions/checkout@v4
+
+      - name: Rebuild HTML
+        shell: bash
+        run: |
+          mkdir -p site
+          cat .herenow/berlin/chunk1.b64 .herenow/berlin/chunk2.b64 .herenow/berlin/chunk3.b64 .herenow/berlin/chunk4.b64 .herenow/berlin/chunk5.b64 .herenow/berlin/chunk6.b64 | tr -d '\n\r ' | base64 -d > site/index.html
+          echo "site_bytes=$(wc -c < site/index.html)"
+          test "$(wc -c < site/index.html)" -eq 18501
+
+      - name: Fetch current here.now publisher
+        shell: bash
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/heredotnow/skill/main/here-now/scripts/publish.sh -o publish.sh
+          chmod +x publish.sh
+
+      - name: Publish anonymous site
+        shell: bash
+        run: |
+          set -o pipefail
+          ./publish.sh site --client github-actions 2>&1 | tee publish.log
+          echo "=== PUBLISH RESULT ==="
+          cat publish.log
